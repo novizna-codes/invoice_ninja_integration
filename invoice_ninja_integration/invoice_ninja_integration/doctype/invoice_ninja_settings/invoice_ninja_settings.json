@@ -1,0 +1,239 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:title",
+ "creation": "2025-07-24 10:00:00.000000",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "enabled",
+  "section_break_3",
+  "invoice_ninja_url",
+  "api_token",
+  "column_break_6",
+  "test_connection",
+  "connection_status",
+  "sync_settings_section",
+  "enable_customer_sync",
+  "enable_invoice_sync",
+  "enable_quote_sync",
+  "enable_product_sync",
+  "enable_payment_sync",
+  "column_break_13",
+  "sync_frequency",
+  "last_sync_time",
+  "enable_webhooks",
+  "webhook_url",
+  "webhook_secret",
+  "error_handling_section",
+  "send_error_notifications",
+  "notification_email",
+  "max_retries",
+  "column_break_21",
+  "log_level",
+  "cleanup_logs_after_days",
+  "reporting_section",
+  "send_sync_reports",
+  "report_recipients"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Title",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "fieldname": "section_break_3",
+   "fieldtype": "Section Break",
+   "label": "Invoice Ninja Connection"
+  },
+  {
+   "fieldname": "invoice_ninja_url",
+   "fieldtype": "Data",
+   "label": "Invoice Ninja URL",
+   "reqd": 1
+  },
+  {
+   "fieldname": "api_token",
+   "fieldtype": "Password",
+   "label": "API Token",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_6",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "test_connection",
+   "fieldtype": "Button",
+   "label": "Test Connection"
+  },
+  {
+   "fieldname": "connection_status",
+   "fieldtype": "Select",
+   "label": "Connection Status",
+   "options": "Not Tested\nConnected\nFailed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sync_settings_section",
+   "fieldtype": "Section Break",
+   "label": "Sync Settings"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_customer_sync",
+   "fieldtype": "Check",
+   "label": "Enable Customer Sync"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_invoice_sync",
+   "fieldtype": "Check",
+   "label": "Enable Invoice Sync"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_quote_sync",
+   "fieldtype": "Check",
+   "label": "Enable Quote Sync"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_product_sync",
+   "fieldtype": "Check",
+   "label": "Enable Product Sync"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_payment_sync",
+   "fieldtype": "Check",
+   "label": "Enable Payment Sync"
+  },
+  {
+   "fieldname": "column_break_13",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Hourly",
+   "fieldname": "sync_frequency",
+   "fieldtype": "Select",
+   "label": "Sync Frequency",
+   "options": "Every 15 minutes\nEvery 30 minutes\nHourly\nDaily"
+  },
+  {
+   "fieldname": "last_sync_time",
+   "fieldtype": "Datetime",
+   "label": "Last Sync Time",
+   "read_only": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_webhooks",
+   "fieldtype": "Check",
+   "label": "Enable Real-time Webhooks"
+  },
+  {
+   "fieldname": "webhook_url",
+   "fieldtype": "Data",
+   "label": "Webhook URL",
+   "read_only": 1
+  },
+  {
+   "fieldname": "webhook_secret",
+   "fieldtype": "Password",
+   "label": "Webhook Secret"
+  },
+  {
+   "fieldname": "error_handling_section",
+   "fieldtype": "Section Break",
+   "label": "Error Handling"
+  },
+  {
+   "default": "1",
+   "fieldname": "send_error_notifications",
+   "fieldtype": "Check",
+   "label": "Send Error Notifications"
+  },
+  {
+   "fieldname": "notification_email",
+   "fieldtype": "Data",
+   "label": "Notification Email"
+  },
+  {
+   "default": "3",
+   "fieldname": "max_retries",
+   "fieldtype": "Int",
+   "label": "Max Retries"
+  },
+  {
+   "fieldname": "column_break_21",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Info",
+   "fieldname": "log_level",
+   "fieldtype": "Select",
+   "label": "Log Level",
+   "options": "Debug\nInfo\nWarning\nError"
+  },
+  {
+   "default": "30",
+   "fieldname": "cleanup_logs_after_days",
+   "fieldtype": "Int",
+   "label": "Cleanup Logs After (Days)"
+  },
+  {
+   "fieldname": "reporting_section",
+   "fieldtype": "Section Break",
+   "label": "Reporting Settings"
+  },
+  {
+   "default": "0",
+   "fieldname": "send_sync_reports",
+   "fieldtype": "Check",
+   "label": "Send Weekly Sync Reports"
+  },
+  {
+   "fieldname": "report_recipients",
+   "fieldtype": "Small Text",
+   "label": "Report Recipients (comma-separated emails)"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2025-07-24 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Invoice Ninja Integration",
+ "name": "Invoice Ninja Settings",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

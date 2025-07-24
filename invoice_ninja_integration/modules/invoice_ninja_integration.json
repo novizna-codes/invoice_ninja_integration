@@ -1,0 +1,10 @@
+{
+ "module_name": "Invoice Ninja Integration",
+ "category": "Integration",
+ "app_name": "invoice_ninja_integration",
+ "label": "Invoice Ninja Integration",
+ "color": "grey",
+ "icon": "fa fa-sync",
+ "type": "module",
+ "description": "Integration with Invoice Ninja for seamless data synchronization"
+}
