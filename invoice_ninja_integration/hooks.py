@@ -79,6 +79,44 @@ app_license = "mit"
 # 	"filters": "invoice_ninja_integration.utils.jinja_filters"
 # }
 
+# Document Events
+# ---------------
+
+doc_events = {
+    "Customer": {
+        "after_insert": "invoice_ninja_integration.sync_hooks.on_customer_save",
+        "on_update": "invoice_ninja_integration.sync_hooks.on_customer_save",
+    },
+    "Sales Invoice": {
+        "on_submit": "invoice_ninja_integration.sync_hooks.on_invoice_save",
+        "on_update_after_submit": "invoice_ninja_integration.sync_hooks.on_invoice_save",
+    },
+    "Quotation": {
+        "after_insert": "invoice_ninja_integration.sync_hooks.on_quotation_save",
+        "on_update": "invoice_ninja_integration.sync_hooks.on_quotation_save",
+    },
+    "Item": {
+        "after_insert": "invoice_ninja_integration.sync_hooks.on_item_save",
+        "on_update": "invoice_ninja_integration.sync_hooks.on_item_save",
+    },
+    "Payment Entry": {
+        "on_submit": "invoice_ninja_integration.sync_hooks.on_payment_save",
+        "on_update_after_submit": "invoice_ninja_integration.sync_hooks.on_payment_save",
+    }
+}
+
+# Scheduled Tasks
+# ---------------
+
+scheduler_events = {
+    "hourly": [
+        "invoice_ninja_integration.tasks.sync_from_invoice_ninja"
+    ],
+    "daily": [
+        "invoice_ninja_integration.tasks.cleanup_sync_logs"
+    ]
+}
+
 # Installation
 # ------------
 

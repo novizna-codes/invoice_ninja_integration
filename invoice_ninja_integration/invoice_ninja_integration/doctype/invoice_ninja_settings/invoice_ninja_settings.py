@@ -1,7 +1,7 @@
 import frappe
 from frappe.model.document import Document
 import requests
-from frappe.utils import get_site_url
+from frappe.utils import get_url
 
 
 class InvoiceNinjaSettings(Document):
@@ -12,7 +12,7 @@ class InvoiceNinjaSettings(Document):
 				frappe.throw("Invoice Ninja URL and API Token are required when enabled")
 
 		# Set webhook URL automatically
-		self.webhook_url = f"{get_site_url()}/api/method/invoice_ninja_integration.www.webhook"
+		self.webhook_url = f"{get_url()}/api/method/invoice_ninja_integration.www.webhook"
 
 	@frappe.whitelist()
 	def test_connection(self):
