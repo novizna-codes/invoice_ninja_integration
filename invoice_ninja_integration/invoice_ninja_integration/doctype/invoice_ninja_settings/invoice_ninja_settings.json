@@ -16,6 +16,8 @@
   "column_break_6",
   "test_connection",
   "connection_status",
+  "company_mapping_section",
+  "company_mappings",
   "sync_settings_section",
   "enable_customer_sync",
   "customer_sync_direction",
@@ -91,6 +93,18 @@
    "label": "Connection Status",
    "options": "Not Tested\nConnected\nFailed",
    "read_only": 1
+  },
+  {
+   "fieldname": "company_mapping_section",
+   "fieldtype": "Section Break",
+   "label": "Company Mappings"
+  },
+  {
+   "fieldname": "company_mappings",
+   "fieldtype": "Table",
+   "label": "Company Mappings",
+   "options": "Invoice Ninja Company Mapping",
+   "description": "Map ERPNext companies to Invoice Ninja companies for proper document routing"
   },
   {
    "fieldname": "sync_settings_section",

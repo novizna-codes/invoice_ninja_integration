@@ -337,3 +337,36 @@ def sync_item_from_invoice_ninja(product_data):
 
 	except Exception as e:
 		frappe.log_error(f"Error creating item from Invoice Ninja: {str(e)}", "Item Creation Error")
+
+
+@frappe.whitelist()
+def get_invoice_ninja_companies(settings_name=None):
+	"""Fetch companies from Invoice Ninja API"""
+	try:
+		settings = frappe.get_single("Invoice Ninja Settings")
+		
+		if not settings.invoice_ninja_url or not settings.api_token:
+			return {"success": False, "error": "Invoice Ninja URL and API Token are required"}
+		
+		# Initialize client
+		client = InvoiceNinjaClient(settings.invoice_ninja_url, settings.get_password("api_token"))
+		
+		# Fetch companies from Invoice Ninja
+		response = client._make_request('GET', 'companies')
+		
+		if response and 'data' in response:
+			companies = []
+			for company in response['data']:
+				companies.append({
+					'id': company.get('id'),
+					'name': company.get('name', f"Company {company.get('id')}"),
+					'settings': company.get('settings', {})
+				})
+			
+			return {"success": True, "companies": companies}
+		else:
+			return {"success": False, "error": "Failed to fetch companies from Invoice Ninja"}
+			
+	except Exception as e:
+		frappe.log_error(f"Error fetching Invoice Ninja companies: {str(e)}", "Invoice Ninja API Error")
+		return {"success": False, "error": str(e)}

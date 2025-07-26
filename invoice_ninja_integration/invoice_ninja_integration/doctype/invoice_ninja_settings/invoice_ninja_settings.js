@@ -4,7 +4,7 @@ frappe.ui.form.on('Invoice Ninja Settings', {
         // Add sync status indicators
         add_sync_status_indicators(frm);
     },
-    
+
     test_connection: function(frm) {
         // Handle test connection button click
         test_invoice_ninja_connection(frm);
@@ -84,7 +84,7 @@ function get_direction_indicator(direction) {
 
 function test_invoice_ninja_connection(frm) {
     if (!frm.doc.invoice_ninja_url || !frm.doc.api_token) {
-        frappe.msgprint(__('Please enter Invoice Ninja URL and API Token first'));
+        frappe.msgprint(__('Please enter Invoice Ninja URL and API Token before testing connection.'));
         return;
     }
 
@@ -93,28 +93,59 @@ function test_invoice_ninja_connection(frm) {
         doc: frm.doc,
         callback: function(r) {
             if (r.message && r.message.success) {
-                frappe.msgprint({
-                    title: __('Success'),
-                    message: __('Connection to Invoice Ninja successful!'),
-                    indicator: 'green'
-                });
-                frm.set_value('connection_status', 'Connected');
+                frappe.msgprint(__('Connection successful!'), __('Success'));
+                frm.refresh_field('connection_status');
             } else {
-                frappe.msgprint({
-                    title: __('Error'),
-                    message: __('Connection failed: ' + (r.message ? r.message.error : 'Unknown error')),
-                    indicator: 'red'
-                });
-                frm.set_value('connection_status', 'Failed');
+                frappe.msgprint(__('Connection failed. Please check your settings.'), __('Error'));
+                frm.refresh_field('connection_status');
             }
         },
         error: function(r) {
-            frappe.msgprint({
-                title: __('Error'),
-                message: __('Connection test failed: ' + (r.message || 'Unknown error')),
-                indicator: 'red'
-            });
-            frm.set_value('connection_status', 'Failed');
+            frappe.msgprint(__('Connection test failed. Please check your settings.'), __('Error'));
         }
     });
+}
+
+function show_manual_sync_dialog(frm) {
+    let d = new frappe.ui.Dialog({
+        title: __('Manual Sync'),
+        fields: [
+            {
+                label: __('Sync Type'),
+                fieldname: 'sync_type',
+                fieldtype: 'Select',
+                options: 'Customer\nInvoice\nQuote\nProduct\nPayment',
+                reqd: 1
+            },
+            {
+                label: __('Sync Direction'),
+                fieldname: 'sync_direction',
+                fieldtype: 'Select',
+                options: 'Invoice Ninja to ERPNext\nERPNext to Invoice Ninja',
+                reqd: 1
+            },
+            {
+                label: __('Record ID (optional)'),
+                fieldname: 'record_id',
+                fieldtype: 'Data',
+                description: 'Leave empty to sync all records'
+            }
+        ],
+        primary_action_label: __('Start Sync'),
+        primary_action: function(values) {
+            frappe.call({
+                method: 'invoice_ninja_integration.tasks.manual_sync',
+                args: values,
+                callback: function(r) {
+                    if (r.message && r.message.success) {
+                        frappe.msgprint(__('Sync started successfully!'));
+                    } else {
+                        frappe.msgprint(__('Sync failed: ' + (r.message.error || 'Unknown error')));
+                    }
+                }
+            });
+            d.hide();
+        }
+    });
+    d.show();
 }

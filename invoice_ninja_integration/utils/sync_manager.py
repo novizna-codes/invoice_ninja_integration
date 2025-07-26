@@ -399,3 +399,134 @@ class SyncManager:
             issues.append("WARNING: Multiple bidirectional syncs enabled - risk of sync loops")
 
         return issues
+
+    def sync_single_record_from_invoice_ninja(self, sync_type, record_id):
+        """Sync a single record from Invoice Ninja to ERPNext"""
+        try:
+            # Map sync types to Invoice Ninja API endpoints
+            endpoint_map = {
+                'Customer': 'clients',
+                'Invoice': 'invoices',
+                'Quote': 'quotes',
+                'Product': 'products',
+                'Payment': 'payments'
+            }
+
+            endpoint = endpoint_map.get(sync_type)
+            if not endpoint:
+                raise Exception(f"Invalid sync type: {sync_type}")
+
+            # Fetch record from Invoice Ninja
+            data = self.client.get(f"{endpoint}/{record_id}")
+            if not data:
+                raise Exception(f"Record not found in Invoice Ninja: {record_id}")
+
+            # Map to ERPNext doctype
+            doctype_map = {
+                'Customer': 'Customer',
+                'Invoice': 'Sales Invoice',
+                'Quote': 'Quotation',
+                'Product': 'Item',
+                'Payment': 'Payment Entry'
+            }
+
+            doc_type = doctype_map[sync_type]
+            result = self.sync_document_from_invoice_ninja(data, doc_type)
+
+            return {"synced": 1, "record": result.name if result else None}
+
+        except Exception as e:
+            frappe.log_error(f"Single record sync failed: {str(e)}", "Single Record Sync Error")
+            raise e
+
+    def sync_all_records_from_invoice_ninja(self, sync_type, limit=100):
+        """Sync all records of a type from Invoice Ninja to ERPNext"""
+        try:
+            # Map sync types to Invoice Ninja API endpoints
+            endpoint_map = {
+                'Customer': 'clients',
+                'Invoice': 'invoices',
+                'Quote': 'quotes',
+                'Product': 'products',
+                'Payment': 'payments'
+            }
+
+            endpoint = endpoint_map.get(sync_type)
+            if not endpoint:
+                raise Exception(f"Invalid sync type: {sync_type}")
+
+            # Fetch records from Invoice Ninja
+            data = self.client.get(f"{endpoint}?per_page={limit}")
+            if not data or not data.get('data'):
+                return {"synced": 0, "message": "No records found"}
+
+            # Map to ERPNext doctype
+            doctype_map = {
+                'Customer': 'Customer',
+                'Invoice': 'Sales Invoice',
+                'Quote': 'Quotation',
+                'Product': 'Item',
+                'Payment': 'Payment Entry'
+            }
+
+            doc_type = doctype_map[sync_type]
+            synced_count = 0
+
+            for record in data['data']:
+                try:
+                    result = self.sync_document_from_invoice_ninja(record, doc_type)
+                    if result:
+                        synced_count += 1
+                except Exception as e:
+                    frappe.log_error(f"Failed to sync {sync_type} {record.get('id')}: {str(e)}", "Record Sync Error")
+                    continue
+
+            return {"synced": synced_count, "total": len(data['data'])}
+
+        except Exception as e:
+            frappe.log_error(f"Bulk sync failed: {str(e)}", "Bulk Sync Error")
+            raise e
+
+    def sync_all_records_to_invoice_ninja(self, doc_type, limit=100):
+        """Sync all records of a type from ERPNext to Invoice Ninja"""
+        try:
+            # Get all records of this doctype that don't have Invoice Ninja ID yet
+            filters = {
+                "custom_invoice_ninja_id": ["is", "not set"]
+            }
+
+            # Add additional filters based on doctype
+            if doc_type == "Sales Invoice":
+                filters["docstatus"] = 1  # Only submitted invoices
+            elif doc_type == "Quotation":
+                filters["status"] = ["!=", "Cancelled"]
+            elif doc_type == "Payment Entry":
+                filters["docstatus"] = 1  # Only submitted payments
+
+            records = frappe.get_list(
+                doc_type,
+                filters=filters,
+                limit=limit,
+                fields=["name"]
+            )
+
+            if not records:
+                return {"synced": 0, "message": "No records to sync"}
+
+            synced_count = 0
+
+            for record in records:
+                try:
+                    doc = frappe.get_doc(doc_type, record.name)
+                    result = self.sync_document_to_invoice_ninja(doc)
+                    if result:
+                        synced_count += 1
+                except Exception as e:
+                    frappe.log_error(f"Failed to sync {doc_type} {record.name}: {str(e)}", "Record Sync Error")
+                    continue
+
+            return {"synced": synced_count, "total": len(records)}
+
+        except Exception as e:
+            frappe.log_error(f"Bulk sync to Invoice Ninja failed: {str(e)}", "Bulk Sync Error")
+            raise e

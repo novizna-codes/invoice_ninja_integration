@@ -10,6 +10,18 @@ class FieldMapper:
 	def map_customer_from_invoice_ninja(in_customer):
 		"""Map Invoice Ninja customer to ERPNext customer"""
 		try:
+			# Get company mapping for this customer
+			company_mapping = FieldMapper.get_company_mapping(
+				invoice_ninja_company_id=in_customer.get('company_id')
+			)
+			
+			if not company_mapping:
+				frappe.log_error(
+					f"No company mapping found for Invoice Ninja company ID: {in_customer.get('company_id')}", 
+					"Customer Mapping Error"
+				)
+				return None, None
+			
 			# Basic customer mapping
 			customer_data = {
 				'doctype': 'Customer',
@@ -18,7 +30,8 @@ class FieldMapper:
 				'customer_group': 'Commercial',  # Default group
 				'territory': 'All Territories',  # Default territory
 				'invoice_ninja_id': str(in_customer.get('id')),
-				'sync_status': 'Synced'
+				'invoice_ninja_sync_status': 'Synced',
+				'company': company_mapping.erpnext_company  # Set the mapped company
 			}
 
 			# Contact information
@@ -80,6 +93,18 @@ class FieldMapper:
 	def map_invoice_from_invoice_ninja(in_invoice):
 		"""Map Invoice Ninja invoice to ERPNext sales invoice"""
 		try:
+			# Get company mapping for this invoice
+			company_mapping = FieldMapper.get_company_mapping(
+				invoice_ninja_company_id=in_invoice.get('company_id')
+			)
+			
+			if not company_mapping:
+				frappe.log_error(
+					f"No company mapping found for Invoice Ninja company ID: {in_invoice.get('company_id')}", 
+					"Invoice Mapping Error"
+				)
+				return None
+			
 			# Get customer reference
 			customer_name = FieldMapper.get_customer_by_invoice_ninja_id(in_invoice.get('client_id'))
 			if not customer_name:
@@ -90,13 +115,15 @@ class FieldMapper:
 			invoice_data = {
 				'doctype': 'Sales Invoice',
 				'customer': customer_name,
+				'company': company_mapping.erpnext_company,  # Set the mapped company
 				'posting_date': FieldMapper.parse_date(in_invoice.get('date')) or nowdate(),
 				'due_date': FieldMapper.parse_date(in_invoice.get('due_date')),
 				'currency': FieldMapper.get_currency_code(in_invoice.get('currency_id')) or 'USD',
 				'conversion_rate': flt(in_invoice.get('exchange_rate')) or 1.0,
 				'selling_price_list': 'Standard Selling',
 				'invoice_ninja_id': str(in_invoice.get('id')),
-				'sync_status': 'Synced',
+				'invoice_ninja_sync_status': 'Synced',
+				'invoice_ninja_number': in_invoice.get('number'),
 				'status': FieldMapper.map_invoice_status(in_invoice.get('status_id')),
 				'items': []
 			}
@@ -162,6 +189,18 @@ class FieldMapper:
 	def map_quote_from_invoice_ninja(in_quote):
 		"""Map Invoice Ninja quote to ERPNext quotation"""
 		try:
+			# Get company mapping for this quote
+			company_mapping = FieldMapper.get_company_mapping(
+				invoice_ninja_company_id=in_quote.get('company_id')
+			)
+			
+			if not company_mapping:
+				frappe.log_error(
+					f"No company mapping found for Invoice Ninja company ID: {in_quote.get('company_id')}", 
+					"Quote Mapping Error"
+				)
+				return None
+			
 			# Get customer reference
 			customer_name = FieldMapper.get_customer_by_invoice_ninja_id(in_quote.get('client_id'))
 			if not customer_name:
@@ -171,12 +210,14 @@ class FieldMapper:
 				'doctype': 'Quotation',
 				'party_name': customer_name,
 				'quotation_to': 'Customer',
+				'company': company_mapping.erpnext_company,  # Set the mapped company
 				'transaction_date': FieldMapper.parse_date(in_quote.get('date')) or nowdate(),
 				'valid_till': FieldMapper.parse_date(in_quote.get('due_date')),
 				'currency': FieldMapper.get_currency_code(in_quote.get('currency_id')) or 'USD',
 				'selling_price_list': 'Standard Selling',
 				'invoice_ninja_id': str(in_quote.get('id')),
-				'sync_status': 'Synced',
+				'invoice_ninja_sync_status': 'Synced',
+				'invoice_ninja_number': in_quote.get('number'),
 				'status': FieldMapper.map_quote_status(in_quote.get('status_id')),
 				'items': []
 			}
@@ -349,6 +390,9 @@ class FieldMapper:
 	@staticmethod
 	def map_customer_to_invoice_ninja(customer_doc):
 		"""Map ERPNext customer to Invoice Ninja format"""
+		# Validate and get company mapping
+		company_mapping = FieldMapper.validate_company_mapping(customer_doc)
+		
 		customer_data = {
 			'name': customer_doc.customer_name,
 			'display_name': customer_doc.customer_name,
@@ -357,7 +401,8 @@ class FieldMapper:
 			'website': customer_doc.website or '',
 			'vat_number': customer_doc.tax_id or '',
 			'public_notes': customer_doc.customer_details or '',
-			'is_company': 1 if customer_doc.customer_type == 'Company' else 0
+			'is_company': 1 if customer_doc.customer_type == 'Company' else 0,
+			'company_id': company_mapping.invoice_ninja_company_id  # Add company mapping
 		}
 
 		# Add address information
@@ -380,6 +425,9 @@ class FieldMapper:
 	@staticmethod
 	def map_invoice_to_invoice_ninja(invoice_doc):
 		"""Map ERPNext sales invoice to Invoice Ninja format"""
+		# Validate and get company mapping
+		company_mapping = FieldMapper.validate_company_mapping(invoice_doc)
+		
 		# Get customer's Invoice Ninja ID
 		client_id = frappe.db.get_value("Customer", invoice_doc.customer, "invoice_ninja_id")
 		if not client_id:
@@ -387,6 +435,7 @@ class FieldMapper:
 
 		invoice_data = {
 			'client_id': client_id,
+			'company_id': company_mapping.invoice_ninja_company_id,  # Add company mapping
 			'date': str(invoice_doc.posting_date),
 			'due_date': str(invoice_doc.due_date) if invoice_doc.due_date else None,
 			'number': invoice_doc.name,
@@ -413,6 +462,9 @@ class FieldMapper:
 	@staticmethod
 	def map_quotation_to_invoice_ninja(quotation_doc):
 		"""Map ERPNext quotation to Invoice Ninja format"""
+		# Validate and get company mapping
+		company_mapping = FieldMapper.validate_company_mapping(quotation_doc)
+		
 		# Get customer's Invoice Ninja ID
 		client_id = frappe.db.get_value("Customer", quotation_doc.party_name, "invoice_ninja_id")
 		if not client_id:
@@ -420,6 +472,7 @@ class FieldMapper:
 
 		quote_data = {
 			'client_id': client_id,
+			'company_id': company_mapping.invoice_ninja_company_id,  # Add company mapping
 			'date': str(quotation_doc.transaction_date),
 			'valid_until': str(quotation_doc.valid_till) if quotation_doc.valid_till else None,
 			'number': quotation_doc.name,
@@ -601,3 +654,67 @@ class FieldMapper:
 			'France': 250
 		}
 		return country_map.get(country_name, 840)
+	
+	@staticmethod
+	def get_company_mapping(erpnext_company=None, invoice_ninja_company_id=None):
+		"""Get company mapping between ERPNext and Invoice Ninja"""
+		settings = frappe.get_single("Invoice Ninja Settings")
+		
+		if not settings.company_mappings:
+			return None
+		
+		for mapping in settings.company_mappings:
+			if not mapping.enabled:
+				continue
+				
+			if erpnext_company and mapping.erpnext_company == erpnext_company:
+				return mapping
+			elif invoice_ninja_company_id and str(mapping.invoice_ninja_company_id) == str(invoice_ninja_company_id):
+				return mapping
+		
+		# Return default mapping if no specific match found
+		for mapping in settings.company_mappings:
+			if mapping.enabled and mapping.is_default:
+				return mapping
+		
+		return None
+	
+	@staticmethod
+	def get_erpnext_company(invoice_ninja_company_id):
+		"""Get ERPNext company name from Invoice Ninja company ID"""
+		mapping = FieldMapper.get_company_mapping(invoice_ninja_company_id=invoice_ninja_company_id)
+		return mapping.erpnext_company if mapping else None
+	
+	@staticmethod
+	def get_invoice_ninja_company_id(erpnext_company):
+		"""Get Invoice Ninja company ID from ERPNext company name"""
+		mapping = FieldMapper.get_company_mapping(erpnext_company=erpnext_company)
+		return mapping.invoice_ninja_company_id if mapping else None
+	
+	@staticmethod
+	def validate_company_mapping(doc):
+		"""Validate that document has proper company mapping"""
+		company = None
+		
+		# Get company from document
+		if hasattr(doc, 'company'):
+			company = doc.company
+		elif hasattr(doc, 'customer') and doc.customer:
+			# Get company from customer's default company
+			customer_doc = frappe.get_doc("Customer", doc.customer)
+			if hasattr(customer_doc, 'default_company'):
+				company = customer_doc.default_company
+		
+		if not company:
+			# Use default company
+			company = frappe.db.get_single_value("Global Defaults", "default_company")
+		
+		if not company:
+			frappe.throw("Cannot determine company for document. Please ensure company mappings are configured.")
+		
+		# Check if company mapping exists
+		mapping = FieldMapper.get_company_mapping(erpnext_company=company)
+		if not mapping:
+			frappe.throw(f"No company mapping found for ERPNext company '{company}'. Please configure company mappings in Invoice Ninja Settings.")
+		
+		return mapping

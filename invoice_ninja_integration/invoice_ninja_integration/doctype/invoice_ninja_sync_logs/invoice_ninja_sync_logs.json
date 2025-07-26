@@ -1,0 +1,168 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:INSL-{YYYY}-{#####}",
+ "creation": "2025-07-26 10:00:00.000000",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "sync_type",
+  "sync_direction",
+  "record_type",
+  "record_id",
+  "record_name",
+  "column_break_6",
+  "status",
+  "message",
+  "error_details",
+  "section_break_10",
+  "sync_timestamp",
+  "duration",
+  "job_id",
+  "column_break_14",
+  "invoice_ninja_id",
+  "erpnext_id",
+  "webhook_triggered"
+ ],
+ "fields": [
+  {
+   "fieldname": "sync_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Sync Type",
+   "options": "Manual\nAutomatic\nWebhook\nScheduled",
+   "reqd": 1
+  },
+  {
+   "fieldname": "sync_direction",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Sync Direction",
+   "options": "Invoice Ninja to ERPNext\nERPNext to Invoice Ninja\nBidirectional",
+   "reqd": 1
+  },
+  {
+   "fieldname": "record_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Record Type",
+   "options": "Customer\nInvoice\nQuotation\nItem\nPayment\nFile",
+   "reqd": 1
+  },
+  {
+   "fieldname": "record_id",
+   "fieldtype": "Data",
+   "label": "Record ID"
+  },
+  {
+   "fieldname": "record_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Record Name"
+  },
+  {
+   "fieldname": "column_break_6",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Success\nFailed\nPartial\nSkipped\nIn Progress",
+   "reqd": 1
+  },
+  {
+   "fieldname": "message",
+   "fieldtype": "Text",
+   "label": "Message"
+  },
+  {
+   "fieldname": "error_details",
+   "fieldtype": "Long Text",
+   "label": "Error Details"
+  },
+  {
+   "fieldname": "section_break_10",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "sync_timestamp",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Sync Timestamp",
+   "reqd": 1
+  },
+  {
+   "fieldname": "duration",
+   "fieldtype": "Float",
+   "label": "Duration (seconds)",
+   "precision": "2"
+  },
+  {
+   "fieldname": "job_id",
+   "fieldtype": "Data",
+   "label": "Background Job ID"
+  },
+  {
+   "fieldname": "column_break_14",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "invoice_ninja_id",
+   "fieldtype": "Data",
+   "label": "Invoice Ninja ID"
+  },
+  {
+   "fieldname": "erpnext_id",
+   "fieldtype": "Data",
+   "label": "ERPNext ID"
+  },
+  {
+   "fieldname": "webhook_triggered",
+   "fieldtype": "Check",
+   "label": "Webhook Triggered"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 0,
+ "links": [],
+ "modified": "2025-07-26 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Invoice Ninja Integration",
+ "name": "Invoice Ninja Sync Logs",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Invoice Ninja User",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "record_name",
+ "track_changes": 1
+}

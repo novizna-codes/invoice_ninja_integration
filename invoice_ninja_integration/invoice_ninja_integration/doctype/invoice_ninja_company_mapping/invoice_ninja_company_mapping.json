@@ -1,0 +1,76 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-07-26 10:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "erpnext_company",
+  "invoice_ninja_company_id",
+  "invoice_ninja_company_name",
+  "column_break_4",
+  "is_default",
+  "enabled",
+  "description"
+ ],
+ "fields": [
+  {
+   "fieldname": "erpnext_company",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "ERPNext Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "invoice_ninja_company_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Invoice Ninja Company ID",
+   "reqd": 1
+  },
+  {
+   "fieldname": "invoice_ninja_company_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Invoice Ninja Company Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_default",
+   "fieldtype": "Check",
+   "label": "Is Default Mapping"
+  },
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-07-26 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Invoice Ninja Integration",
+ "name": "Invoice Ninja Company Mapping",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
