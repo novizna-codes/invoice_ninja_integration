@@ -145,6 +145,41 @@ def _sync_missing_products(client):
 		page += 1
 
 
+def sync_from_invoice_ninja():
+	"""Hourly sync task - wrapper function called by scheduler"""
+	sync_invoice_ninja_data()
+
+
+def sync_customers_from_invoice_ninja():
+	"""Sync customers from Invoice Ninja to ERPNext"""
+	settings = frappe.get_single("Invoice Ninja Settings")
+	if not settings.enabled or not settings.enable_customer_sync:
+		return {"success": False, "message": "Customer sync is disabled"}
+
+	try:
+		from .api import sync_from_invoice_ninja
+		result = sync_from_invoice_ninja("Customer", limit=100)
+		return {"success": True, "message": f"Customer sync completed: {result}"}
+	except Exception as e:
+		frappe.log_error(f"Error syncing customers: {str(e)}", "Customer Sync Error")
+		return {"success": False, "message": str(e)}
+
+
+def sync_invoices_from_invoice_ninja():
+	"""Sync invoices from Invoice Ninja to ERPNext"""
+	settings = frappe.get_single("Invoice Ninja Settings")
+	if not settings.enabled or not settings.enable_invoice_sync:
+		return {"success": False, "message": "Invoice sync is disabled"}
+
+	try:
+		from .api import sync_from_invoice_ninja
+		result = sync_from_invoice_ninja("Sales Invoice", limit=100)
+		return {"success": True, "message": f"Invoice sync completed: {result}"}
+	except Exception as e:
+		frappe.log_error(f"Error syncing invoices: {str(e)}", "Invoice Sync Error")
+		return {"success": False, "message": str(e)}
+
+
 def cleanup_sync_logs():
 	"""Daily cleanup of old sync logs"""
 	try:

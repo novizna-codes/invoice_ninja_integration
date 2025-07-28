@@ -344,16 +344,16 @@ def get_invoice_ninja_companies(settings_name=None):
 	"""Fetch companies from Invoice Ninja API"""
 	try:
 		settings = frappe.get_single("Invoice Ninja Settings")
-		
+
 		if not settings.invoice_ninja_url or not settings.api_token:
 			return {"success": False, "error": "Invoice Ninja URL and API Token are required"}
-		
+
 		# Initialize client
 		client = InvoiceNinjaClient(settings.invoice_ninja_url, settings.get_password("api_token"))
-		
+
 		# Fetch companies from Invoice Ninja
 		response = client._make_request('GET', 'companies')
-		
+
 		if response and 'data' in response:
 			companies = []
 			for company in response['data']:
@@ -362,11 +362,11 @@ def get_invoice_ninja_companies(settings_name=None):
 					'name': company.get('name', f"Company {company.get('id')}"),
 					'settings': company.get('settings', {})
 				})
-			
+
 			return {"success": True, "companies": companies}
 		else:
 			return {"success": False, "error": "Failed to fetch companies from Invoice Ninja"}
-			
+
 	except Exception as e:
 		frappe.log_error(f"Error fetching Invoice Ninja companies: {str(e)}", "Invoice Ninja API Error")
 		return {"success": False, "error": str(e)}
@@ -378,7 +378,7 @@ def get_configuration():
 	"""Get Invoice Ninja integration configuration for dashboard"""
 	try:
 		settings = frappe.get_single("Invoice Ninja Settings")
-		
+
 		return {
 			"apiUrl": settings.invoice_ninja_url or "",
 			"apiToken": bool(settings.api_token),  # Don't expose actual token
@@ -405,25 +405,25 @@ def get_dashboard_stats():
 		total_invoices = frappe.db.count("Sales Invoice", {
 			"invoice_ninja_id": ["!=", ""]
 		})
-		
+
 		# Count synced customers
 		total_clients = frappe.db.count("Customer", {
 			"invoice_ninja_id": ["!=", ""]
 		})
-		
+
 		# Count pending payments (unpaid invoices)
 		pending_payments = frappe.db.count("Sales Invoice", {
 			"invoice_ninja_id": ["!=", ""],
 			"status": ["in", ["Draft", "Unpaid", "Partially Paid"]]
 		})
-		
+
 		# Count overdue invoices
 		overdue_invoices = frappe.db.count("Sales Invoice", {
 			"invoice_ninja_id": ["!=", ""],
 			"status": ["in", ["Unpaid", "Partially Paid"]],
 			"due_date": ["<", frappe.utils.today()]
 		})
-		
+
 		# Get last sync time
 		last_sync_log = frappe.db.get_value(
 			"Invoice Ninja Sync Logs",
@@ -431,7 +431,7 @@ def get_dashboard_stats():
 			"creation",
 			order_by="creation desc"
 		)
-		
+
 		return {
 			"totalInvoices": total_invoices,
 			"totalClients": total_clients,
@@ -463,7 +463,7 @@ def get_recent_activity(limit=10):
 			order_by="creation desc",
 			limit=int(limit)
 		)
-		
+
 		return [{
 			"id": activity.name,
 			"type": f"{activity.sync_type}_{activity.entity_type}".lower() if activity.sync_type and activity.entity_type else "sync",
@@ -471,7 +471,7 @@ def get_recent_activity(limit=10):
 			"status": activity.status.lower() if activity.status else "unknown",
 			"created_at": activity.creation
 		} for activity in activities]
-		
+
 	except Exception as e:
 		frappe.log_error(f"Error getting recent activity: {str(e)}")
 		return []
@@ -487,7 +487,7 @@ def get_sync_logs(limit=5):
 			order_by="creation desc",
 			limit=int(limit)
 		)
-		
+
 		return [{
 			"id": log.name,
 			"sync_type": log.sync_type or "manual",
@@ -496,7 +496,7 @@ def get_sync_logs(limit=5):
 			"message": log.message or f"Synchronized {log.entity_type or 'data'}",
 			"created_at": log.creation
 		} for log in logs]
-		
+
 	except Exception as e:
 		frappe.log_error(f"Error getting sync logs: {str(e)}")
 		return []
@@ -504,38 +504,109 @@ def get_sync_logs(limit=5):
 
 @frappe.whitelist()
 def trigger_manual_sync(sync_type="all"):
-	"""Trigger manual synchronization"""
+	"""Trigger manual synchronization with company mapping support"""
 	try:
-		from .tasks import (
-			sync_customers_from_invoice_ninja,
-			sync_invoices_from_invoice_ninja,
-			sync_payments_from_invoice_ninja
-		)
-		
-		if sync_type == "customers":
-			sync_customers_from_invoice_ninja()
-		elif sync_type == "invoices":
-			sync_invoices_from_invoice_ninja()
-		elif sync_type == "payments":
-			sync_payments_from_invoice_ninja()
-		elif sync_type == "all":
-			sync_customers_from_invoice_ninja()
-			sync_invoices_from_invoice_ninja() 
-			sync_payments_from_invoice_ninja()
-		else:
-			return {
-				"success": False,
-				"message": f"Invalid sync type: {sync_type}"
-			}
-		
+		from .utils.sync_manager import SyncManager
+
+		sync_manager = SyncManager()
+		results = []
+
+		if sync_type == "customers" or sync_type == "all":
+			result = sync_from_invoice_ninja("Customer", limit=100)
+			results.append(f"Customers: {result}")
+
+		if sync_type == "invoices" or sync_type == "all":
+			result = sync_from_invoice_ninja("Sales Invoice", limit=100)
+			results.append(f"Invoices: {result}")
+
+		if sync_type == "payments" or sync_type == "all":
+			# Use the existing sync_payments_from_invoice_ninja from tasks
+			from .tasks import sync_payments_from_invoice_ninja
+			result = sync_payments_from_invoice_ninja()
+			results.append(f"Payments: {result}")
+
+		if sync_type == "quotations" or sync_type == "all":
+			result = sync_from_invoice_ninja("Quotation", limit=100)
+			results.append(f"Quotations: {result}")
+
+		if sync_type == "items" or sync_type == "all":
+			result = sync_from_invoice_ninja("Item", limit=100)
+			results.append(f"Items: {result}")
+
 		return {
 			"success": True,
-			"message": f"Manual {sync_type} sync completed successfully"
+			"message": f"Manual {sync_type} sync completed: {'; '.join(results)}"
 		}
-		
+
 	except Exception as e:
 		frappe.log_error(f"Error during manual sync: {str(e)}")
 		return {
 			"success": False,
 			"message": f"Sync failed: {str(e)}"
 		}
+
+
+@frappe.whitelist()
+def get_company_mappings():
+	"""Get all company mappings for dashboard"""
+	try:
+		settings = frappe.get_single("Invoice Ninja Settings")
+		mappings = []
+
+		if settings.company_mappings:
+			for mapping in settings.company_mappings:
+				if mapping.enabled:
+					mappings.append({
+						"erpnext_company": mapping.erpnext_company,
+						"invoice_ninja_company_id": mapping.invoice_ninja_company_id,
+						"invoice_ninja_company_name": mapping.invoice_ninja_company_name,
+						"is_default": mapping.is_default,
+						"enabled": mapping.enabled
+					})
+
+		return {"success": True, "mappings": mappings}
+	except Exception as e:
+		frappe.log_error(f"Error getting company mappings: {str(e)}")
+		return {"success": False, "mappings": []}
+
+
+@frappe.whitelist()
+def sync_company_mappings_from_invoice_ninja():
+	"""Fetch and sync company mappings from Invoice Ninja"""
+	try:
+		from .utils.company_mapper import CompanyMapper
+
+		# Get Invoice Ninja companies
+		companies_response = get_invoice_ninja_companies()
+		if not companies_response.get("success"):
+			return companies_response
+
+		settings = frappe.get_single("Invoice Ninja Settings")
+		companies = companies_response.get("companies", [])
+
+		# Get existing mappings
+		existing_mappings = {}
+		if settings.company_mappings:
+			for mapping in settings.company_mappings:
+				existing_mappings[mapping.invoice_ninja_company_id] = mapping
+
+		# Update or create mappings
+		updated_count = 0
+		for company in companies:
+			company_id = str(company.get("id"))
+			if company_id in existing_mappings:
+				# Update existing mapping name
+				existing_mappings[company_id].invoice_ninja_company_name = company.get("name")
+				updated_count += 1
+
+		settings.save()
+
+		return {
+			"success": True,
+			"message": f"Updated {updated_count} company mappings",
+			"companies": companies
+		}
+
+	except Exception as e:
+		frappe.log_error(f"Error syncing company mappings: {str(e)}")
+		return {"success": False, "error": str(e)}

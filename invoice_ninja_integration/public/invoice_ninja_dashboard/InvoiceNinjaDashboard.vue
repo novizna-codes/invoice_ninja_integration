@@ -4,6 +4,7 @@ import { ref, computed, onMounted } from 'vue';
 // Reactive state
 const loading = ref(true);
 const syncing = ref(false);
+const loadingMappings = ref(false);
 const error = ref(null);
 
 const stats = ref({
@@ -17,6 +18,7 @@ const stats = ref({
 
 const recentActivity = ref([]);
 const syncLogs = ref([]);
+const companyMappings = ref([]);
 
 // Configuration
 const config = ref({
@@ -37,7 +39,7 @@ const fetchDashboardData = async () => {
     const configResponse = await frappe.call({
       method: 'invoice_ninja_integration.api.get_configuration'
     });
-    
+
     if (configResponse.message) {
       config.value = { ...config.value, ...configResponse.message };
     }
@@ -46,7 +48,7 @@ const fetchDashboardData = async () => {
     const statsResponse = await frappe.call({
       method: 'invoice_ninja_integration.api.get_dashboard_stats'
     });
-    
+
     if (statsResponse.message) {
       stats.value = { ...stats.value, ...statsResponse.message };
     }
@@ -56,7 +58,7 @@ const fetchDashboardData = async () => {
       method: 'invoice_ninja_integration.api.get_recent_activity',
       args: { limit: 10 }
     });
-    
+
     if (activityResponse.message) {
       recentActivity.value = activityResponse.message;
     }
@@ -66,7 +68,7 @@ const fetchDashboardData = async () => {
       method: 'invoice_ninja_integration.api.get_sync_logs',
       args: { limit: 5 }
     });
-    
+
     if (logsResponse.message) {
       syncLogs.value = logsResponse.message;
     }
@@ -84,19 +86,19 @@ const triggerSync = async (syncType = 'all') => {
   try {
     syncing.value = true;
     stats.value.syncStatus = 'syncing';
-    
+
     const response = await frappe.call({
       method: 'invoice_ninja_integration.api.trigger_manual_sync',
       args: { sync_type: syncType }
     });
-    
+
     if (response.message) {
       stats.value.syncStatus = 'success';
       frappe.show_alert({
         message: `${syncType} sync completed successfully`,
         indicator: 'green'
       });
-      
+
       // Refresh data after sync
       setTimeout(() => {
         fetchDashboardData();
@@ -119,7 +121,7 @@ const testConnection = async () => {
     const response = await frappe.call({
       method: 'invoice_ninja_integration.api.test_connection'
     });
-    
+
     if (response.message && response.message.success) {
       frappe.show_alert({
         message: 'Connection test successful',
@@ -138,8 +140,46 @@ const testConnection = async () => {
   }
 };
 
+// Company mappings functions
+const fetchCompanyMappings = async () => {
+  try {
+    const response = await frappe.call({
+      method: 'invoice_ninja_integration.api.get_company_mappings'
+    });
+
+    if (response.message && response.message.success) {
+      companyMappings.value = response.message.mappings || [];
+    }
+  } catch (err) {
+    console.error('Error fetching company mappings:', err);
+  }
+};
+
+const refreshCompanyMappings = async () => {
+  try {
+    loadingMappings.value = true;
+    await fetchCompanyMappings();
+
+    frappe.show_alert({
+      message: 'Company mappings refreshed',
+      indicator: 'green'
+    });
+  } catch (err) {
+    frappe.show_alert({
+      message: `Failed to refresh mappings: ${err.message}`,
+      indicator: 'red'
+    });
+  } finally {
+    loadingMappings.value = false;
+  }
+};
+
 // Navigation functions
 const openConfiguration = () => {
+  frappe.set_route('Form', 'Invoice Ninja Settings');
+};
+
+const openSettings = () => {
   frappe.set_route('Form', 'Invoice Ninja Settings');
 };
 
@@ -198,14 +238,16 @@ const formatActivityType = (type) => {
 
 onMounted(() => {
   fetchDashboardData();
-  
+  fetchCompanyMappings();
+
   // Auto-refresh every 30 seconds
   const refreshInterval = setInterval(() => {
     if (!loading.value && !syncing.value) {
       fetchDashboardData();
+      fetchCompanyMappings();
     }
   }, 30000);
-  
+
   // Cleanup interval on unmount
   return () => {
     clearInterval(refreshInterval);
@@ -261,7 +303,7 @@ onMounted(() => {
           <div class="stat-sublabel">Synced from Invoice Ninja</div>
         </div>
       </div>
-      
+
       <div class="stat-card clickable" @click="openCustomerList">
         <div class="stat-icon stat-icon-green">
           👥
@@ -272,7 +314,7 @@ onMounted(() => {
           <div class="stat-sublabel">Synced customers</div>
         </div>
       </div>
-      
+
       <div class="stat-card">
         <div class="stat-icon stat-icon-orange">
           💰
@@ -283,7 +325,7 @@ onMounted(() => {
           <div class="stat-sublabel">Awaiting payment</div>
         </div>
       </div>
-      
+
       <div class="stat-card">
         <div class="stat-icon stat-icon-red">
           ⚠️
@@ -296,6 +338,36 @@ onMounted(() => {
       </div>
     </div>
 
+    <!-- Company Mappings -->
+    <div class="dashboard-card mb-6">
+      <div class="card-header">
+        <h2 class="text-lg font-semibold text-gray-900">🏢 Company Mappings</h2>
+        <button @click="refreshCompanyMappings" class="refresh-button" :disabled="loadingMappings">
+          {{ loadingMappings ? '...' : '↻ Refresh' }}
+        </button>
+      </div>
+
+      <div class="card-content">
+        <div v-if="companyMappings.length === 0" class="empty-state">
+          <p class="text-gray-600">No company mappings configured</p>
+          <button @click="openSettings" class="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+            Configure Mappings
+          </button>
+        </div>
+        <div v-else class="company-mappings-list">
+          <div v-for="mapping in companyMappings" :key="mapping.invoice_ninja_company_id"
+               class="mapping-item" :class="{ 'default-mapping': mapping.is_default }">
+            <div class="mapping-info">
+              <strong>{{ mapping.erpnext_company }}</strong>
+              <span class="mapping-arrow">↔</span>
+              <span>{{ mapping.invoice_ninja_company_name }}</span>
+              <span v-if="mapping.is_default" class="default-badge">Default</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Sync Controls -->
     <div class="dashboard-card mb-6">
       <div class="card-header">
@@ -304,36 +376,36 @@ onMounted(() => {
           Last sync: {{ formatDate(stats.lastSyncTime) }}
         </div>
       </div>
-      
+
       <div class="card-content">
         <div class="sync-controls">
           <div class="sync-buttons">
-            <button 
-              @click="triggerSync('all')" 
+            <button
+              @click="triggerSync('all')"
               :disabled="syncing || loading"
               class="btn btn-primary"
             >
               <span v-if="syncing" class="loading-spinner-sm"></span>
               {{ syncing ? 'Syncing...' : 'Full Sync' }}
             </button>
-            
+
             <div class="sync-options">
-              <button 
-                @click="triggerSync('customers')" 
+              <button
+                @click="triggerSync('customers')"
                 :disabled="syncing || loading"
                 class="btn btn-secondary"
               >
                 Sync Customers
               </button>
-              <button 
-                @click="triggerSync('invoices')" 
+              <button
+                @click="triggerSync('invoices')"
                 :disabled="syncing || loading"
                 class="btn btn-secondary"
               >
                 Sync Invoices
               </button>
-              <button 
-                @click="triggerSync('payments')" 
+              <button
+                @click="triggerSync('payments')"
                 :disabled="syncing || loading"
                 class="btn btn-secondary"
               >
@@ -341,7 +413,7 @@ onMounted(() => {
               </button>
             </div>
           </div>
-          
+
           <div class="sync-info">
             <div class="info-item">
               <span class="info-label">Auto Sync:</span>
@@ -368,19 +440,19 @@ onMounted(() => {
             🔄
           </button>
         </div>
-        
+
         <div class="card-content">
           <div v-if="loading" class="text-center py-4">
             <div class="loading-spinner"></div>
           </div>
-          
+
           <div v-else-if="recentActivity.length === 0" class="text-center py-8 text-gray-500">
             No recent activity
           </div>
-          
+
           <div v-else class="activity-list">
-            <div 
-              v-for="activity in recentActivity" 
+            <div
+              v-for="activity in recentActivity"
               :key="activity.id"
               class="activity-item"
             >
@@ -411,19 +483,19 @@ onMounted(() => {
             View All
           </button>
         </div>
-        
+
         <div class="card-content">
           <div v-if="loading" class="text-center py-4">
             <div class="loading-spinner"></div>
           </div>
-          
+
           <div v-else-if="syncLogs.length === 0" class="text-center py-8 text-gray-500">
             No sync logs available
           </div>
-          
+
           <div v-else class="logs-list">
-            <div 
-              v-for="log in syncLogs" 
+            <div
+              v-for="log in syncLogs"
               :key="log.id"
               class="log-item"
             >
@@ -452,7 +524,7 @@ onMounted(() => {
       <div class="card-header">
         <h3 class="text-lg font-semibold text-gray-900">Quick Actions</h3>
       </div>
-      
+
       <div class="card-content">
         <div class="quick-actions">
           <button @click="openConfiguration" class="action-button">
@@ -462,7 +534,7 @@ onMounted(() => {
               <div class="action-description">Manage API settings and sync preferences</div>
             </div>
           </button>
-          
+
           <button @click="openSyncLogs" class="action-button">
             <div class="action-icon">📋</div>
             <div class="action-content">
@@ -470,7 +542,7 @@ onMounted(() => {
               <div class="action-description">View detailed synchronization history</div>
             </div>
           </button>
-          
+
           <button @click="openInvoiceList" class="action-button">
             <div class="action-icon">📄</div>
             <div class="action-content">
@@ -478,7 +550,7 @@ onMounted(() => {
               <div class="action-description">Browse invoices from Invoice Ninja</div>
             </div>
           </button>
-          
+
           <button @click="openCustomerList" class="action-button">
             <div class="action-icon">👥</div>
             <div class="action-content">
@@ -878,7 +950,93 @@ onMounted(() => {
   border-top: 3px solid #2563eb;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin: 0 auto;
+}
+
+/* Company Mappings */
+.company-mappings-list {
+  space-y: 12px;
+}
+
+.mapping-item {
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: white;
+  transition: all 0.2s;
+}
+
+.mapping-item:hover {
+  border-color: #2563eb;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.mapping-item.default-mapping {
+  border-color: #10b981;
+  background: #f0fdf4;
+}
+
+.mapping-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.mapping-arrow {
+  color: #6b7280;
+  font-weight: bold;
+}
+
+.default-badge {
+  background: #10b981;
+  color: white;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 24px;
+}
+
+.refresh-button {
+  background: none;
+  border: 1px solid #e5e7eb;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.refresh-button:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.refresh-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .company-mappings-list {
+    space-y: 8px;
+  }
+
+  .mapping-item {
+    padding: 8px;
+  }
+
+  .mapping-info {
+    font-size: 12px;
+    gap: 6px;
+  }
 }
 
 .loading-spinner-sm {
@@ -901,21 +1059,21 @@ onMounted(() => {
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .header-actions {
     width: 100%;
     justify-content: flex-start;
   }
-  
+
   .stats-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .sync-controls {
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .quick-actions {
     grid-template-columns: 1fr;
   }

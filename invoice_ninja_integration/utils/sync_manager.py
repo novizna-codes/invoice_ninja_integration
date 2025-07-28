@@ -1,17 +1,19 @@
 import frappe
 from invoice_ninja_integration.utils.invoice_ninja_client import InvoiceNinjaClient
 from invoice_ninja_integration.utils.field_mapper import FieldMapper
+from invoice_ninja_integration.utils.company_mapper import CompanyMapper
 
 class SyncManager:
     """
     Manages bidirectional synchronization between Invoice Ninja and ERPNext
-    based on user-configured sync directions.
+    with proper company mapping support.
     """
 
     def __init__(self):
         self.settings = frappe.get_single("Invoice Ninja Settings")
         self.client = InvoiceNinjaClient()
         self.mapper = FieldMapper()
+        self.company_mapper = CompanyMapper()
 
     def get_sync_direction(self, doc_type):
         """Get sync direction for a specific document type"""
@@ -57,7 +59,7 @@ class SyncManager:
 
     def sync_document_to_invoice_ninja(self, doc):
         """
-        Sync ERPNext document to Invoice Ninja based on configuration
+        Sync ERPNext document to Invoice Ninja with company mapping
         """
         if not self.is_sync_enabled(doc.doctype):
             frappe.logger().info(f"Sync disabled for {doc.doctype}")
@@ -67,17 +69,29 @@ class SyncManager:
             frappe.logger().info(f"ERPNext to Invoice Ninja sync disabled for {doc.doctype}")
             return
 
+        # Check company mapping
+        if not self.company_mapper.should_sync_document(doc):
+            frappe.logger().info(f"Document {doc.name} skipped - no valid company mapping")
+            return
+
         try:
+            # Get company context
+            company_context = self.company_mapper.set_company_context(doc)
+
+            # Initialize client with proper company context
+            if company_context.get("invoice_ninja_company_id"):
+                self.client.set_company_id(company_context["invoice_ninja_company_id"])
+
             if doc.doctype == "Customer":
-                return self._sync_customer_to_invoice_ninja(doc)
+                return self._sync_customer_to_invoice_ninja(doc, company_context)
             elif doc.doctype == "Sales Invoice":
-                return self._sync_invoice_to_invoice_ninja(doc)
+                return self._sync_invoice_to_invoice_ninja(doc, company_context)
             elif doc.doctype == "Quotation":
-                return self._sync_quote_to_invoice_ninja(doc)
+                return self._sync_quote_to_invoice_ninja(doc, company_context)
             elif doc.doctype == "Item":
-                return self._sync_product_to_invoice_ninja(doc)
+                return self._sync_product_to_invoice_ninja(doc, company_context)
             elif doc.doctype == "Payment Entry":
-                return self._sync_payment_to_invoice_ninja(doc)
+                return self._sync_payment_to_invoice_ninja(doc, company_context)
 
         except Exception as e:
             frappe.logger().error(f"Error syncing {doc.doctype} {doc.name} to Invoice Ninja: {str(e)}")
@@ -85,7 +99,7 @@ class SyncManager:
 
     def sync_document_from_invoice_ninja(self, invoice_ninja_data, doc_type):
         """
-        Sync Invoice Ninja data to ERPNext based on configuration
+        Sync Invoice Ninja data to ERPNext with company mapping
         """
         if not self.is_sync_enabled(doc_type):
             frappe.logger().info(f"Sync disabled for {doc_type}")
@@ -96,8 +110,15 @@ class SyncManager:
             return
 
         try:
+            # Get company context from Invoice Ninja data
+            company_context = self.company_mapper.set_company_context(None, invoice_ninja_data)
+
+            if not company_context.get("erpnext_company"):
+                frappe.logger().error(f"No ERPNext company mapping found for Invoice Ninja company {invoice_ninja_data.get('company_id')}")
+                return
+
             if doc_type == "Customer":
-                return self._sync_customer_from_invoice_ninja(invoice_ninja_data)
+                return self._sync_customer_from_invoice_ninja(invoice_ninja_data, company_context)
             elif doc_type == "Sales Invoice":
                 return self._sync_invoice_from_invoice_ninja(invoice_ninja_data)
             elif doc_type == "Quotation":
@@ -111,13 +132,17 @@ class SyncManager:
             frappe.logger().error(f"Error syncing {doc_type} from Invoice Ninja: {str(e)}")
             self._log_sync_error(None, "Invoice Ninja to ERPNext", str(e), invoice_ninja_data)
 
-    def _sync_customer_to_invoice_ninja(self, customer):
-        """Sync ERPNext Customer to Invoice Ninja"""
+    def _sync_customer_to_invoice_ninja(self, customer, company_context):
+        """Sync ERPNext Customer to Invoice Ninja with company context"""
         # Check if customer already exists in Invoice Ninja
         in_customer_id = customer.get("custom_invoice_ninja_id")
 
-        # Map ERPNext customer to Invoice Ninja format
+        # Map ERPNext customer to Invoice Ninja format with company context
         customer_data = self.mapper.map_customer_to_invoice_ninja(customer)
+
+        # Add company context to customer data
+        if company_context.get("invoice_ninja_company_id"):
+            customer_data["company_id"] = company_context["invoice_ninja_company_id"]
 
         if in_customer_id:
             # Update existing customer
@@ -127,13 +152,13 @@ class SyncManager:
             result = self.client.create_customer(customer_data)
             if result.get("id"):
                 # Update ERPNext with Invoice Ninja ID
-                frappe.db.set_value("Customer", customer.name, "custom_invoice_ninja_id", result["id"])
-                frappe.db.commit()
+                customer.db_set("custom_invoice_ninja_id", result["id"])
 
+        self._log_sync_success(customer, "ERPNext to Invoice Ninja", f"Customer synced to company {company_context.get('invoice_ninja_company_name', 'Unknown')}")
         return result
 
-    def _sync_customer_from_invoice_ninja(self, customer_data):
-        """Sync Invoice Ninja Customer to ERPNext"""
+    def _sync_customer_from_invoice_ninja(self, customer_data, company_context):
+        """Sync Invoice Ninja Customer to ERPNext with company context"""
         # Check if customer already exists
         existing_customer = frappe.db.get_value(
             "Customer",
@@ -144,6 +169,10 @@ class SyncManager:
         # Map Invoice Ninja customer to ERPNext format
         erpnext_data = self.mapper.map_customer_from_invoice_ninja(customer_data)
 
+        # Set the correct ERPNext company from mapping
+        if company_context.get("erpnext_company"):
+            erpnext_data["company"] = company_context["erpnext_company"]
+
         if existing_customer:
             # Update existing customer
             customer_doc = frappe.get_doc("Customer", existing_customer)
@@ -151,17 +180,21 @@ class SyncManager:
             customer_doc.save()
         else:
             # Create new customer
-            customer_doc = frappe.new_doc("Customer")
-            customer_doc.update(erpnext_data)
-            customer_doc.custom_invoice_ninja_id = customer_data.get("id")
+            erpnext_data["custom_invoice_ninja_id"] = customer_data.get("id")
+            customer_doc = frappe.get_doc(erpnext_data)
             customer_doc.insert()
 
+        self._log_sync_success(customer_doc, "Invoice Ninja to ERPNext", f"Customer synced from company {company_context.get('invoice_ninja_company_name', 'Unknown')}")
         return customer_doc
 
-    def _sync_invoice_to_invoice_ninja(self, invoice):
-        """Sync ERPNext Sales Invoice to Invoice Ninja"""
-        # Implementation for invoice sync to Invoice Ninja
+    def _sync_invoice_to_invoice_ninja(self, invoice, company_context):
+        """Sync ERPNext Sales Invoice to Invoice Ninja with company context"""
+        # Map ERPNext invoice to Invoice Ninja format
         invoice_data = self.mapper.map_invoice_to_invoice_ninja(invoice)
+
+        # Add company context to invoice data
+        if company_context.get("invoice_ninja_company_id"):
+            invoice_data["company_id"] = company_context["invoice_ninja_company_id"]
 
         in_invoice_id = invoice.get("custom_invoice_ninja_id")
         if in_invoice_id:
@@ -169,14 +202,14 @@ class SyncManager:
         else:
             result = self.client.create_invoice(invoice_data)
             if result.get("id"):
-                frappe.db.set_value("Sales Invoice", invoice.name, "custom_invoice_ninja_id", result["id"])
-                frappe.db.commit()
+                invoice.db_set("custom_invoice_ninja_id", result["id"])
 
+        self._log_sync_success(invoice, "ERPNext to Invoice Ninja", f"Invoice synced to company {company_context.get('invoice_ninja_company_name', 'Unknown')}")
         return result
 
-    def _sync_invoice_from_invoice_ninja(self, invoice_data):
-        """Sync Invoice Ninja Invoice to ERPNext"""
-        # Implementation for invoice sync from Invoice Ninja
+    def _sync_invoice_from_invoice_ninja(self, invoice_data, company_context):
+        """Sync Invoice Ninja Invoice to ERPNext with company context"""
+        # Check if invoice already exists
         existing_invoice = frappe.db.get_value(
             "Sales Invoice",
             {"custom_invoice_ninja_id": invoice_data.get("id")},
@@ -530,3 +563,38 @@ class SyncManager:
         except Exception as e:
             frappe.log_error(f"Bulk sync to Invoice Ninja failed: {str(e)}", "Bulk Sync Error")
             raise e
+
+    def _log_sync_success(self, doc, sync_direction, message):
+        """Log successful sync operation"""
+        try:
+            log_doc = frappe.get_doc({
+                "doctype": "Invoice Ninja Sync Logs",
+                "sync_type": "Manual" if sync_direction else "Automatic",
+                "entity_type": doc.doctype,
+                "entity_name": doc.name,
+                "status": "Success",
+                "message": message,
+                "sync_direction": sync_direction
+            })
+            log_doc.insert()
+        except Exception as e:
+            frappe.log_error(f"Failed to log sync success: {str(e)}")
+
+    def _log_sync_error(self, doc, sync_direction, error_message, invoice_ninja_data=None):
+        """Log sync error"""
+        try:
+            entity_name = doc.name if doc else invoice_ninja_data.get("id", "Unknown")
+            entity_type = doc.doctype if doc else "Unknown"
+
+            log_doc = frappe.get_doc({
+                "doctype": "Invoice Ninja Sync Logs",
+                "sync_type": "Manual" if sync_direction else "Automatic",
+                "entity_type": entity_type,
+                "entity_name": entity_name,
+                "status": "Failed",
+                "message": error_message,
+                "sync_direction": sync_direction
+            })
+            log_doc.insert()
+        except Exception as e:
+            frappe.log_error(f"Failed to log sync error: {str(e)}")

@@ -5,16 +5,26 @@ import json
 
 
 class InvoiceNinjaClient:
-	"""Invoice Ninja API Client for ERPNext Integration"""
+	"""Invoice Ninja API Client for ERPNext Integration with Company Context"""
 
-	def __init__(self, url, token):
-		self.base_url = url.rstrip('/')
-		self.token = token
+	def __init__(self, url=None, token=None):
+		settings = frappe.get_single("Invoice Ninja Settings")
+		self.base_url = (url or settings.invoice_ninja_url).rstrip('/')
+		self.token = token or settings.get_password("api_token")
+		self.company_id = None  # Set via set_company_id method
 		self.headers = {
-			'X-API-TOKEN': token,
+			'X-API-TOKEN': self.token,
 			'Content-Type': 'application/json',
 			'Accept': 'application/json'
 		}
+
+	def set_company_id(self, company_id):
+		"""Set company context for API requests"""
+		self.company_id = company_id
+		if company_id:
+			self.headers['X-API-COMPANY'] = str(company_id)
+		elif 'X-API-COMPANY' in self.headers:
+			del self.headers['X-API-COMPANY']
 
 	def _make_request(self, method, endpoint, data=None, params=None):
 		"""Make API request to Invoice Ninja"""

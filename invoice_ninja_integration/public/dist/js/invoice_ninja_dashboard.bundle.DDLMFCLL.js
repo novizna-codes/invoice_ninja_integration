@@ -1,4 +1,4 @@
-frappe.dom.set_style("/* sfc-style:/workspace/development/novizna/apps/invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/InvoiceNinjaDashboard.vue?type=style&index=0 */\n.invoice-ninja-dashboard[data-v-09f26faf] {\n  font-family:\n    -apple-system,\n    BlinkMacSystemFont,\n    \"Segoe UI\",\n    Roboto,\n    Oxygen,\n    Ubuntu,\n    Cantarell,\n    sans-serif;\n  min-height: 100vh;\n  background-color: #f8fafc;\n}\n.dashboard-header[data-v-09f26faf] {\n  background: white;\n  border-radius: 8px;\n  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);\n  padding: 1.5rem;\n}\n.header-content[data-v-09f26faf] {\n  display: flex;\n  justify-content: space-between;\n  align-items: flex-start;\n  flex-wrap: wrap;\n  gap: 1rem;\n}\n.header-actions[data-v-09f26faf] {\n  display: flex;\n  align-items: center;\n  gap: 1rem;\n  flex-wrap: wrap;\n}\n.status-badges[data-v-09f26faf] {\n  display: flex;\n  gap: 0.5rem;\n}\n.status-badge[data-v-09f26faf] {\n  padding: 0.25rem 0.75rem;\n  border-radius: 9999px;\n  font-size: 0.75rem;\n  font-weight: 500;\n}\n.alert[data-v-09f26faf] {\n  border-radius: 8px;\n  padding: 1rem;\n}\n.alert-error[data-v-09f26faf] {\n  background-color: #fef2f2;\n  border: 1px solid #fecaca;\n  color: #991b1b;\n}\n.alert-content[data-v-09f26faf] {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n}\n.alert-close[data-v-09f26faf] {\n  background: none;\n  border: none;\n  font-size: 1.25rem;\n  cursor: pointer;\n  color: inherit;\n  padding: 0;\n  margin-left: 1rem;\n}\n.dashboard-card[data-v-09f26faf] {\n  background: white;\n  border-radius: 8px;\n  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);\n  overflow: hidden;\n}\n.card-header[data-v-09f26faf] {\n  padding: 1.5rem;\n  border-bottom: 1px solid #e5e7eb;\n  background: #f9fafb;\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n}\n.card-content[data-v-09f26faf] {\n  padding: 1.5rem;\n}\n.stats-grid[data-v-09f26faf] {\n  display: grid;\n  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));\n  gap: 1.5rem;\n  margin-bottom: 2rem;\n}\n.stat-card[data-v-09f26faf] {\n  background: white;\n  border: 1px solid #e2e8f0;\n  border-radius: 8px;\n  padding: 1.5rem;\n  display: flex;\n  align-items: center;\n  gap: 1rem;\n  transition: all 0.2s;\n}\n.stat-card.clickable[data-v-09f26faf] {\n  cursor: pointer;\n}\n.stat-card.clickable[data-v-09f26faf]:hover {\n  transform: translateY(-2px);\n  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);\n}\n.stat-icon[data-v-09f26faf] {\n  width: 48px;\n  height: 48px;\n  border-radius: 8px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 1.5rem;\n  flex-shrink: 0;\n}\n.stat-icon-blue[data-v-09f26faf] {\n  background-color: #dbeafe;\n}\n.stat-icon-green[data-v-09f26faf] {\n  background-color: #d1fae5;\n}\n.stat-icon-orange[data-v-09f26faf] {\n  background-color: #fed7aa;\n}\n.stat-icon-red[data-v-09f26faf] {\n  background-color: #fecaca;\n}\n.stat-content[data-v-09f26faf] {\n  flex: 1;\n}\n.stat-number[data-v-09f26faf] {\n  font-size: 1.875rem;\n  font-weight: bold;\n  color: #1f2937;\n  line-height: 1;\n}\n.stat-label[data-v-09f26faf] {\n  color: #374151;\n  font-size: 0.875rem;\n  font-weight: 600;\n  margin-top: 0.25rem;\n}\n.stat-sublabel[data-v-09f26faf] {\n  color: #6b7280;\n  font-size: 0.75rem;\n  margin-top: 0.125rem;\n}\n.sync-controls[data-v-09f26faf] {\n  display: flex;\n  justify-content: space-between;\n  align-items: flex-start;\n  gap: 2rem;\n  flex-wrap: wrap;\n}\n.sync-buttons[data-v-09f26faf] {\n  display: flex;\n  flex-direction: column;\n  gap: 1rem;\n}\n.sync-options[data-v-09f26faf] {\n  display: flex;\n  gap: 0.75rem;\n  flex-wrap: wrap;\n}\n.sync-info[data-v-09f26faf] {\n  display: flex;\n  flex-direction: column;\n  gap: 0.5rem;\n}\n.info-item[data-v-09f26faf] {\n  display: flex;\n  gap: 0.5rem;\n}\n.info-label[data-v-09f26faf] {\n  font-weight: 500;\n  color: #374151;\n}\n.dashboard-grid[data-v-09f26faf] {\n  display: grid;\n  grid-template-columns: 1fr 1fr;\n  gap: 1.5rem;\n}\n@media (max-width: 1024px) {\n  .dashboard-grid[data-v-09f26faf] {\n    grid-template-columns: 1fr;\n  }\n}\n.activity-list[data-v-09f26faf],\n.logs-list[data-v-09f26faf] {\n  display: flex;\n  flex-direction: column;\n  gap: 0.75rem;\n}\n.activity-item[data-v-09f26faf],\n.log-item[data-v-09f26faf] {\n  display: flex;\n  justify-content: space-between;\n  align-items: flex-start;\n  padding: 0.75rem;\n  border: 1px solid #e5e7eb;\n  border-radius: 6px;\n  background: #f9fafb;\n}\n.activity-content[data-v-09f26faf],\n.log-content[data-v-09f26faf] {\n  flex: 1;\n}\n.activity-title[data-v-09f26faf],\n.log-title[data-v-09f26faf] {\n  font-weight: 500;\n  color: #1f2937;\n  font-size: 0.875rem;\n}\n.activity-description[data-v-09f26faf],\n.log-message[data-v-09f26faf] {\n  color: #6b7280;\n  font-size: 0.75rem;\n  margin-top: 0.25rem;\n}\n.activity-time[data-v-09f26faf],\n.log-time[data-v-09f26faf] {\n  color: #9ca3af;\n  font-size: 0.6875rem;\n  margin-top: 0.25rem;\n}\n.activity-status[data-v-09f26faf],\n.log-status[data-v-09f26faf] {\n  padding: 0.125rem 0.5rem;\n  border-radius: 9999px;\n  font-size: 0.6875rem;\n  font-weight: 500;\n  text-transform: uppercase;\n}\n.status-success[data-v-09f26faf] {\n  background-color: #d1fae5;\n  color: #065f46;\n}\n.status-error[data-v-09f26faf] {\n  background-color: #fecaca;\n  color: #991b1b;\n}\n.quick-actions[data-v-09f26faf] {\n  display: grid;\n  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));\n  gap: 1rem;\n}\n.action-button[data-v-09f26faf] {\n  display: flex;\n  align-items: center;\n  gap: 1rem;\n  padding: 1rem;\n  border: 1px solid #e5e7eb;\n  border-radius: 8px;\n  background: white;\n  text-align: left;\n  cursor: pointer;\n  transition: all 0.2s;\n}\n.action-button[data-v-09f26faf]:hover {\n  border-color: #2563eb;\n  background-color: #f8fafc;\n}\n.action-icon[data-v-09f26faf] {\n  font-size: 1.5rem;\n  flex-shrink: 0;\n}\n.action-content[data-v-09f26faf] {\n  flex: 1;\n}\n.action-title[data-v-09f26faf] {\n  font-weight: 500;\n  color: #1f2937;\n  margin-bottom: 0.25rem;\n}\n.action-description[data-v-09f26faf] {\n  color: #6b7280;\n  font-size: 0.75rem;\n}\n.btn[data-v-09f26faf] {\n  padding: 0.5rem 1rem;\n  border-radius: 6px;\n  border: none;\n  font-weight: 500;\n  cursor: pointer;\n  transition: all 0.2s;\n  text-decoration: none;\n  display: inline-flex;\n  align-items: center;\n  gap: 0.5rem;\n  font-size: 0.875rem;\n}\n.btn[data-v-09f26faf]:disabled {\n  opacity: 0.5;\n  cursor: not-allowed;\n}\n.btn-primary[data-v-09f26faf] {\n  background-color: #2563eb;\n  color: white;\n}\n.btn-primary[data-v-09f26faf]:hover:not(:disabled) {\n  background-color: #1d4ed8;\n}\n.btn-secondary[data-v-09f26faf] {\n  background-color: #f3f4f6;\n  color: #374151;\n}\n.btn-secondary[data-v-09f26faf]:hover:not(:disabled) {\n  background-color: #e5e7eb;\n}\n.btn-outline[data-v-09f26faf] {\n  background-color: transparent;\n  color: #374151;\n  border: 1px solid #d1d5db;\n}\n.btn-outline[data-v-09f26faf]:hover:not(:disabled) {\n  background-color: #f9fafb;\n  border-color: #9ca3af;\n}\n.btn-sm[data-v-09f26faf] {\n  padding: 0.25rem 0.75rem;\n  font-size: 0.75rem;\n}\n.btn-refresh[data-v-09f26faf] {\n  background: none;\n  border: none;\n  cursor: pointer;\n  padding: 0.25rem;\n  border-radius: 4px;\n  transition: background-color 0.2s;\n}\n.btn-refresh[data-v-09f26faf]:hover {\n  background-color: #f3f4f6;\n}\n.loading-spinner[data-v-09f26faf] {\n  width: 32px;\n  height: 32px;\n  border: 3px solid #e5e7eb;\n  border-top: 3px solid #2563eb;\n  border-radius: 50%;\n  animation: spin-09f26faf 1s linear infinite;\n  margin: 0 auto;\n}\n.loading-spinner-sm[data-v-09f26faf] {\n  width: 16px;\n  height: 16px;\n  border: 2px solid #e5e7eb;\n  border-top: 2px solid currentColor;\n  border-radius: 50%;\n  animation: spin-09f26faf 1s linear infinite;\n}\n@keyframes spin-09f26faf {\n  0% {\n    transform: rotate(0deg);\n  }\n  100% {\n    transform: rotate(360deg);\n  }\n}\n@media (max-width: 768px) {\n  .header-content[data-v-09f26faf] {\n    flex-direction: column;\n    align-items: flex-start;\n  }\n  .header-actions[data-v-09f26faf] {\n    width: 100%;\n    justify-content: flex-start;\n  }\n  .stats-grid[data-v-09f26faf] {\n    grid-template-columns: 1fr;\n  }\n  .sync-controls[data-v-09f26faf] {\n    flex-direction: column;\n    align-items: flex-start;\n  }\n  .quick-actions[data-v-09f26faf] {\n    grid-template-columns: 1fr;\n  }\n}\n/*# sourceMappingURL=invoice_ninja_dashboard.bundle.VTA2TKX6.css.map */\n");
+frappe.dom.set_style("/* sfc-style:/workspace/development/novizna/apps/invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/InvoiceNinjaDashboard.vue?type=style&index=0 */\n.invoice-ninja-dashboard[data-v-09f26faf] {\n  font-family:\n    -apple-system,\n    BlinkMacSystemFont,\n    \"Segoe UI\",\n    Roboto,\n    Oxygen,\n    Ubuntu,\n    Cantarell,\n    sans-serif;\n  min-height: 100vh;\n  background-color: #f8fafc;\n}\n.dashboard-header[data-v-09f26faf] {\n  background: white;\n  border-radius: 8px;\n  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);\n  padding: 1.5rem;\n}\n.header-content[data-v-09f26faf] {\n  display: flex;\n  justify-content: space-between;\n  align-items: flex-start;\n  flex-wrap: wrap;\n  gap: 1rem;\n}\n.header-actions[data-v-09f26faf] {\n  display: flex;\n  align-items: center;\n  gap: 1rem;\n  flex-wrap: wrap;\n}\n.status-badges[data-v-09f26faf] {\n  display: flex;\n  gap: 0.5rem;\n}\n.status-badge[data-v-09f26faf] {\n  padding: 0.25rem 0.75rem;\n  border-radius: 9999px;\n  font-size: 0.75rem;\n  font-weight: 500;\n}\n.alert[data-v-09f26faf] {\n  border-radius: 8px;\n  padding: 1rem;\n}\n.alert-error[data-v-09f26faf] {\n  background-color: #fef2f2;\n  border: 1px solid #fecaca;\n  color: #991b1b;\n}\n.alert-content[data-v-09f26faf] {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n}\n.alert-close[data-v-09f26faf] {\n  background: none;\n  border: none;\n  font-size: 1.25rem;\n  cursor: pointer;\n  color: inherit;\n  padding: 0;\n  margin-left: 1rem;\n}\n.dashboard-card[data-v-09f26faf] {\n  background: white;\n  border-radius: 8px;\n  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);\n  overflow: hidden;\n}\n.card-header[data-v-09f26faf] {\n  padding: 1.5rem;\n  border-bottom: 1px solid #e5e7eb;\n  background: #f9fafb;\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n}\n.card-content[data-v-09f26faf] {\n  padding: 1.5rem;\n}\n.stats-grid[data-v-09f26faf] {\n  display: grid;\n  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));\n  gap: 1.5rem;\n  margin-bottom: 2rem;\n}\n.stat-card[data-v-09f26faf] {\n  background: white;\n  border: 1px solid #e2e8f0;\n  border-radius: 8px;\n  padding: 1.5rem;\n  display: flex;\n  align-items: center;\n  gap: 1rem;\n  transition: all 0.2s;\n}\n.stat-card.clickable[data-v-09f26faf] {\n  cursor: pointer;\n}\n.stat-card.clickable[data-v-09f26faf]:hover {\n  transform: translateY(-2px);\n  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);\n}\n.stat-icon[data-v-09f26faf] {\n  width: 48px;\n  height: 48px;\n  border-radius: 8px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 1.5rem;\n  flex-shrink: 0;\n}\n.stat-icon-blue[data-v-09f26faf] {\n  background-color: #dbeafe;\n}\n.stat-icon-green[data-v-09f26faf] {\n  background-color: #d1fae5;\n}\n.stat-icon-orange[data-v-09f26faf] {\n  background-color: #fed7aa;\n}\n.stat-icon-red[data-v-09f26faf] {\n  background-color: #fecaca;\n}\n.stat-content[data-v-09f26faf] {\n  flex: 1;\n}\n.stat-number[data-v-09f26faf] {\n  font-size: 1.875rem;\n  font-weight: bold;\n  color: #1f2937;\n  line-height: 1;\n}\n.stat-label[data-v-09f26faf] {\n  color: #374151;\n  font-size: 0.875rem;\n  font-weight: 600;\n  margin-top: 0.25rem;\n}\n.stat-sublabel[data-v-09f26faf] {\n  color: #6b7280;\n  font-size: 0.75rem;\n  margin-top: 0.125rem;\n}\n.sync-controls[data-v-09f26faf] {\n  display: flex;\n  justify-content: space-between;\n  align-items: flex-start;\n  gap: 2rem;\n  flex-wrap: wrap;\n}\n.sync-buttons[data-v-09f26faf] {\n  display: flex;\n  flex-direction: column;\n  gap: 1rem;\n}\n.sync-options[data-v-09f26faf] {\n  display: flex;\n  gap: 0.75rem;\n  flex-wrap: wrap;\n}\n.sync-info[data-v-09f26faf] {\n  display: flex;\n  flex-direction: column;\n  gap: 0.5rem;\n}\n.info-item[data-v-09f26faf] {\n  display: flex;\n  gap: 0.5rem;\n}\n.info-label[data-v-09f26faf] {\n  font-weight: 500;\n  color: #374151;\n}\n.dashboard-grid[data-v-09f26faf] {\n  display: grid;\n  grid-template-columns: 1fr 1fr;\n  gap: 1.5rem;\n}\n@media (max-width: 1024px) {\n  .dashboard-grid[data-v-09f26faf] {\n    grid-template-columns: 1fr;\n  }\n}\n.activity-list[data-v-09f26faf],\n.logs-list[data-v-09f26faf] {\n  display: flex;\n  flex-direction: column;\n  gap: 0.75rem;\n}\n.activity-item[data-v-09f26faf],\n.log-item[data-v-09f26faf] {\n  display: flex;\n  justify-content: space-between;\n  align-items: flex-start;\n  padding: 0.75rem;\n  border: 1px solid #e5e7eb;\n  border-radius: 6px;\n  background: #f9fafb;\n}\n.activity-content[data-v-09f26faf],\n.log-content[data-v-09f26faf] {\n  flex: 1;\n}\n.activity-title[data-v-09f26faf],\n.log-title[data-v-09f26faf] {\n  font-weight: 500;\n  color: #1f2937;\n  font-size: 0.875rem;\n}\n.activity-description[data-v-09f26faf],\n.log-message[data-v-09f26faf] {\n  color: #6b7280;\n  font-size: 0.75rem;\n  margin-top: 0.25rem;\n}\n.activity-time[data-v-09f26faf],\n.log-time[data-v-09f26faf] {\n  color: #9ca3af;\n  font-size: 0.6875rem;\n  margin-top: 0.25rem;\n}\n.activity-status[data-v-09f26faf],\n.log-status[data-v-09f26faf] {\n  padding: 0.125rem 0.5rem;\n  border-radius: 9999px;\n  font-size: 0.6875rem;\n  font-weight: 500;\n  text-transform: uppercase;\n}\n.status-success[data-v-09f26faf] {\n  background-color: #d1fae5;\n  color: #065f46;\n}\n.status-error[data-v-09f26faf] {\n  background-color: #fecaca;\n  color: #991b1b;\n}\n.quick-actions[data-v-09f26faf] {\n  display: grid;\n  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));\n  gap: 1rem;\n}\n.action-button[data-v-09f26faf] {\n  display: flex;\n  align-items: center;\n  gap: 1rem;\n  padding: 1rem;\n  border: 1px solid #e5e7eb;\n  border-radius: 8px;\n  background: white;\n  text-align: left;\n  cursor: pointer;\n  transition: all 0.2s;\n}\n.action-button[data-v-09f26faf]:hover {\n  border-color: #2563eb;\n  background-color: #f8fafc;\n}\n.action-icon[data-v-09f26faf] {\n  font-size: 1.5rem;\n  flex-shrink: 0;\n}\n.action-content[data-v-09f26faf] {\n  flex: 1;\n}\n.action-title[data-v-09f26faf] {\n  font-weight: 500;\n  color: #1f2937;\n  margin-bottom: 0.25rem;\n}\n.action-description[data-v-09f26faf] {\n  color: #6b7280;\n  font-size: 0.75rem;\n}\n.btn[data-v-09f26faf] {\n  padding: 0.5rem 1rem;\n  border-radius: 6px;\n  border: none;\n  font-weight: 500;\n  cursor: pointer;\n  transition: all 0.2s;\n  text-decoration: none;\n  display: inline-flex;\n  align-items: center;\n  gap: 0.5rem;\n  font-size: 0.875rem;\n}\n.btn[data-v-09f26faf]:disabled {\n  opacity: 0.5;\n  cursor: not-allowed;\n}\n.btn-primary[data-v-09f26faf] {\n  background-color: #2563eb;\n  color: white;\n}\n.btn-primary[data-v-09f26faf]:hover:not(:disabled) {\n  background-color: #1d4ed8;\n}\n.btn-secondary[data-v-09f26faf] {\n  background-color: #f3f4f6;\n  color: #374151;\n}\n.btn-secondary[data-v-09f26faf]:hover:not(:disabled) {\n  background-color: #e5e7eb;\n}\n.btn-outline[data-v-09f26faf] {\n  background-color: transparent;\n  color: #374151;\n  border: 1px solid #d1d5db;\n}\n.btn-outline[data-v-09f26faf]:hover:not(:disabled) {\n  background-color: #f9fafb;\n  border-color: #9ca3af;\n}\n.btn-sm[data-v-09f26faf] {\n  padding: 0.25rem 0.75rem;\n  font-size: 0.75rem;\n}\n.btn-refresh[data-v-09f26faf] {\n  background: none;\n  border: none;\n  cursor: pointer;\n  padding: 0.25rem;\n  border-radius: 4px;\n  transition: background-color 0.2s;\n}\n.btn-refresh[data-v-09f26faf]:hover {\n  background-color: #f3f4f6;\n}\n.loading-spinner[data-v-09f26faf] {\n  width: 32px;\n  height: 32px;\n  border: 3px solid #e5e7eb;\n  border-top: 3px solid #2563eb;\n  border-radius: 50%;\n  animation: spin-09f26faf 1s linear infinite;\n}\n.company-mappings-list[data-v-09f26faf] {\n  space-y: 12px;\n}\n.mapping-item[data-v-09f26faf] {\n  padding: 12px;\n  border: 1px solid #e5e7eb;\n  border-radius: 8px;\n  background: white;\n  transition: all 0.2s;\n}\n.mapping-item[data-v-09f26faf]:hover {\n  border-color: #2563eb;\n  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);\n}\n.mapping-item.default-mapping[data-v-09f26faf] {\n  border-color: #10b981;\n  background: #f0fdf4;\n}\n.mapping-info[data-v-09f26faf] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  font-size: 14px;\n}\n.mapping-arrow[data-v-09f26faf] {\n  color: #6b7280;\n  font-weight: bold;\n}\n.default-badge[data-v-09f26faf] {\n  background: #10b981;\n  color: white;\n  font-size: 10px;\n  padding: 2px 6px;\n  border-radius: 12px;\n  text-transform: uppercase;\n  font-weight: 600;\n  letter-spacing: 0.5px;\n}\n.empty-state[data-v-09f26faf] {\n  text-align: center;\n  padding: 24px;\n}\n.refresh-button[data-v-09f26faf] {\n  background: none;\n  border: 1px solid #e5e7eb;\n  padding: 4px 8px;\n  border-radius: 4px;\n  cursor: pointer;\n  font-size: 12px;\n  transition: all 0.2s;\n}\n.refresh-button[data-v-09f26faf]:hover:not(:disabled) {\n  background: #f9fafb;\n  border-color: #9ca3af;\n}\n.refresh-button[data-v-09f26faf]:disabled {\n  opacity: 0.5;\n  cursor: not-allowed;\n}\n@media (max-width: 768px) {\n  .company-mappings-list[data-v-09f26faf] {\n    space-y: 8px;\n  }\n  .mapping-item[data-v-09f26faf] {\n    padding: 8px;\n  }\n  .mapping-info[data-v-09f26faf] {\n    font-size: 12px;\n    gap: 6px;\n  }\n}\n.loading-spinner-sm[data-v-09f26faf] {\n  width: 16px;\n  height: 16px;\n  border: 2px solid #e5e7eb;\n  border-top: 2px solid currentColor;\n  border-radius: 50%;\n  animation: spin-09f26faf 1s linear infinite;\n}\n@keyframes spin-09f26faf {\n  0% {\n    transform: rotate(0deg);\n  }\n  100% {\n    transform: rotate(360deg);\n  }\n}\n@media (max-width: 768px) {\n  .header-content[data-v-09f26faf] {\n    flex-direction: column;\n    align-items: flex-start;\n  }\n  .header-actions[data-v-09f26faf] {\n    width: 100%;\n    justify-content: flex-start;\n  }\n  .stats-grid[data-v-09f26faf] {\n    grid-template-columns: 1fr;\n  }\n  .sync-controls[data-v-09f26faf] {\n    flex-direction: column;\n    align-items: flex-start;\n  }\n  .quick-actions[data-v-09f26faf] {\n    grid-template-columns: 1fr;\n  }\n}\n/*# sourceMappingURL=invoice_ninja_dashboard.bundle.DJQPKD26.css.map */\n");
 (() => {
   var __create = Object.create;
   var __defProp = Object.defineProperty;
@@ -36150,6 +36150,7 @@ ${codeFrame}` : message);
       __expose();
       const loading = (0, import_vue.ref)(true);
       const syncing = (0, import_vue.ref)(false);
+      const loadingMappings = (0, import_vue.ref)(false);
       const error = (0, import_vue.ref)(null);
       const stats = (0, import_vue.ref)({
         totalInvoices: 0,
@@ -36161,6 +36162,7 @@ ${codeFrame}` : message);
       });
       const recentActivity = (0, import_vue.ref)([]);
       const syncLogs = (0, import_vue.ref)([]);
+      const companyMappings = (0, import_vue.ref)([]);
       const config = (0, import_vue.ref)({
         apiUrl: "",
         apiToken: "",
@@ -36256,7 +36258,39 @@ ${codeFrame}` : message);
           config.value.isConnected = false;
         }
       };
+      const fetchCompanyMappings = async () => {
+        try {
+          const response = await frappe.call({
+            method: "invoice_ninja_integration.api.get_company_mappings"
+          });
+          if (response.message && response.message.success) {
+            companyMappings.value = response.message.mappings || [];
+          }
+        } catch (err) {
+          console.error("Error fetching company mappings:", err);
+        }
+      };
+      const refreshCompanyMappings = async () => {
+        try {
+          loadingMappings.value = true;
+          await fetchCompanyMappings();
+          frappe.show_alert({
+            message: "Company mappings refreshed",
+            indicator: "green"
+          });
+        } catch (err) {
+          frappe.show_alert({
+            message: `Failed to refresh mappings: ${err.message}`,
+            indicator: "red"
+          });
+        } finally {
+          loadingMappings.value = false;
+        }
+      };
       const openConfiguration = () => {
+        frappe.set_route("Form", "Invoice Ninja Settings");
+      };
+      const openSettings = () => {
         frappe.set_route("Form", "Invoice Ninja Settings");
       };
       const openSyncLogs = () => {
@@ -36307,16 +36341,18 @@ ${codeFrame}` : message);
       };
       (0, import_vue.onMounted)(() => {
         fetchDashboardData();
+        fetchCompanyMappings();
         const refreshInterval = setInterval(() => {
           if (!loading.value && !syncing.value) {
             fetchDashboardData();
+            fetchCompanyMappings();
           }
         }, 3e4);
         return () => {
           clearInterval(refreshInterval);
         };
       });
-      const __returned__ = { loading, syncing, error, stats, recentActivity, syncLogs, config, fetchDashboardData, triggerSync, testConnection, openConfiguration, openSyncLogs, openInvoiceList, openCustomerList, connectionStatus, syncStatusDisplay, formatDate, formatActivityType, ref: import_vue.ref, computed: import_vue.computed, onMounted: import_vue.onMounted };
+      const __returned__ = { loading, syncing, loadingMappings, error, stats, recentActivity, syncLogs, companyMappings, config, fetchDashboardData, triggerSync, testConnection, fetchCompanyMappings, refreshCompanyMappings, openConfiguration, openSettings, openSyncLogs, openInvoiceList, openCustomerList, connectionStatus, syncStatusDisplay, formatDate, formatActivityType, ref: import_vue.ref, computed: import_vue.computed, onMounted: import_vue.onMounted };
       Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
       return __returned__;
     }
@@ -36365,111 +36401,131 @@ ${codeFrame}` : message);
   var _hoisted_32 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "stat-sublabel" }, "Past due date", -1));
   var _hoisted_33 = { class: "dashboard-card mb-6" };
   var _hoisted_34 = { class: "card-header" };
-  var _hoisted_35 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("h2", { class: "text-lg font-semibold text-gray-900" }, "Synchronization Controls", -1));
-  var _hoisted_36 = { class: "text-sm text-gray-500" };
+  var _hoisted_35 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("h2", { class: "text-lg font-semibold text-gray-900" }, "\u{1F3E2} Company Mappings", -1));
+  var _hoisted_36 = ["disabled"];
   var _hoisted_37 = { class: "card-content" };
-  var _hoisted_38 = { class: "sync-controls" };
-  var _hoisted_39 = { class: "sync-buttons" };
-  var _hoisted_40 = ["disabled"];
-  var _hoisted_41 = {
+  var _hoisted_38 = {
+    key: 0,
+    class: "empty-state"
+  };
+  var _hoisted_39 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("p", { class: "text-gray-600" }, "No company mappings configured", -1));
+  var _hoisted_40 = {
+    key: 1,
+    class: "company-mappings-list"
+  };
+  var _hoisted_41 = { class: "mapping-info" };
+  var _hoisted_42 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("span", { class: "mapping-arrow" }, "\u2194", -1));
+  var _hoisted_43 = {
+    key: 0,
+    class: "default-badge"
+  };
+  var _hoisted_44 = { class: "dashboard-card mb-6" };
+  var _hoisted_45 = { class: "card-header" };
+  var _hoisted_46 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("h2", { class: "text-lg font-semibold text-gray-900" }, "Synchronization Controls", -1));
+  var _hoisted_47 = { class: "text-sm text-gray-500" };
+  var _hoisted_48 = { class: "card-content" };
+  var _hoisted_49 = { class: "sync-controls" };
+  var _hoisted_50 = { class: "sync-buttons" };
+  var _hoisted_51 = ["disabled"];
+  var _hoisted_52 = {
     key: 0,
     class: "loading-spinner-sm"
   };
-  var _hoisted_42 = { class: "sync-options" };
-  var _hoisted_43 = ["disabled"];
-  var _hoisted_44 = ["disabled"];
-  var _hoisted_45 = ["disabled"];
-  var _hoisted_46 = { class: "sync-info" };
-  var _hoisted_47 = { class: "info-item" };
-  var _hoisted_48 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("span", { class: "info-label" }, "Auto Sync:", -1));
-  var _hoisted_49 = { class: "info-item" };
-  var _hoisted_50 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("span", { class: "info-label" }, "Sync Interval:", -1));
-  var _hoisted_51 = { class: "text-gray-600" };
-  var _hoisted_52 = { class: "dashboard-grid" };
-  var _hoisted_53 = { class: "dashboard-card" };
-  var _hoisted_54 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("h3", { class: "text-lg font-semibold text-gray-900" }, "Recent Activity", -1));
-  var _hoisted_55 = { class: "card-content" };
-  var _hoisted_56 = {
+  var _hoisted_53 = { class: "sync-options" };
+  var _hoisted_54 = ["disabled"];
+  var _hoisted_55 = ["disabled"];
+  var _hoisted_56 = ["disabled"];
+  var _hoisted_57 = { class: "sync-info" };
+  var _hoisted_58 = { class: "info-item" };
+  var _hoisted_59 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("span", { class: "info-label" }, "Auto Sync:", -1));
+  var _hoisted_60 = { class: "info-item" };
+  var _hoisted_61 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("span", { class: "info-label" }, "Sync Interval:", -1));
+  var _hoisted_62 = { class: "text-gray-600" };
+  var _hoisted_63 = { class: "dashboard-grid" };
+  var _hoisted_64 = { class: "dashboard-card" };
+  var _hoisted_65 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("h3", { class: "text-lg font-semibold text-gray-900" }, "Recent Activity", -1));
+  var _hoisted_66 = { class: "card-content" };
+  var _hoisted_67 = {
     key: 0,
     class: "text-center py-4"
   };
-  var _hoisted_57 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "loading-spinner" }, null, -1));
-  var _hoisted_58 = [
-    _hoisted_57
+  var _hoisted_68 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "loading-spinner" }, null, -1));
+  var _hoisted_69 = [
+    _hoisted_68
   ];
-  var _hoisted_59 = {
+  var _hoisted_70 = {
     key: 1,
     class: "text-center py-8 text-gray-500"
   };
-  var _hoisted_60 = {
+  var _hoisted_71 = {
     key: 2,
     class: "activity-list"
   };
-  var _hoisted_61 = { class: "activity-content" };
-  var _hoisted_62 = { class: "activity-title" };
-  var _hoisted_63 = { class: "activity-description" };
-  var _hoisted_64 = { class: "activity-time" };
-  var _hoisted_65 = { class: "dashboard-card" };
-  var _hoisted_66 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("h3", { class: "text-lg font-semibold text-gray-900" }, "Sync Logs", -1));
-  var _hoisted_67 = { class: "card-content" };
-  var _hoisted_68 = {
+  var _hoisted_72 = { class: "activity-content" };
+  var _hoisted_73 = { class: "activity-title" };
+  var _hoisted_74 = { class: "activity-description" };
+  var _hoisted_75 = { class: "activity-time" };
+  var _hoisted_76 = { class: "dashboard-card" };
+  var _hoisted_77 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("h3", { class: "text-lg font-semibold text-gray-900" }, "Sync Logs", -1));
+  var _hoisted_78 = { class: "card-content" };
+  var _hoisted_79 = {
     key: 0,
     class: "text-center py-4"
   };
-  var _hoisted_69 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "loading-spinner" }, null, -1));
-  var _hoisted_70 = [
-    _hoisted_69
+  var _hoisted_80 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "loading-spinner" }, null, -1));
+  var _hoisted_81 = [
+    _hoisted_80
   ];
-  var _hoisted_71 = {
+  var _hoisted_82 = {
     key: 1,
     class: "text-center py-8 text-gray-500"
   };
-  var _hoisted_72 = {
+  var _hoisted_83 = {
     key: 2,
     class: "logs-list"
   };
-  var _hoisted_73 = { class: "log-content" };
-  var _hoisted_74 = { class: "log-title" };
-  var _hoisted_75 = { class: "log-message" };
-  var _hoisted_76 = { class: "log-time" };
-  var _hoisted_77 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "card-header" }, [
+  var _hoisted_84 = { class: "log-content" };
+  var _hoisted_85 = { class: "log-title" };
+  var _hoisted_86 = { class: "log-message" };
+  var _hoisted_87 = { class: "log-time" };
+  var _hoisted_88 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "card-header" }, [
     /* @__PURE__ */ (0, import_vue2.createElementVNode)("h3", { class: "text-lg font-semibold text-gray-900" }, "Quick Actions")
   ], -1));
-  var _hoisted_78 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "action-icon" }, "\u2699\uFE0F", -1));
-  var _hoisted_79 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "action-content" }, [
+  var _hoisted_89 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "action-icon" }, "\u2699\uFE0F", -1));
+  var _hoisted_90 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "action-content" }, [
     /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "action-title" }, "Configuration"),
     /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "action-description" }, "Manage API settings and sync preferences")
   ], -1));
-  var _hoisted_80 = [
-    _hoisted_78,
-    _hoisted_79
+  var _hoisted_91 = [
+    _hoisted_89,
+    _hoisted_90
   ];
-  var _hoisted_81 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "action-icon" }, "\u{1F4CB}", -1));
-  var _hoisted_82 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "action-content" }, [
+  var _hoisted_92 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "action-icon" }, "\u{1F4CB}", -1));
+  var _hoisted_93 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "action-content" }, [
     /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "action-title" }, "Sync Logs"),
     /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "action-description" }, "View detailed synchronization history")
   ], -1));
-  var _hoisted_83 = [
-    _hoisted_81,
-    _hoisted_82
+  var _hoisted_94 = [
+    _hoisted_92,
+    _hoisted_93
   ];
-  var _hoisted_84 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "action-icon" }, "\u{1F4C4}", -1));
-  var _hoisted_85 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "action-content" }, [
+  var _hoisted_95 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "action-icon" }, "\u{1F4C4}", -1));
+  var _hoisted_96 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "action-content" }, [
     /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "action-title" }, "Synced Invoices"),
     /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "action-description" }, "Browse invoices from Invoice Ninja")
   ], -1));
-  var _hoisted_86 = [
-    _hoisted_84,
-    _hoisted_85
+  var _hoisted_97 = [
+    _hoisted_95,
+    _hoisted_96
   ];
-  var _hoisted_87 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "action-icon" }, "\u{1F465}", -1));
-  var _hoisted_88 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "action-content" }, [
+  var _hoisted_98 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "action-icon" }, "\u{1F465}", -1));
+  var _hoisted_99 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "action-content" }, [
     /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "action-title" }, "Synced Customers"),
     /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "action-description" }, "Manage synchronized customer data")
   ], -1));
-  var _hoisted_89 = [
-    _hoisted_87,
-    _hoisted_88
+  var _hoisted_100 = [
+    _hoisted_98,
+    _hoisted_99
   ];
   function render(_ctx, _cache, $props, $setup, $data, $options) {
     return (0, import_vue2.openBlock)(), (0, import_vue2.createElementBlock)("div", _hoisted_1, [
@@ -36549,78 +36605,112 @@ ${codeFrame}` : message);
           ])
         ])
       ]),
-      (0, import_vue2.createCommentVNode)(" Sync Controls "),
+      (0, import_vue2.createCommentVNode)(" Company Mappings "),
       (0, import_vue2.createElementVNode)("div", _hoisted_33, [
         (0, import_vue2.createElementVNode)("div", _hoisted_34, [
           _hoisted_35,
-          (0, import_vue2.createElementVNode)("div", _hoisted_36, " Last sync: " + (0, import_vue2.toDisplayString)($setup.formatDate($setup.stats.lastSyncTime)), 1)
+          (0, import_vue2.createElementVNode)("button", {
+            onClick: $setup.refreshCompanyMappings,
+            class: "refresh-button",
+            disabled: $setup.loadingMappings
+          }, (0, import_vue2.toDisplayString)($setup.loadingMappings ? "..." : "\u21BB Refresh"), 9, _hoisted_36)
         ]),
         (0, import_vue2.createElementVNode)("div", _hoisted_37, [
-          (0, import_vue2.createElementVNode)("div", _hoisted_38, [
-            (0, import_vue2.createElementVNode)("div", _hoisted_39, [
+          $setup.companyMappings.length === 0 ? ((0, import_vue2.openBlock)(), (0, import_vue2.createElementBlock)("div", _hoisted_38, [
+            _hoisted_39,
+            (0, import_vue2.createElementVNode)("button", {
+              onClick: $setup.openSettings,
+              class: "mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            }, " Configure Mappings ")
+          ])) : ((0, import_vue2.openBlock)(), (0, import_vue2.createElementBlock)("div", _hoisted_40, [
+            ((0, import_vue2.openBlock)(true), (0, import_vue2.createElementBlock)(import_vue2.Fragment, null, (0, import_vue2.renderList)($setup.companyMappings, (mapping) => {
+              return (0, import_vue2.openBlock)(), (0, import_vue2.createElementBlock)("div", {
+                key: mapping.invoice_ninja_company_id,
+                class: (0, import_vue2.normalizeClass)(["mapping-item", { "default-mapping": mapping.is_default }])
+              }, [
+                (0, import_vue2.createElementVNode)("div", _hoisted_41, [
+                  (0, import_vue2.createElementVNode)("strong", null, (0, import_vue2.toDisplayString)(mapping.erpnext_company), 1),
+                  _hoisted_42,
+                  (0, import_vue2.createElementVNode)("span", null, (0, import_vue2.toDisplayString)(mapping.invoice_ninja_company_name), 1),
+                  mapping.is_default ? ((0, import_vue2.openBlock)(), (0, import_vue2.createElementBlock)("span", _hoisted_43, "Default")) : (0, import_vue2.createCommentVNode)("v-if", true)
+                ])
+              ], 2);
+            }), 128))
+          ]))
+        ])
+      ]),
+      (0, import_vue2.createCommentVNode)(" Sync Controls "),
+      (0, import_vue2.createElementVNode)("div", _hoisted_44, [
+        (0, import_vue2.createElementVNode)("div", _hoisted_45, [
+          _hoisted_46,
+          (0, import_vue2.createElementVNode)("div", _hoisted_47, " Last sync: " + (0, import_vue2.toDisplayString)($setup.formatDate($setup.stats.lastSyncTime)), 1)
+        ]),
+        (0, import_vue2.createElementVNode)("div", _hoisted_48, [
+          (0, import_vue2.createElementVNode)("div", _hoisted_49, [
+            (0, import_vue2.createElementVNode)("div", _hoisted_50, [
               (0, import_vue2.createElementVNode)("button", {
                 onClick: _cache[1] || (_cache[1] = ($event) => $setup.triggerSync("all")),
                 disabled: $setup.syncing || $setup.loading,
                 class: "btn btn-primary"
               }, [
-                $setup.syncing ? ((0, import_vue2.openBlock)(), (0, import_vue2.createElementBlock)("span", _hoisted_41)) : (0, import_vue2.createCommentVNode)("v-if", true),
+                $setup.syncing ? ((0, import_vue2.openBlock)(), (0, import_vue2.createElementBlock)("span", _hoisted_52)) : (0, import_vue2.createCommentVNode)("v-if", true),
                 (0, import_vue2.createTextVNode)(" " + (0, import_vue2.toDisplayString)($setup.syncing ? "Syncing..." : "Full Sync"), 1)
-              ], 8, _hoisted_40),
-              (0, import_vue2.createElementVNode)("div", _hoisted_42, [
+              ], 8, _hoisted_51),
+              (0, import_vue2.createElementVNode)("div", _hoisted_53, [
                 (0, import_vue2.createElementVNode)("button", {
                   onClick: _cache[2] || (_cache[2] = ($event) => $setup.triggerSync("customers")),
                   disabled: $setup.syncing || $setup.loading,
                   class: "btn btn-secondary"
-                }, " Sync Customers ", 8, _hoisted_43),
+                }, " Sync Customers ", 8, _hoisted_54),
                 (0, import_vue2.createElementVNode)("button", {
                   onClick: _cache[3] || (_cache[3] = ($event) => $setup.triggerSync("invoices")),
                   disabled: $setup.syncing || $setup.loading,
                   class: "btn btn-secondary"
-                }, " Sync Invoices ", 8, _hoisted_44),
+                }, " Sync Invoices ", 8, _hoisted_55),
                 (0, import_vue2.createElementVNode)("button", {
                   onClick: _cache[4] || (_cache[4] = ($event) => $setup.triggerSync("payments")),
                   disabled: $setup.syncing || $setup.loading,
                   class: "btn btn-secondary"
-                }, " Sync Payments ", 8, _hoisted_45)
+                }, " Sync Payments ", 8, _hoisted_56)
               ])
             ]),
-            (0, import_vue2.createElementVNode)("div", _hoisted_46, [
-              (0, import_vue2.createElementVNode)("div", _hoisted_47, [
-                _hoisted_48,
+            (0, import_vue2.createElementVNode)("div", _hoisted_57, [
+              (0, import_vue2.createElementVNode)("div", _hoisted_58, [
+                _hoisted_59,
                 (0, import_vue2.createElementVNode)("span", {
                   class: (0, import_vue2.normalizeClass)($setup.config.autoSync ? "text-green-600" : "text-gray-600")
                 }, (0, import_vue2.toDisplayString)($setup.config.autoSync ? "Enabled" : "Disabled"), 3)
               ]),
-              (0, import_vue2.createElementVNode)("div", _hoisted_49, [
-                _hoisted_50,
-                (0, import_vue2.createElementVNode)("span", _hoisted_51, (0, import_vue2.toDisplayString)($setup.config.syncInterval) + " minutes", 1)
+              (0, import_vue2.createElementVNode)("div", _hoisted_60, [
+                _hoisted_61,
+                (0, import_vue2.createElementVNode)("span", _hoisted_62, (0, import_vue2.toDisplayString)($setup.config.syncInterval) + " minutes", 1)
               ])
             ])
           ])
         ])
       ]),
       (0, import_vue2.createCommentVNode)(" Two Column Layout "),
-      (0, import_vue2.createElementVNode)("div", _hoisted_52, [
+      (0, import_vue2.createElementVNode)("div", _hoisted_63, [
         (0, import_vue2.createCommentVNode)(" Recent Activity "),
-        (0, import_vue2.createElementVNode)("div", _hoisted_53, [
+        (0, import_vue2.createElementVNode)("div", _hoisted_64, [
           (0, import_vue2.createElementVNode)("div", { class: "card-header" }, [
-            _hoisted_54,
+            _hoisted_65,
             (0, import_vue2.createElementVNode)("button", {
               onClick: $setup.fetchDashboardData,
               class: "btn-refresh"
             }, " \u{1F504} ")
           ]),
-          (0, import_vue2.createElementVNode)("div", _hoisted_55, [
-            $setup.loading ? ((0, import_vue2.openBlock)(), (0, import_vue2.createElementBlock)("div", _hoisted_56, [..._hoisted_58])) : $setup.recentActivity.length === 0 ? ((0, import_vue2.openBlock)(), (0, import_vue2.createElementBlock)("div", _hoisted_59, " No recent activity ")) : ((0, import_vue2.openBlock)(), (0, import_vue2.createElementBlock)("div", _hoisted_60, [
+          (0, import_vue2.createElementVNode)("div", _hoisted_66, [
+            $setup.loading ? ((0, import_vue2.openBlock)(), (0, import_vue2.createElementBlock)("div", _hoisted_67, [..._hoisted_69])) : $setup.recentActivity.length === 0 ? ((0, import_vue2.openBlock)(), (0, import_vue2.createElementBlock)("div", _hoisted_70, " No recent activity ")) : ((0, import_vue2.openBlock)(), (0, import_vue2.createElementBlock)("div", _hoisted_71, [
               ((0, import_vue2.openBlock)(true), (0, import_vue2.createElementBlock)(import_vue2.Fragment, null, (0, import_vue2.renderList)($setup.recentActivity, (activity) => {
                 return (0, import_vue2.openBlock)(), (0, import_vue2.createElementBlock)("div", {
                   key: activity.id,
                   class: "activity-item"
                 }, [
-                  (0, import_vue2.createElementVNode)("div", _hoisted_61, [
-                    (0, import_vue2.createElementVNode)("div", _hoisted_62, (0, import_vue2.toDisplayString)($setup.formatActivityType(activity.type)), 1),
-                    (0, import_vue2.createElementVNode)("div", _hoisted_63, (0, import_vue2.toDisplayString)(activity.description), 1),
-                    (0, import_vue2.createElementVNode)("div", _hoisted_64, (0, import_vue2.toDisplayString)($setup.formatDate(activity.created_at)), 1)
+                  (0, import_vue2.createElementVNode)("div", _hoisted_72, [
+                    (0, import_vue2.createElementVNode)("div", _hoisted_73, (0, import_vue2.toDisplayString)($setup.formatActivityType(activity.type)), 1),
+                    (0, import_vue2.createElementVNode)("div", _hoisted_74, (0, import_vue2.toDisplayString)(activity.description), 1),
+                    (0, import_vue2.createElementVNode)("div", _hoisted_75, (0, import_vue2.toDisplayString)($setup.formatDate(activity.created_at)), 1)
                   ]),
                   (0, import_vue2.createElementVNode)("div", {
                     class: (0, import_vue2.normalizeClass)(["activity-status", activity.status === "success" ? "status-success" : "status-error"])
@@ -36631,25 +36721,25 @@ ${codeFrame}` : message);
           ])
         ]),
         (0, import_vue2.createCommentVNode)(" Sync Logs "),
-        (0, import_vue2.createElementVNode)("div", _hoisted_65, [
+        (0, import_vue2.createElementVNode)("div", _hoisted_76, [
           (0, import_vue2.createElementVNode)("div", { class: "card-header" }, [
-            _hoisted_66,
+            _hoisted_77,
             (0, import_vue2.createElementVNode)("button", {
               onClick: $setup.openSyncLogs,
               class: "btn btn-sm btn-outline"
             }, " View All ")
           ]),
-          (0, import_vue2.createElementVNode)("div", _hoisted_67, [
-            $setup.loading ? ((0, import_vue2.openBlock)(), (0, import_vue2.createElementBlock)("div", _hoisted_68, [..._hoisted_70])) : $setup.syncLogs.length === 0 ? ((0, import_vue2.openBlock)(), (0, import_vue2.createElementBlock)("div", _hoisted_71, " No sync logs available ")) : ((0, import_vue2.openBlock)(), (0, import_vue2.createElementBlock)("div", _hoisted_72, [
+          (0, import_vue2.createElementVNode)("div", _hoisted_78, [
+            $setup.loading ? ((0, import_vue2.openBlock)(), (0, import_vue2.createElementBlock)("div", _hoisted_79, [..._hoisted_81])) : $setup.syncLogs.length === 0 ? ((0, import_vue2.openBlock)(), (0, import_vue2.createElementBlock)("div", _hoisted_82, " No sync logs available ")) : ((0, import_vue2.openBlock)(), (0, import_vue2.createElementBlock)("div", _hoisted_83, [
               ((0, import_vue2.openBlock)(true), (0, import_vue2.createElementBlock)(import_vue2.Fragment, null, (0, import_vue2.renderList)($setup.syncLogs, (log) => {
                 return (0, import_vue2.openBlock)(), (0, import_vue2.createElementBlock)("div", {
                   key: log.id,
                   class: "log-item"
                 }, [
-                  (0, import_vue2.createElementVNode)("div", _hoisted_73, [
-                    (0, import_vue2.createElementVNode)("div", _hoisted_74, (0, import_vue2.toDisplayString)(log.sync_type) + " - " + (0, import_vue2.toDisplayString)(log.entity_type), 1),
-                    (0, import_vue2.createElementVNode)("div", _hoisted_75, (0, import_vue2.toDisplayString)(log.message), 1),
-                    (0, import_vue2.createElementVNode)("div", _hoisted_76, (0, import_vue2.toDisplayString)($setup.formatDate(log.created_at)), 1)
+                  (0, import_vue2.createElementVNode)("div", _hoisted_84, [
+                    (0, import_vue2.createElementVNode)("div", _hoisted_85, (0, import_vue2.toDisplayString)(log.sync_type) + " - " + (0, import_vue2.toDisplayString)(log.entity_type), 1),
+                    (0, import_vue2.createElementVNode)("div", _hoisted_86, (0, import_vue2.toDisplayString)(log.message), 1),
+                    (0, import_vue2.createElementVNode)("div", _hoisted_87, (0, import_vue2.toDisplayString)($setup.formatDate(log.created_at)), 1)
                   ]),
                   (0, import_vue2.createElementVNode)("div", {
                     class: (0, import_vue2.normalizeClass)(["log-status", log.status === "success" ? "status-success" : "status-error"])
@@ -36662,25 +36752,25 @@ ${codeFrame}` : message);
       ]),
       (0, import_vue2.createCommentVNode)(" Quick Actions Footer "),
       (0, import_vue2.createElementVNode)("div", { class: "dashboard-card mt-6" }, [
-        _hoisted_77,
+        _hoisted_88,
         (0, import_vue2.createElementVNode)("div", { class: "card-content" }, [
           (0, import_vue2.createElementVNode)("div", { class: "quick-actions" }, [
             (0, import_vue2.createElementVNode)("button", {
               onClick: $setup.openConfiguration,
               class: "action-button"
-            }, [..._hoisted_80]),
+            }, [..._hoisted_91]),
             (0, import_vue2.createElementVNode)("button", {
               onClick: $setup.openSyncLogs,
               class: "action-button"
-            }, [..._hoisted_83]),
+            }, [..._hoisted_94]),
             (0, import_vue2.createElementVNode)("button", {
               onClick: $setup.openInvoiceList,
               class: "action-button"
-            }, [..._hoisted_86]),
+            }, [..._hoisted_97]),
             (0, import_vue2.createElementVNode)("button", {
               onClick: $setup.openCustomerList,
               class: "action-button"
-            }, [..._hoisted_89])
+            }, [..._hoisted_100])
           ])
         ])
       ])
@@ -36704,4 +36794,4 @@ ${codeFrame}` : message);
   var invoice_ninja_dashboard_bundle_default = setup_ij_dashboard_vue;
 })();
 /*! #__NO_SIDE_EFFECTS__ */
-//# sourceMappingURL=invoice_ninja_dashboard.bundle.NSWJ3DON.js.map
+//# sourceMappingURL=invoice_ninja_dashboard.bundle.DDLMFCLL.js.map
