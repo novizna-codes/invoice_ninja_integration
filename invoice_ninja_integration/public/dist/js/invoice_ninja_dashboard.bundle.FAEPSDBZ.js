@@ -1,4 +1,4 @@
-frappe.dom.set_style("/* sfc-style:/workspace/development/novizna/apps/invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/InvoiceNinjaDashboard.vue?type=style&index=0 */\n.invoice-ninja-dashboard[data-v-09f26faf] {\n  font-family:\n    -apple-system,\n    BlinkMacSystemFont,\n    \"Segoe UI\",\n    Roboto,\n    Oxygen,\n    Ubuntu,\n    Cantarell,\n    sans-serif;\n  min-height: 100vh;\n  background-color: #f8fafc;\n}\n.dashboard-header[data-v-09f26faf] {\n  background: white;\n  border-radius: 8px;\n  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);\n  padding: 1.5rem;\n}\n.header-content[data-v-09f26faf] {\n  display: flex;\n  justify-content: space-between;\n  align-items: flex-start;\n  flex-wrap: wrap;\n  gap: 1rem;\n}\n.header-actions[data-v-09f26faf] {\n  display: flex;\n  align-items: center;\n  gap: 1rem;\n  flex-wrap: wrap;\n}\n.status-badges[data-v-09f26faf] {\n  display: flex;\n  gap: 0.5rem;\n}\n.status-badge[data-v-09f26faf] {\n  padding: 0.25rem 0.75rem;\n  border-radius: 9999px;\n  font-size: 0.75rem;\n  font-weight: 500;\n}\n.alert[data-v-09f26faf] {\n  border-radius: 8px;\n  padding: 1rem;\n}\n.alert-error[data-v-09f26faf] {\n  background-color: #fef2f2;\n  border: 1px solid #fecaca;\n  color: #991b1b;\n}\n.alert-content[data-v-09f26faf] {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n}\n.alert-close[data-v-09f26faf] {\n  background: none;\n  border: none;\n  font-size: 1.25rem;\n  cursor: pointer;\n  color: inherit;\n  padding: 0;\n  margin-left: 1rem;\n}\n.dashboard-card[data-v-09f26faf] {\n  background: white;\n  border-radius: 8px;\n  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);\n  overflow: hidden;\n}\n.card-header[data-v-09f26faf] {\n  padding: 1.5rem;\n  border-bottom: 1px solid #e5e7eb;\n  background: #f9fafb;\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n}\n.card-content[data-v-09f26faf] {\n  padding: 1.5rem;\n}\n.stats-grid[data-v-09f26faf] {\n  display: grid;\n  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));\n  gap: 1.5rem;\n  margin-bottom: 2rem;\n}\n.stat-card[data-v-09f26faf] {\n  background: white;\n  border: 1px solid #e2e8f0;\n  border-radius: 8px;\n  padding: 1.5rem;\n  display: flex;\n  align-items: center;\n  gap: 1rem;\n  transition: all 0.2s;\n}\n.stat-card.clickable[data-v-09f26faf] {\n  cursor: pointer;\n}\n.stat-card.clickable[data-v-09f26faf]:hover {\n  transform: translateY(-2px);\n  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);\n}\n.stat-icon[data-v-09f26faf] {\n  width: 48px;\n  height: 48px;\n  border-radius: 8px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 1.5rem;\n  flex-shrink: 0;\n}\n.stat-icon-blue[data-v-09f26faf] {\n  background-color: #dbeafe;\n}\n.stat-icon-green[data-v-09f26faf] {\n  background-color: #d1fae5;\n}\n.stat-icon-orange[data-v-09f26faf] {\n  background-color: #fed7aa;\n}\n.stat-icon-red[data-v-09f26faf] {\n  background-color: #fecaca;\n}\n.stat-content[data-v-09f26faf] {\n  flex: 1;\n}\n.stat-number[data-v-09f26faf] {\n  font-size: 1.875rem;\n  font-weight: bold;\n  color: #1f2937;\n  line-height: 1;\n}\n.stat-label[data-v-09f26faf] {\n  color: #374151;\n  font-size: 0.875rem;\n  font-weight: 600;\n  margin-top: 0.25rem;\n}\n.stat-sublabel[data-v-09f26faf] {\n  color: #6b7280;\n  font-size: 0.75rem;\n  margin-top: 0.125rem;\n}\n.sync-controls[data-v-09f26faf] {\n  display: flex;\n  justify-content: space-between;\n  align-items: flex-start;\n  gap: 2rem;\n  flex-wrap: wrap;\n}\n.sync-buttons[data-v-09f26faf] {\n  display: flex;\n  flex-direction: column;\n  gap: 1rem;\n}\n.sync-options[data-v-09f26faf] {\n  display: flex;\n  gap: 0.75rem;\n  flex-wrap: wrap;\n}\n.sync-info[data-v-09f26faf] {\n  display: flex;\n  flex-direction: column;\n  gap: 0.5rem;\n}\n.info-item[data-v-09f26faf] {\n  display: flex;\n  gap: 0.5rem;\n}\n.info-label[data-v-09f26faf] {\n  font-weight: 500;\n  color: #374151;\n}\n.dashboard-grid[data-v-09f26faf] {\n  display: grid;\n  grid-template-columns: 1fr 1fr;\n  gap: 1.5rem;\n}\n@media (max-width: 1024px) {\n  .dashboard-grid[data-v-09f26faf] {\n    grid-template-columns: 1fr;\n  }\n}\n.activity-list[data-v-09f26faf],\n.logs-list[data-v-09f26faf] {\n  display: flex;\n  flex-direction: column;\n  gap: 0.75rem;\n}\n.activity-item[data-v-09f26faf],\n.log-item[data-v-09f26faf] {\n  display: flex;\n  justify-content: space-between;\n  align-items: flex-start;\n  padding: 0.75rem;\n  border: 1px solid #e5e7eb;\n  border-radius: 6px;\n  background: #f9fafb;\n}\n.activity-content[data-v-09f26faf],\n.log-content[data-v-09f26faf] {\n  flex: 1;\n}\n.activity-title[data-v-09f26faf],\n.log-title[data-v-09f26faf] {\n  font-weight: 500;\n  color: #1f2937;\n  font-size: 0.875rem;\n}\n.activity-description[data-v-09f26faf],\n.log-message[data-v-09f26faf] {\n  color: #6b7280;\n  font-size: 0.75rem;\n  margin-top: 0.25rem;\n}\n.activity-time[data-v-09f26faf],\n.log-time[data-v-09f26faf] {\n  color: #9ca3af;\n  font-size: 0.6875rem;\n  margin-top: 0.25rem;\n}\n.activity-status[data-v-09f26faf],\n.log-status[data-v-09f26faf] {\n  padding: 0.125rem 0.5rem;\n  border-radius: 9999px;\n  font-size: 0.6875rem;\n  font-weight: 500;\n  text-transform: uppercase;\n}\n.status-success[data-v-09f26faf] {\n  background-color: #d1fae5;\n  color: #065f46;\n}\n.status-error[data-v-09f26faf] {\n  background-color: #fecaca;\n  color: #991b1b;\n}\n.quick-actions[data-v-09f26faf] {\n  display: grid;\n  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));\n  gap: 1rem;\n}\n.action-button[data-v-09f26faf] {\n  display: flex;\n  align-items: center;\n  gap: 1rem;\n  padding: 1rem;\n  border: 1px solid #e5e7eb;\n  border-radius: 8px;\n  background: white;\n  text-align: left;\n  cursor: pointer;\n  transition: all 0.2s;\n}\n.action-button[data-v-09f26faf]:hover {\n  border-color: #2563eb;\n  background-color: #f8fafc;\n}\n.action-icon[data-v-09f26faf] {\n  font-size: 1.5rem;\n  flex-shrink: 0;\n}\n.action-content[data-v-09f26faf] {\n  flex: 1;\n}\n.action-title[data-v-09f26faf] {\n  font-weight: 500;\n  color: #1f2937;\n  margin-bottom: 0.25rem;\n}\n.action-description[data-v-09f26faf] {\n  color: #6b7280;\n  font-size: 0.75rem;\n}\n.btn[data-v-09f26faf] {\n  padding: 0.5rem 1rem;\n  border-radius: 6px;\n  border: none;\n  font-weight: 500;\n  cursor: pointer;\n  transition: all 0.2s;\n  text-decoration: none;\n  display: inline-flex;\n  align-items: center;\n  gap: 0.5rem;\n  font-size: 0.875rem;\n}\n.btn[data-v-09f26faf]:disabled {\n  opacity: 0.5;\n  cursor: not-allowed;\n}\n.btn-primary[data-v-09f26faf] {\n  background-color: #2563eb;\n  color: white;\n}\n.btn-primary[data-v-09f26faf]:hover:not(:disabled) {\n  background-color: #1d4ed8;\n}\n.btn-secondary[data-v-09f26faf] {\n  background-color: #f3f4f6;\n  color: #374151;\n}\n.btn-secondary[data-v-09f26faf]:hover:not(:disabled) {\n  background-color: #e5e7eb;\n}\n.btn-outline[data-v-09f26faf] {\n  background-color: transparent;\n  color: #374151;\n  border: 1px solid #d1d5db;\n}\n.btn-outline[data-v-09f26faf]:hover:not(:disabled) {\n  background-color: #f9fafb;\n  border-color: #9ca3af;\n}\n.btn-sm[data-v-09f26faf] {\n  padding: 0.25rem 0.75rem;\n  font-size: 0.75rem;\n}\n.btn-refresh[data-v-09f26faf] {\n  background: none;\n  border: none;\n  cursor: pointer;\n  padding: 0.25rem;\n  border-radius: 4px;\n  transition: background-color 0.2s;\n}\n.btn-refresh[data-v-09f26faf]:hover {\n  background-color: #f3f4f6;\n}\n.loading-spinner[data-v-09f26faf] {\n  width: 32px;\n  height: 32px;\n  border: 3px solid #e5e7eb;\n  border-top: 3px solid #2563eb;\n  border-radius: 50%;\n  animation: spin-09f26faf 1s linear infinite;\n}\n.company-mappings-list[data-v-09f26faf] {\n  space-y: 12px;\n}\n.mapping-item[data-v-09f26faf] {\n  padding: 12px;\n  border: 1px solid #e5e7eb;\n  border-radius: 8px;\n  background: white;\n  transition: all 0.2s;\n}\n.mapping-item[data-v-09f26faf]:hover {\n  border-color: #2563eb;\n  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);\n}\n.mapping-item.default-mapping[data-v-09f26faf] {\n  border-color: #10b981;\n  background: #f0fdf4;\n}\n.mapping-info[data-v-09f26faf] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  font-size: 14px;\n}\n.mapping-arrow[data-v-09f26faf] {\n  color: #6b7280;\n  font-weight: bold;\n}\n.default-badge[data-v-09f26faf] {\n  background: #10b981;\n  color: white;\n  font-size: 10px;\n  padding: 2px 6px;\n  border-radius: 12px;\n  text-transform: uppercase;\n  font-weight: 600;\n  letter-spacing: 0.5px;\n}\n.empty-state[data-v-09f26faf] {\n  text-align: center;\n  padding: 24px;\n}\n.refresh-button[data-v-09f26faf] {\n  background: none;\n  border: 1px solid #e5e7eb;\n  padding: 4px 8px;\n  border-radius: 4px;\n  cursor: pointer;\n  font-size: 12px;\n  transition: all 0.2s;\n}\n.refresh-button[data-v-09f26faf]:hover:not(:disabled) {\n  background: #f9fafb;\n  border-color: #9ca3af;\n}\n.refresh-button[data-v-09f26faf]:disabled {\n  opacity: 0.5;\n  cursor: not-allowed;\n}\n@media (max-width: 768px) {\n  .company-mappings-list[data-v-09f26faf] {\n    space-y: 8px;\n  }\n  .mapping-item[data-v-09f26faf] {\n    padding: 8px;\n  }\n  .mapping-info[data-v-09f26faf] {\n    font-size: 12px;\n    gap: 6px;\n  }\n}\n.loading-spinner-sm[data-v-09f26faf] {\n  width: 16px;\n  height: 16px;\n  border: 2px solid #e5e7eb;\n  border-top: 2px solid currentColor;\n  border-radius: 50%;\n  animation: spin-09f26faf 1s linear infinite;\n}\n@keyframes spin-09f26faf {\n  0% {\n    transform: rotate(0deg);\n  }\n  100% {\n    transform: rotate(360deg);\n  }\n}\n@media (max-width: 768px) {\n  .header-content[data-v-09f26faf] {\n    flex-direction: column;\n    align-items: flex-start;\n  }\n  .header-actions[data-v-09f26faf] {\n    width: 100%;\n    justify-content: flex-start;\n  }\n  .stats-grid[data-v-09f26faf] {\n    grid-template-columns: 1fr;\n  }\n  .sync-controls[data-v-09f26faf] {\n    flex-direction: column;\n    align-items: flex-start;\n  }\n  .quick-actions[data-v-09f26faf] {\n    grid-template-columns: 1fr;\n  }\n}\n/*# sourceMappingURL=invoice_ninja_dashboard.bundle.DJQPKD26.css.map */\n");
+frappe.dom.set_style("/* sfc-style:/workspace/development/novizna/apps/invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/components/DashboardHeader.vue?type=style&index=0 */\n.dashboard-header[data-v-7f0f29b2] {\n  background: white;\n  border-radius: 8px;\n  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);\n  padding: 1.5rem;\n}\n.header-content[data-v-7f0f29b2] {\n  display: flex;\n  justify-content: space-between;\n  align-items: flex-start;\n  flex-wrap: wrap;\n  gap: 1rem;\n}\n.header-actions[data-v-7f0f29b2] {\n  display: flex;\n  align-items: center;\n  gap: 1rem;\n  flex-wrap: wrap;\n}\n.status-badges[data-v-7f0f29b2] {\n  display: flex;\n  gap: 0.5rem;\n}\n.status-badge[data-v-7f0f29b2] {\n  padding: 0.25rem 0.75rem;\n  border-radius: 9999px;\n  font-size: 0.75rem;\n  font-weight: 500;\n}\n.btn[data-v-7f0f29b2] {\n  padding: 0.5rem 1rem;\n  border-radius: 6px;\n  border: none;\n  font-weight: 500;\n  cursor: pointer;\n  transition: all 0.2s;\n  text-decoration: none;\n  display: inline-flex;\n  align-items: center;\n  gap: 0.5rem;\n  font-size: 0.875rem;\n}\n.btn-primary[data-v-7f0f29b2] {\n  background-color: #2563eb;\n  color: white;\n}\n.btn-primary[data-v-7f0f29b2]:hover {\n  background-color: #1d4ed8;\n}\n.btn-outline[data-v-7f0f29b2] {\n  background-color: transparent;\n  color: #374151;\n  border: 1px solid #d1d5db;\n}\n.btn-outline[data-v-7f0f29b2]:hover {\n  background-color: #f9fafb;\n  border-color: #9ca3af;\n}\n@media (max-width: 768px) {\n  .header-content[data-v-7f0f29b2] {\n    flex-direction: column;\n    align-items: flex-start;\n  }\n  .header-actions[data-v-7f0f29b2] {\n    width: 100%;\n    justify-content: flex-start;\n  }\n}\n\n/* sfc-style:/workspace/development/novizna/apps/invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/components/StatsGrid.vue?type=style&index=0 */\n.stats-grid[data-v-1362496b] {\n  display: grid;\n  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));\n  gap: 1.5rem;\n  margin-bottom: 2rem;\n}\n.stat-card[data-v-1362496b] {\n  background: white;\n  border: 1px solid #e2e8f0;\n  border-radius: 8px;\n  padding: 1.5rem;\n  display: flex;\n  align-items: center;\n  gap: 1rem;\n  transition: all 0.2s;\n}\n.stat-card.clickable[data-v-1362496b] {\n  cursor: pointer;\n}\n.stat-card.clickable[data-v-1362496b]:hover {\n  transform: translateY(-2px);\n  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);\n}\n.stat-icon[data-v-1362496b] {\n  width: 48px;\n  height: 48px;\n  border-radius: 8px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 1.5rem;\n  flex-shrink: 0;\n}\n.stat-icon-blue[data-v-1362496b] {\n  background-color: #dbeafe;\n}\n.stat-icon-green[data-v-1362496b] {\n  background-color: #d1fae5;\n}\n.stat-icon-orange[data-v-1362496b] {\n  background-color: #fed7aa;\n}\n.stat-icon-red[data-v-1362496b] {\n  background-color: #fecaca;\n}\n.stat-content[data-v-1362496b] {\n  flex: 1;\n}\n.stat-number[data-v-1362496b] {\n  font-size: 1.875rem;\n  font-weight: bold;\n  color: #1f2937;\n  line-height: 1;\n}\n.stat-label[data-v-1362496b] {\n  color: #374151;\n  font-size: 0.875rem;\n  font-weight: 600;\n  margin-top: 0.25rem;\n}\n.stat-sublabel[data-v-1362496b] {\n  color: #6b7280;\n  font-size: 0.75rem;\n  margin-top: 0.125rem;\n}\n@media (max-width: 768px) {\n  .stats-grid[data-v-1362496b] {\n    grid-template-columns: 1fr;\n  }\n}\n\n/* sfc-style:/workspace/development/novizna/apps/invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/components/CompanyMappings.vue?type=style&index=0 */\n.dashboard-card[data-v-1f422356] {\n  background: white;\n  border-radius: 8px;\n  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);\n  overflow: hidden;\n}\n.card-header[data-v-1f422356] {\n  padding: 1.5rem;\n  border-bottom: 1px solid #e5e7eb;\n  background: #f9fafb;\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n}\n.card-content[data-v-1f422356] {\n  padding: 1.5rem;\n}\n.company-mappings-list[data-v-1f422356] {\n  display: flex;\n  flex-direction: column;\n  gap: 12px;\n}\n.mapping-item[data-v-1f422356] {\n  padding: 12px;\n  border: 1px solid #e5e7eb;\n  border-radius: 8px;\n  background: white;\n  transition: all 0.2s;\n}\n.mapping-item[data-v-1f422356]:hover {\n  border-color: #2563eb;\n  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);\n}\n.mapping-item.default-mapping[data-v-1f422356] {\n  border-color: #10b981;\n  background: #f0fdf4;\n}\n.mapping-info[data-v-1f422356] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  font-size: 14px;\n}\n.mapping-arrow[data-v-1f422356] {\n  color: #6b7280;\n  font-weight: bold;\n}\n.default-badge[data-v-1f422356] {\n  background: #10b981;\n  color: white;\n  font-size: 10px;\n  padding: 2px 6px;\n  border-radius: 12px;\n  text-transform: uppercase;\n  font-weight: 600;\n  letter-spacing: 0.5px;\n}\n.empty-state[data-v-1f422356] {\n  text-align: center;\n  padding: 24px;\n}\n.refresh-button[data-v-1f422356] {\n  background: none;\n  border: 1px solid #e5e7eb;\n  padding: 4px 8px;\n  border-radius: 4px;\n  cursor: pointer;\n  font-size: 12px;\n  transition: all 0.2s;\n}\n.refresh-button[data-v-1f422356]:hover:not(:disabled) {\n  background: #f9fafb;\n  border-color: #9ca3af;\n}\n.refresh-button[data-v-1f422356]:disabled {\n  opacity: 0.5;\n  cursor: not-allowed;\n}\n@media (max-width: 768px) {\n  .company-mappings-list[data-v-1f422356] {\n    gap: 8px;\n  }\n  .mapping-item[data-v-1f422356] {\n    padding: 8px;\n  }\n  .mapping-info[data-v-1f422356] {\n    font-size: 12px;\n    gap: 6px;\n  }\n}\n\n/* sfc-style:/workspace/development/novizna/apps/invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/components/SyncControls.vue?type=style&index=0 */\n.dashboard-card[data-v-f58fec2b] {\n  background: white;\n  border-radius: 8px;\n  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);\n  overflow: hidden;\n}\n.card-header[data-v-f58fec2b] {\n  padding: 1.5rem;\n  border-bottom: 1px solid #e5e7eb;\n  background: #f9fafb;\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n}\n.card-content[data-v-f58fec2b] {\n  padding: 1.5rem;\n}\n.sync-controls[data-v-f58fec2b] {\n  display: flex;\n  justify-content: space-between;\n  align-items: flex-start;\n  gap: 2rem;\n  flex-wrap: wrap;\n}\n.sync-buttons[data-v-f58fec2b] {\n  display: flex;\n  flex-direction: column;\n  gap: 1rem;\n}\n.sync-options[data-v-f58fec2b] {\n  display: flex;\n  gap: 0.75rem;\n  flex-wrap: wrap;\n}\n.sync-info[data-v-f58fec2b] {\n  display: flex;\n  flex-direction: column;\n  gap: 0.5rem;\n}\n.info-item[data-v-f58fec2b] {\n  display: flex;\n  gap: 0.5rem;\n}\n.info-label[data-v-f58fec2b] {\n  font-weight: 500;\n  color: #374151;\n}\n.btn[data-v-f58fec2b] {\n  padding: 0.5rem 1rem;\n  border-radius: 6px;\n  border: none;\n  font-weight: 500;\n  cursor: pointer;\n  transition: all 0.2s;\n  text-decoration: none;\n  display: inline-flex;\n  align-items: center;\n  gap: 0.5rem;\n  font-size: 0.875rem;\n}\n.btn[data-v-f58fec2b]:disabled {\n  opacity: 0.5;\n  cursor: not-allowed;\n}\n.btn-primary[data-v-f58fec2b] {\n  background-color: #2563eb;\n  color: white;\n}\n.btn-primary[data-v-f58fec2b]:hover:not(:disabled) {\n  background-color: #1d4ed8;\n}\n.btn-secondary[data-v-f58fec2b] {\n  background-color: #f3f4f6;\n  color: #374151;\n}\n.btn-secondary[data-v-f58fec2b]:hover:not(:disabled) {\n  background-color: #e5e7eb;\n}\n.loading-spinner-sm[data-v-f58fec2b] {\n  width: 16px;\n  height: 16px;\n  border: 2px solid #e5e7eb;\n  border-top: 2px solid currentColor;\n  border-radius: 50%;\n  animation: spin-f58fec2b 1s linear infinite;\n}\n@keyframes spin-f58fec2b {\n  0% {\n    transform: rotate(0deg);\n  }\n  100% {\n    transform: rotate(360deg);\n  }\n}\n@media (max-width: 768px) {\n  .sync-controls[data-v-f58fec2b] {\n    flex-direction: column;\n    align-items: flex-start;\n  }\n}\n\n/* sfc-style:/workspace/development/novizna/apps/invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/components/RecentActivity.vue?type=style&index=0 */\n.dashboard-card[data-v-c2850a91] {\n  background: white;\n  border-radius: 8px;\n  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);\n  overflow: hidden;\n}\n.card-header[data-v-c2850a91] {\n  padding: 1.5rem;\n  border-bottom: 1px solid #e5e7eb;\n  background: #f9fafb;\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n}\n.card-content[data-v-c2850a91] {\n  padding: 1.5rem;\n}\n.btn-refresh[data-v-c2850a91] {\n  background: none;\n  border: none;\n  cursor: pointer;\n  padding: 0.25rem;\n  border-radius: 4px;\n  transition: background-color 0.2s;\n}\n.btn-refresh[data-v-c2850a91]:hover {\n  background-color: #f3f4f6;\n}\n.loading-spinner[data-v-c2850a91] {\n  width: 32px;\n  height: 32px;\n  border: 3px solid #e5e7eb;\n  border-top: 3px solid #2563eb;\n  border-radius: 50%;\n  animation: spin-c2850a91 1s linear infinite;\n}\n.activity-list[data-v-c2850a91] {\n  display: flex;\n  flex-direction: column;\n  gap: 0.75rem;\n}\n.activity-item[data-v-c2850a91] {\n  display: flex;\n  justify-content: space-between;\n  align-items: flex-start;\n  padding: 0.75rem;\n  border: 1px solid #e5e7eb;\n  border-radius: 6px;\n  background: #f9fafb;\n}\n.activity-content[data-v-c2850a91] {\n  flex: 1;\n}\n.activity-title[data-v-c2850a91] {\n  font-weight: 500;\n  color: #1f2937;\n  font-size: 0.875rem;\n}\n.activity-description[data-v-c2850a91] {\n  color: #6b7280;\n  font-size: 0.75rem;\n  margin-top: 0.25rem;\n}\n.activity-time[data-v-c2850a91] {\n  color: #9ca3af;\n  font-size: 0.6875rem;\n  margin-top: 0.25rem;\n}\n.activity-status[data-v-c2850a91] {\n  padding: 0.125rem 0.5rem;\n  border-radius: 9999px;\n  font-size: 0.6875rem;\n  font-weight: 500;\n  text-transform: uppercase;\n}\n.status-success[data-v-c2850a91] {\n  background-color: #d1fae5;\n  color: #065f46;\n}\n.status-error[data-v-c2850a91] {\n  background-color: #fecaca;\n  color: #991b1b;\n}\n@keyframes spin-c2850a91 {\n  0% {\n    transform: rotate(0deg);\n  }\n  100% {\n    transform: rotate(360deg);\n  }\n}\n\n/* sfc-style:/workspace/development/novizna/apps/invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/components/SyncLogs.vue?type=style&index=0 */\n.dashboard-card[data-v-c6f7a7a7] {\n  background: white;\n  border-radius: 8px;\n  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);\n  overflow: hidden;\n}\n.card-header[data-v-c6f7a7a7] {\n  padding: 1.5rem;\n  border-bottom: 1px solid #e5e7eb;\n  background: #f9fafb;\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n}\n.card-content[data-v-c6f7a7a7] {\n  padding: 1.5rem;\n}\n.btn[data-v-c6f7a7a7] {\n  padding: 0.5rem 1rem;\n  border-radius: 6px;\n  border: none;\n  font-weight: 500;\n  cursor: pointer;\n  transition: all 0.2s;\n  text-decoration: none;\n  display: inline-flex;\n  align-items: center;\n  gap: 0.5rem;\n  font-size: 0.875rem;\n}\n.btn-sm[data-v-c6f7a7a7] {\n  padding: 0.25rem 0.75rem;\n  font-size: 0.75rem;\n}\n.btn-outline[data-v-c6f7a7a7] {\n  background-color: transparent;\n  color: #374151;\n  border: 1px solid #d1d5db;\n}\n.btn-outline[data-v-c6f7a7a7]:hover {\n  background-color: #f9fafb;\n  border-color: #9ca3af;\n}\n.loading-spinner[data-v-c6f7a7a7] {\n  width: 32px;\n  height: 32px;\n  border: 3px solid #e5e7eb;\n  border-top: 3px solid #2563eb;\n  border-radius: 50%;\n  animation: spin-c6f7a7a7 1s linear infinite;\n}\n.logs-list[data-v-c6f7a7a7] {\n  display: flex;\n  flex-direction: column;\n  gap: 0.75rem;\n}\n.log-item[data-v-c6f7a7a7] {\n  display: flex;\n  justify-content: space-between;\n  align-items: flex-start;\n  padding: 0.75rem;\n  border: 1px solid #e5e7eb;\n  border-radius: 6px;\n  background: #f9fafb;\n}\n.log-content[data-v-c6f7a7a7] {\n  flex: 1;\n}\n.log-title[data-v-c6f7a7a7] {\n  font-weight: 500;\n  color: #1f2937;\n  font-size: 0.875rem;\n}\n.log-message[data-v-c6f7a7a7] {\n  color: #6b7280;\n  font-size: 0.75rem;\n  margin-top: 0.25rem;\n}\n.log-time[data-v-c6f7a7a7] {\n  color: #9ca3af;\n  font-size: 0.6875rem;\n  margin-top: 0.25rem;\n}\n.log-status[data-v-c6f7a7a7] {\n  padding: 0.125rem 0.5rem;\n  border-radius: 9999px;\n  font-size: 0.6875rem;\n  font-weight: 500;\n  text-transform: uppercase;\n}\n.status-success[data-v-c6f7a7a7] {\n  background-color: #d1fae5;\n  color: #065f46;\n}\n.status-error[data-v-c6f7a7a7] {\n  background-color: #fecaca;\n  color: #991b1b;\n}\n@keyframes spin-c6f7a7a7 {\n  0% {\n    transform: rotate(0deg);\n  }\n  100% {\n    transform: rotate(360deg);\n  }\n}\n\n/* sfc-style:/workspace/development/novizna/apps/invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/components/QuickActions.vue?type=style&index=0 */\n.dashboard-card[data-v-37000d8b] {\n  background: white;\n  border-radius: 8px;\n  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);\n  overflow: hidden;\n}\n.card-header[data-v-37000d8b] {\n  padding: 1.5rem;\n  border-bottom: 1px solid #e5e7eb;\n  background: #f9fafb;\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n}\n.card-content[data-v-37000d8b] {\n  padding: 1.5rem;\n}\n.quick-actions[data-v-37000d8b] {\n  display: grid;\n  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));\n  gap: 1rem;\n}\n.action-button[data-v-37000d8b] {\n  display: flex;\n  align-items: center;\n  gap: 1rem;\n  padding: 1rem;\n  border: 1px solid #e5e7eb;\n  border-radius: 8px;\n  background: white;\n  text-align: left;\n  cursor: pointer;\n  transition: all 0.2s;\n}\n.action-button[data-v-37000d8b]:hover {\n  border-color: #2563eb;\n  background-color: #f8fafc;\n}\n.action-icon[data-v-37000d8b] {\n  font-size: 1.5rem;\n  flex-shrink: 0;\n}\n.action-content[data-v-37000d8b] {\n  flex: 1;\n}\n.action-title[data-v-37000d8b] {\n  font-weight: 500;\n  color: #1f2937;\n  margin-bottom: 0.25rem;\n}\n.action-description[data-v-37000d8b] {\n  color: #6b7280;\n  font-size: 0.75rem;\n}\n@media (max-width: 768px) {\n  .quick-actions[data-v-37000d8b] {\n    grid-template-columns: 1fr;\n  }\n}\n\n/* sfc-style:/workspace/development/novizna/apps/invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/components/ErrorAlert.vue?type=style&index=0 */\n.alert[data-v-93b3c4cb] {\n  border-radius: 8px;\n  padding: 1rem;\n}\n.alert-error[data-v-93b3c4cb] {\n  background-color: #fef2f2;\n  border: 1px solid #fecaca;\n  color: #991b1b;\n}\n.alert-content[data-v-93b3c4cb] {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n}\n.alert-close[data-v-93b3c4cb] {\n  background: none;\n  border: none;\n  font-size: 1.25rem;\n  cursor: pointer;\n  color: inherit;\n  padding: 0;\n  margin-left: 1rem;\n}\n\n/* sfc-style:/workspace/development/novizna/apps/invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/InvoiceNinjaDashboard.vue?type=style&index=0 */\n.invoice-ninja-dashboard[data-v-09f26faf] {\n  font-family:\n    -apple-system,\n    BlinkMacSystemFont,\n    \"Segoe UI\",\n    Roboto,\n    Oxygen,\n    Ubuntu,\n    Cantarell,\n    sans-serif;\n  min-height: 100vh;\n  background-color: #f8fafc;\n}\n.dashboard-grid[data-v-09f26faf] {\n  display: grid;\n  grid-template-columns: 1fr 1fr;\n  gap: 1.5rem;\n}\n@media (max-width: 1024px) {\n  .dashboard-grid[data-v-09f26faf] {\n    grid-template-columns: 1fr;\n  }\n}\n@media (max-width: 768px) {\n  .invoice-ninja-dashboard[data-v-09f26faf] {\n    padding: 1rem;\n  }\n}\n/*# sourceMappingURL=invoice_ninja_dashboard.bundle.Y4NX7R2Q.css.map */\n");
 (() => {
   var __create = Object.create;
   var __defProp = Object.defineProperty;
@@ -27655,7 +27655,7 @@ const ${helpers.map((s) => `_${helperNameMap[s]} = ${helperNameMap[s]}`).join(",
           slots,
           attrs,
           emit: emit2,
-          render: render2,
+          render: render10,
           renderCache,
           data,
           setupState,
@@ -27682,7 +27682,7 @@ const ${helpers.map((s) => `_${helperNameMap[s]} = ${helperNameMap[s]}`).join(",
               }
             }) : proxyToUse;
             result = normalizeVNode(
-              render2.call(
+              render10.call(
                 thisProxy,
                 proxyToUse,
                 renderCache,
@@ -30093,7 +30093,7 @@ If this is a native custom element, make sure to exclude it from component resol
           beforeUnmount,
           destroyed,
           unmounted,
-          render: render2,
+          render: render10,
           renderTracked,
           renderTriggered,
           errorCaptured,
@@ -30243,8 +30243,8 @@ If this is a native custom element, make sure to exclude it from component resol
             instance.exposed = {};
           }
         }
-        if (render2 && instance.render === shared.NOOP) {
-          instance.render = render2;
+        if (render10 && instance.render === shared.NOOP) {
+          instance.render = render10;
         }
         if (inheritAttrs != null) {
           instance.inheritAttrs = inheritAttrs;
@@ -30480,7 +30480,7 @@ If this is a native custom element, make sure to exclude it from component resol
         };
       }
       var uid$1 = 0;
-      function createAppAPI(render2, hydrate) {
+      function createAppAPI(render10, hydrate) {
         return function createApp2(rootComponent, rootProps = null) {
           if (!shared.isFunction(rootComponent)) {
             rootComponent = shared.extend({}, rootComponent);
@@ -30588,13 +30588,13 @@ If this is a native custom element, make sure to exclude it from component resol
                 vnode.appContext = context;
                 {
                   context.reload = () => {
-                    render2(cloneVNode(vnode), rootContainer, isSVG);
+                    render10(cloneVNode(vnode), rootContainer, isSVG);
                   };
                 }
                 if (isHydrate && hydrate) {
                   hydrate(vnode, rootContainer);
                 } else {
-                  render2(vnode, rootContainer, isSVG);
+                  render10(vnode, rootContainer, isSVG);
                 }
                 isMounted = true;
                 app._container = rootContainer;
@@ -30613,7 +30613,7 @@ If you want to remount the same app, move your app creation logic into a factory
             },
             unmount() {
               if (isMounted) {
-                render2(null, app._container);
+                render10(null, app._container);
                 {
                   app._instance = null;
                   devtoolsUnmountApp(app);
@@ -33073,7 +33073,7 @@ If you want to remount the same app, move your app creation logic into a factory
           }
           return hostNextSibling(vnode.anchor || vnode.el);
         };
-        const render2 = (vnode, container, isSVG) => {
+        const render10 = (vnode, container, isSVG) => {
           if (vnode == null) {
             if (container._vnode) {
               unmount(container._vnode, null, null, true);
@@ -33105,9 +33105,9 @@ If you want to remount the same app, move your app creation logic into a factory
           );
         }
         return {
-          render: render2,
+          render: render10,
           hydrate,
-          createApp: createAppAPI(render2, hydrate)
+          createApp: createAppAPI(render10, hydrate)
         };
       }
       function toggleRecurse({ effect, update }, allowed) {
@@ -33510,7 +33510,7 @@ If you want to remount the same app, move your app creation logic into a factory
         vnodeArgsTransformer = transformer;
       }
       var createVNodeWithArgsTransform = (...args) => {
-        return _createVNode(
+        return _createVNode2(
           ...vnodeArgsTransformer ? vnodeArgsTransformer(args, currentRenderingInstance) : args
         );
       };
@@ -33572,7 +33572,7 @@ If you want to remount the same app, move your app creation logic into a factory
         return vnode;
       }
       var createVNode = createVNodeWithArgsTransform;
-      function _createVNode(type, props = null, children = null, patchFlag = 0, dynamicProps = null, isBlockNode = false) {
+      function _createVNode2(type, props = null, children = null, patchFlag = 0, dynamicProps = null, isBlockNode = false) {
         if (!type || type === NULL_DYNAMIC_COMPONENT) {
           if (!type) {
             warn(`Invalid vnode type when creating vnode: ${type}.`);
@@ -34394,12 +34394,12 @@ Component that was made reactive: `,
           window.devtoolsFormatters = [formatter];
         }
       }
-      function withMemo(memo, render2, cache, index) {
+      function withMemo(memo, render10, cache, index) {
         const cached = cache[index];
         if (cached && isMemoSame(cached, memo)) {
           return cached;
         }
-        const ret = render2();
+        const ret = render10();
         ret.memo = memo.slice();
         return cache[index] = ret;
       }
@@ -35296,7 +35296,7 @@ Component that was made reactive: `,
           }
           runtimeCore.nextTick(() => {
             if (!this._connected) {
-              render2(null, this.shadowRoot);
+              render10(null, this.shadowRoot);
               this._instance = null;
             }
           });
@@ -35388,7 +35388,7 @@ Component that was made reactive: `,
           }
         }
         _update() {
-          render2(this._createVNode(), this.shadowRoot);
+          render10(this._createVNode(), this.shadowRoot);
         }
         _createVNode() {
           const vnode = runtimeCore.createVNode(this._def, shared.extend({}, this._props));
@@ -35906,7 +35906,7 @@ Component that was made reactive: `,
         enabledHydration = true;
         return renderer;
       }
-      var render2 = (...args) => {
+      var render10 = (...args) => {
         ensureRenderer().render(...args);
       };
       var hydrate = (...args) => {
@@ -36021,7 +36021,7 @@ Component that was made reactive: `,
       exports.defineSSRCustomElement = defineSSRCustomElement;
       exports.hydrate = hydrate;
       exports.initDirectivesForSSR = initDirectivesForSSR;
-      exports.render = render2;
+      exports.render = render10;
       exports.useCssModule = useCssModule;
       exports.useCssVars = useCssVars;
       exports.vModelCheckbox = vModelCheckbox;
@@ -36114,9 +36114,9 @@ Component that was made reactive: `,
           runtimeDom.warn(codeFrame ? `${message}
 ${codeFrame}` : message);
         }
-        const render2 = new Function("Vue", code)(runtimeDom__namespace);
-        render2._rc = true;
-        return compileCache[key] = render2;
+        const render10 = new Function("Vue", code)(runtimeDom__namespace);
+        render10._rc = true;
+        return compileCache[key] = render10;
       }
       runtimeDom.registerRuntimeCompiler(compileToFunction);
       exports.compile = compileToFunction;
@@ -36140,19 +36140,745 @@ ${codeFrame}` : message);
   });
 
   // ../invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/invoice_ninja_dashboard.bundle.js
-  var import_vue3 = __toESM(require_vue());
+  var import_vue12 = __toESM(require_vue());
 
   // sfc-script:/workspace/development/novizna/apps/invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/InvoiceNinjaDashboard.vue?type=script
+  var import_vue10 = __toESM(require_vue());
+
+  // sfc-script:/workspace/development/novizna/apps/invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/components/DashboardHeader.vue?type=script
   var import_vue = __toESM(require_vue());
+  var DashboardHeader_default = {
+    __name: "DashboardHeader",
+    props: {
+      config: {
+        type: Object,
+        required: true
+      },
+      stats: {
+        type: Object,
+        required: true
+      }
+    },
+    emits: ["test-connection", "open-configuration"],
+    setup(__props, { expose: __expose }) {
+      __expose();
+      const props = __props;
+      const connectionStatus = (0, import_vue.computed)(() => {
+        if (!props.config.apiUrl || !props.config.apiToken) {
+          return { text: "Not Configured", color: "text-gray-500", bg: "bg-gray-100" };
+        }
+        if (props.config.isConnected) {
+          return { text: "Connected", color: "text-green-700", bg: "bg-green-100" };
+        }
+        return { text: "Disconnected", color: "text-red-700", bg: "bg-red-100" };
+      });
+      const syncStatusDisplay = (0, import_vue.computed)(() => {
+        switch (props.stats.syncStatus) {
+          case "syncing":
+            return { text: "Syncing...", color: "text-blue-700", bg: "bg-blue-100" };
+          case "success":
+            return { text: "Up to date", color: "text-green-700", bg: "bg-green-100" };
+          case "error":
+            return { text: "Sync Error", color: "text-red-700", bg: "bg-red-100" };
+          default:
+            return { text: "Idle", color: "text-gray-700", bg: "bg-gray-100" };
+        }
+      });
+      const __returned__ = { props, connectionStatus, syncStatusDisplay, computed: import_vue.computed };
+      Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
+      return __returned__;
+    }
+  };
+
+  // sfc-template:/workspace/development/novizna/apps/invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/components/DashboardHeader.vue?type=template
+  var import_vue2 = __toESM(require_vue());
+  var _withScopeId = (n) => ((0, import_vue2.pushScopeId)("data-v-7f0f29b2"), n = n(), (0, import_vue2.popScopeId)(), n);
+  var _hoisted_1 = { class: "dashboard-header mb-6" };
+  var _hoisted_2 = { class: "header-content" };
+  var _hoisted_3 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", null, [
+    /* @__PURE__ */ (0, import_vue2.createElementVNode)("h1", { class: "text-2xl font-bold text-gray-900" }, "Invoice Ninja Integration"),
+    /* @__PURE__ */ (0, import_vue2.createElementVNode)("p", { class: "text-gray-600 mt-1" }, "Manage your Invoice Ninja synchronization and data")
+  ], -1));
+  var _hoisted_4 = { class: "header-actions" };
+  var _hoisted_5 = { class: "status-badges" };
+  function render(_ctx, _cache, $props, $setup, $data, $options) {
+    return (0, import_vue2.openBlock)(), (0, import_vue2.createElementBlock)("div", _hoisted_1, [
+      (0, import_vue2.createElementVNode)("div", _hoisted_2, [
+        _hoisted_3,
+        (0, import_vue2.createElementVNode)("div", _hoisted_4, [
+          (0, import_vue2.createElementVNode)("div", _hoisted_5, [
+            (0, import_vue2.createElementVNode)("span", {
+              class: (0, import_vue2.normalizeClass)(["status-badge", $setup.connectionStatus.bg, $setup.connectionStatus.color])
+            }, (0, import_vue2.toDisplayString)($setup.connectionStatus.text), 3),
+            (0, import_vue2.createElementVNode)("span", {
+              class: (0, import_vue2.normalizeClass)(["status-badge", $setup.syncStatusDisplay.bg, $setup.syncStatusDisplay.color])
+            }, (0, import_vue2.toDisplayString)($setup.syncStatusDisplay.text), 3)
+          ]),
+          (0, import_vue2.createElementVNode)("button", {
+            onClick: _cache[0] || (_cache[0] = ($event) => _ctx.$emit("test-connection")),
+            class: "btn btn-outline"
+          }, " Test Connection "),
+          (0, import_vue2.createElementVNode)("button", {
+            onClick: _cache[1] || (_cache[1] = ($event) => _ctx.$emit("open-configuration")),
+            class: "btn btn-primary"
+          }, " Configure ")
+        ])
+      ])
+    ]);
+  }
+
+  // ../invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/components/DashboardHeader.vue
+  DashboardHeader_default.render = render;
+  DashboardHeader_default.__file = "../invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/components/DashboardHeader.vue";
+  DashboardHeader_default.__scopeId = "data-v-7f0f29b2";
+  var DashboardHeader_default2 = DashboardHeader_default;
+
+  // sfc-script:/workspace/development/novizna/apps/invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/components/StatsGrid.vue?type=script
+  var StatsGrid_default = {
+    __name: "StatsGrid",
+    props: {
+      stats: {
+        type: Object,
+        required: true
+      },
+      loading: {
+        type: Boolean,
+        default: false
+      }
+    },
+    emits: ["open-invoice-list", "open-customer-list"],
+    setup(__props, { expose: __expose }) {
+      __expose();
+      const props = __props;
+      const __returned__ = { props };
+      Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
+      return __returned__;
+    }
+  };
+
+  // sfc-template:/workspace/development/novizna/apps/invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/components/StatsGrid.vue?type=template
+  var import_vue3 = __toESM(require_vue());
+  var _withScopeId2 = (n) => ((0, import_vue3.pushScopeId)("data-v-1362496b"), n = n(), (0, import_vue3.popScopeId)(), n);
+  var _hoisted_12 = { class: "stats-grid mb-8" };
+  var _hoisted_22 = /* @__PURE__ */ _withScopeId2(() => /* @__PURE__ */ (0, import_vue3.createElementVNode)("div", { class: "stat-icon stat-icon-blue" }, " \u{1F4C4} ", -1));
+  var _hoisted_32 = { class: "stat-content" };
+  var _hoisted_42 = { class: "stat-number" };
+  var _hoisted_52 = /* @__PURE__ */ _withScopeId2(() => /* @__PURE__ */ (0, import_vue3.createElementVNode)("div", { class: "stat-label" }, "Total Invoices", -1));
+  var _hoisted_6 = /* @__PURE__ */ _withScopeId2(() => /* @__PURE__ */ (0, import_vue3.createElementVNode)("div", { class: "stat-sublabel" }, "Synced from Invoice Ninja", -1));
+  var _hoisted_7 = /* @__PURE__ */ _withScopeId2(() => /* @__PURE__ */ (0, import_vue3.createElementVNode)("div", { class: "stat-icon stat-icon-green" }, " \u{1F465} ", -1));
+  var _hoisted_8 = { class: "stat-content" };
+  var _hoisted_9 = { class: "stat-number" };
+  var _hoisted_10 = /* @__PURE__ */ _withScopeId2(() => /* @__PURE__ */ (0, import_vue3.createElementVNode)("div", { class: "stat-label" }, "Total Clients", -1));
+  var _hoisted_11 = /* @__PURE__ */ _withScopeId2(() => /* @__PURE__ */ (0, import_vue3.createElementVNode)("div", { class: "stat-sublabel" }, "Synced customers", -1));
+  var _hoisted_122 = { class: "stat-card" };
+  var _hoisted_13 = /* @__PURE__ */ _withScopeId2(() => /* @__PURE__ */ (0, import_vue3.createElementVNode)("div", { class: "stat-icon stat-icon-orange" }, " \u{1F4B0} ", -1));
+  var _hoisted_14 = { class: "stat-content" };
+  var _hoisted_15 = { class: "stat-number" };
+  var _hoisted_16 = /* @__PURE__ */ _withScopeId2(() => /* @__PURE__ */ (0, import_vue3.createElementVNode)("div", { class: "stat-label" }, "Pending Payments", -1));
+  var _hoisted_17 = /* @__PURE__ */ _withScopeId2(() => /* @__PURE__ */ (0, import_vue3.createElementVNode)("div", { class: "stat-sublabel" }, "Awaiting payment", -1));
+  var _hoisted_18 = { class: "stat-card" };
+  var _hoisted_19 = /* @__PURE__ */ _withScopeId2(() => /* @__PURE__ */ (0, import_vue3.createElementVNode)("div", { class: "stat-icon stat-icon-red" }, " \u26A0\uFE0F ", -1));
+  var _hoisted_20 = { class: "stat-content" };
+  var _hoisted_21 = { class: "stat-number" };
+  var _hoisted_222 = /* @__PURE__ */ _withScopeId2(() => /* @__PURE__ */ (0, import_vue3.createElementVNode)("div", { class: "stat-label" }, "Overdue Invoices", -1));
+  var _hoisted_23 = /* @__PURE__ */ _withScopeId2(() => /* @__PURE__ */ (0, import_vue3.createElementVNode)("div", { class: "stat-sublabel" }, "Past due date", -1));
+  function render2(_ctx, _cache, $props, $setup, $data, $options) {
+    return (0, import_vue3.openBlock)(), (0, import_vue3.createElementBlock)("div", _hoisted_12, [
+      (0, import_vue3.createElementVNode)("div", {
+        class: "stat-card clickable",
+        onClick: _cache[0] || (_cache[0] = ($event) => _ctx.$emit("open-invoice-list"))
+      }, [
+        _hoisted_22,
+        (0, import_vue3.createElementVNode)("div", _hoisted_32, [
+          (0, import_vue3.createElementVNode)("div", _hoisted_42, (0, import_vue3.toDisplayString)($props.loading ? "..." : $props.stats.totalInvoices), 1),
+          _hoisted_52,
+          _hoisted_6
+        ])
+      ]),
+      (0, import_vue3.createElementVNode)("div", {
+        class: "stat-card clickable",
+        onClick: _cache[1] || (_cache[1] = ($event) => _ctx.$emit("open-customer-list"))
+      }, [
+        _hoisted_7,
+        (0, import_vue3.createElementVNode)("div", _hoisted_8, [
+          (0, import_vue3.createElementVNode)("div", _hoisted_9, (0, import_vue3.toDisplayString)($props.loading ? "..." : $props.stats.totalClients), 1),
+          _hoisted_10,
+          _hoisted_11
+        ])
+      ]),
+      (0, import_vue3.createElementVNode)("div", _hoisted_122, [
+        _hoisted_13,
+        (0, import_vue3.createElementVNode)("div", _hoisted_14, [
+          (0, import_vue3.createElementVNode)("div", _hoisted_15, (0, import_vue3.toDisplayString)($props.loading ? "..." : $props.stats.pendingPayments), 1),
+          _hoisted_16,
+          _hoisted_17
+        ])
+      ]),
+      (0, import_vue3.createElementVNode)("div", _hoisted_18, [
+        _hoisted_19,
+        (0, import_vue3.createElementVNode)("div", _hoisted_20, [
+          (0, import_vue3.createElementVNode)("div", _hoisted_21, (0, import_vue3.toDisplayString)($props.loading ? "..." : $props.stats.overdueInvoices), 1),
+          _hoisted_222,
+          _hoisted_23
+        ])
+      ])
+    ]);
+  }
+
+  // ../invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/components/StatsGrid.vue
+  StatsGrid_default.render = render2;
+  StatsGrid_default.__file = "../invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/components/StatsGrid.vue";
+  StatsGrid_default.__scopeId = "data-v-1362496b";
+  var StatsGrid_default2 = StatsGrid_default;
+
+  // sfc-script:/workspace/development/novizna/apps/invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/components/CompanyMappings.vue?type=script
+  var CompanyMappings_default = {
+    __name: "CompanyMappings",
+    props: {
+      mappings: {
+        type: Array,
+        default: () => []
+      },
+      loading: {
+        type: Boolean,
+        default: false
+      }
+    },
+    emits: ["refresh-mappings", "open-settings"],
+    setup(__props, { expose: __expose }) {
+      __expose();
+      const props = __props;
+      const __returned__ = { props };
+      Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
+      return __returned__;
+    }
+  };
+
+  // sfc-template:/workspace/development/novizna/apps/invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/components/CompanyMappings.vue?type=template
+  var import_vue4 = __toESM(require_vue());
+  var _withScopeId3 = (n) => ((0, import_vue4.pushScopeId)("data-v-1f422356"), n = n(), (0, import_vue4.popScopeId)(), n);
+  var _hoisted_110 = { class: "dashboard-card mb-6" };
+  var _hoisted_24 = { class: "card-header" };
+  var _hoisted_33 = /* @__PURE__ */ _withScopeId3(() => /* @__PURE__ */ (0, import_vue4.createElementVNode)("h2", { class: "text-lg font-semibold text-gray-900" }, "\u{1F3E2} Company Mappings", -1));
+  var _hoisted_43 = ["disabled"];
+  var _hoisted_53 = { class: "card-content" };
+  var _hoisted_62 = {
+    key: 0,
+    class: "empty-state"
+  };
+  var _hoisted_72 = /* @__PURE__ */ _withScopeId3(() => /* @__PURE__ */ (0, import_vue4.createElementVNode)("p", { class: "text-gray-600" }, "No company mappings configured", -1));
+  var _hoisted_82 = {
+    key: 1,
+    class: "company-mappings-list"
+  };
+  var _hoisted_92 = { class: "mapping-info" };
+  var _hoisted_102 = /* @__PURE__ */ _withScopeId3(() => /* @__PURE__ */ (0, import_vue4.createElementVNode)("span", { class: "mapping-arrow" }, "\u2194", -1));
+  var _hoisted_112 = {
+    key: 0,
+    class: "default-badge"
+  };
+  function render3(_ctx, _cache, $props, $setup, $data, $options) {
+    return (0, import_vue4.openBlock)(), (0, import_vue4.createElementBlock)("div", _hoisted_110, [
+      (0, import_vue4.createElementVNode)("div", _hoisted_24, [
+        _hoisted_33,
+        (0, import_vue4.createElementVNode)("button", {
+          onClick: _cache[0] || (_cache[0] = ($event) => _ctx.$emit("refresh-mappings")),
+          class: "refresh-button",
+          disabled: $props.loading
+        }, (0, import_vue4.toDisplayString)($props.loading ? "..." : "\u21BB Refresh"), 9, _hoisted_43)
+      ]),
+      (0, import_vue4.createElementVNode)("div", _hoisted_53, [
+        $props.mappings.length === 0 ? ((0, import_vue4.openBlock)(), (0, import_vue4.createElementBlock)("div", _hoisted_62, [
+          _hoisted_72,
+          (0, import_vue4.createElementVNode)("button", {
+            onClick: _cache[1] || (_cache[1] = ($event) => _ctx.$emit("open-settings")),
+            class: "mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          }, " Configure Mappings ")
+        ])) : ((0, import_vue4.openBlock)(), (0, import_vue4.createElementBlock)("div", _hoisted_82, [
+          ((0, import_vue4.openBlock)(true), (0, import_vue4.createElementBlock)(import_vue4.Fragment, null, (0, import_vue4.renderList)($props.mappings, (mapping) => {
+            return (0, import_vue4.openBlock)(), (0, import_vue4.createElementBlock)("div", {
+              key: mapping.invoice_ninja_company_id,
+              class: (0, import_vue4.normalizeClass)(["mapping-item", { "default-mapping": mapping.is_default }])
+            }, [
+              (0, import_vue4.createElementVNode)("div", _hoisted_92, [
+                (0, import_vue4.createElementVNode)("strong", null, (0, import_vue4.toDisplayString)(mapping.erpnext_company), 1),
+                _hoisted_102,
+                (0, import_vue4.createElementVNode)("span", null, (0, import_vue4.toDisplayString)(mapping.invoice_ninja_company_name), 1),
+                mapping.is_default ? ((0, import_vue4.openBlock)(), (0, import_vue4.createElementBlock)("span", _hoisted_112, "Default")) : (0, import_vue4.createCommentVNode)("v-if", true)
+              ])
+            ], 2);
+          }), 128))
+        ]))
+      ])
+    ]);
+  }
+
+  // ../invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/components/CompanyMappings.vue
+  CompanyMappings_default.render = render3;
+  CompanyMappings_default.__file = "../invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/components/CompanyMappings.vue";
+  CompanyMappings_default.__scopeId = "data-v-1f422356";
+  var CompanyMappings_default2 = CompanyMappings_default;
+
+  // sfc-script:/workspace/development/novizna/apps/invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/components/SyncControls.vue?type=script
+  var SyncControls_default = {
+    __name: "SyncControls",
+    props: {
+      stats: {
+        type: Object,
+        required: true
+      },
+      config: {
+        type: Object,
+        required: true
+      },
+      syncing: {
+        type: Boolean,
+        default: false
+      },
+      loading: {
+        type: Boolean,
+        default: false
+      }
+    },
+    emits: ["trigger-sync"],
+    setup(__props, { expose: __expose }) {
+      __expose();
+      const props = __props;
+      const formatDate = (dateString) => {
+        if (!dateString)
+          return "Never";
+        return new Date(dateString).toLocaleString();
+      };
+      const __returned__ = { props, formatDate };
+      Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
+      return __returned__;
+    }
+  };
+
+  // sfc-template:/workspace/development/novizna/apps/invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/components/SyncControls.vue?type=template
+  var import_vue5 = __toESM(require_vue());
+  var _withScopeId4 = (n) => ((0, import_vue5.pushScopeId)("data-v-f58fec2b"), n = n(), (0, import_vue5.popScopeId)(), n);
+  var _hoisted_111 = { class: "dashboard-card mb-6" };
+  var _hoisted_25 = { class: "card-header" };
+  var _hoisted_34 = /* @__PURE__ */ _withScopeId4(() => /* @__PURE__ */ (0, import_vue5.createElementVNode)("h2", { class: "text-lg font-semibold text-gray-900" }, "Synchronization Controls", -1));
+  var _hoisted_44 = { class: "text-sm text-gray-500" };
+  var _hoisted_54 = { class: "card-content" };
+  var _hoisted_63 = { class: "sync-controls" };
+  var _hoisted_73 = { class: "sync-buttons" };
+  var _hoisted_83 = ["disabled"];
+  var _hoisted_93 = {
+    key: 0,
+    class: "loading-spinner-sm"
+  };
+  var _hoisted_103 = { class: "sync-options" };
+  var _hoisted_113 = ["disabled"];
+  var _hoisted_123 = ["disabled"];
+  var _hoisted_132 = ["disabled"];
+  var _hoisted_142 = { class: "sync-info" };
+  var _hoisted_152 = { class: "info-item" };
+  var _hoisted_162 = /* @__PURE__ */ _withScopeId4(() => /* @__PURE__ */ (0, import_vue5.createElementVNode)("span", { class: "info-label" }, "Auto Sync:", -1));
+  var _hoisted_172 = { class: "info-item" };
+  var _hoisted_182 = /* @__PURE__ */ _withScopeId4(() => /* @__PURE__ */ (0, import_vue5.createElementVNode)("span", { class: "info-label" }, "Sync Interval:", -1));
+  var _hoisted_192 = { class: "text-gray-600" };
+  function render4(_ctx, _cache, $props, $setup, $data, $options) {
+    return (0, import_vue5.openBlock)(), (0, import_vue5.createElementBlock)("div", _hoisted_111, [
+      (0, import_vue5.createElementVNode)("div", _hoisted_25, [
+        _hoisted_34,
+        (0, import_vue5.createElementVNode)("div", _hoisted_44, " Last sync: " + (0, import_vue5.toDisplayString)($setup.formatDate($props.stats.lastSyncTime)), 1)
+      ]),
+      (0, import_vue5.createElementVNode)("div", _hoisted_54, [
+        (0, import_vue5.createElementVNode)("div", _hoisted_63, [
+          (0, import_vue5.createElementVNode)("div", _hoisted_73, [
+            (0, import_vue5.createElementVNode)("button", {
+              onClick: _cache[0] || (_cache[0] = ($event) => _ctx.$emit("trigger-sync", "all")),
+              disabled: $props.syncing || $props.loading,
+              class: "btn btn-primary"
+            }, [
+              $props.syncing ? ((0, import_vue5.openBlock)(), (0, import_vue5.createElementBlock)("span", _hoisted_93)) : (0, import_vue5.createCommentVNode)("v-if", true),
+              (0, import_vue5.createTextVNode)(" " + (0, import_vue5.toDisplayString)($props.syncing ? "Syncing..." : "Full Sync"), 1)
+            ], 8, _hoisted_83),
+            (0, import_vue5.createElementVNode)("div", _hoisted_103, [
+              (0, import_vue5.createElementVNode)("button", {
+                onClick: _cache[1] || (_cache[1] = ($event) => _ctx.$emit("trigger-sync", "customers")),
+                disabled: $props.syncing || $props.loading,
+                class: "btn btn-secondary"
+              }, " Sync Customers ", 8, _hoisted_113),
+              (0, import_vue5.createElementVNode)("button", {
+                onClick: _cache[2] || (_cache[2] = ($event) => _ctx.$emit("trigger-sync", "invoices")),
+                disabled: $props.syncing || $props.loading,
+                class: "btn btn-secondary"
+              }, " Sync Invoices ", 8, _hoisted_123),
+              (0, import_vue5.createElementVNode)("button", {
+                onClick: _cache[3] || (_cache[3] = ($event) => _ctx.$emit("trigger-sync", "payments")),
+                disabled: $props.syncing || $props.loading,
+                class: "btn btn-secondary"
+              }, " Sync Payments ", 8, _hoisted_132)
+            ])
+          ]),
+          (0, import_vue5.createElementVNode)("div", _hoisted_142, [
+            (0, import_vue5.createElementVNode)("div", _hoisted_152, [
+              _hoisted_162,
+              (0, import_vue5.createElementVNode)("span", {
+                class: (0, import_vue5.normalizeClass)($props.config.autoSync ? "text-green-600" : "text-gray-600")
+              }, (0, import_vue5.toDisplayString)($props.config.autoSync ? "Enabled" : "Disabled"), 3)
+            ]),
+            (0, import_vue5.createElementVNode)("div", _hoisted_172, [
+              _hoisted_182,
+              (0, import_vue5.createElementVNode)("span", _hoisted_192, (0, import_vue5.toDisplayString)($props.config.syncInterval) + " minutes", 1)
+            ])
+          ])
+        ])
+      ])
+    ]);
+  }
+
+  // ../invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/components/SyncControls.vue
+  SyncControls_default.render = render4;
+  SyncControls_default.__file = "../invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/components/SyncControls.vue";
+  SyncControls_default.__scopeId = "data-v-f58fec2b";
+  var SyncControls_default2 = SyncControls_default;
+
+  // sfc-script:/workspace/development/novizna/apps/invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/components/RecentActivity.vue?type=script
+  var RecentActivity_default = {
+    __name: "RecentActivity",
+    props: {
+      activity: {
+        type: Array,
+        default: () => []
+      },
+      loading: {
+        type: Boolean,
+        default: false
+      }
+    },
+    emits: ["refresh-data"],
+    setup(__props, { expose: __expose }) {
+      __expose();
+      const props = __props;
+      const formatDate = (dateString) => {
+        if (!dateString)
+          return "Never";
+        return new Date(dateString).toLocaleString();
+      };
+      const formatActivityType = (type) => {
+        const types = {
+          "customer_sync": "Customer Sync",
+          "invoice_sync": "Invoice Sync",
+          "payment_sync": "Payment Sync",
+          "quote_sync": "Quote Sync",
+          "product_sync": "Product Sync",
+          "error": "Error"
+        };
+        return types[type] || type;
+      };
+      const __returned__ = { props, formatDate, formatActivityType };
+      Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
+      return __returned__;
+    }
+  };
+
+  // sfc-template:/workspace/development/novizna/apps/invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/components/RecentActivity.vue?type=template
+  var import_vue6 = __toESM(require_vue());
+  var _withScopeId5 = (n) => ((0, import_vue6.pushScopeId)("data-v-c2850a91"), n = n(), (0, import_vue6.popScopeId)(), n);
+  var _hoisted_114 = { class: "dashboard-card" };
+  var _hoisted_26 = { class: "card-header" };
+  var _hoisted_35 = /* @__PURE__ */ _withScopeId5(() => /* @__PURE__ */ (0, import_vue6.createElementVNode)("h3", { class: "text-lg font-semibold text-gray-900" }, "Recent Activity", -1));
+  var _hoisted_45 = { class: "card-content" };
+  var _hoisted_55 = {
+    key: 0,
+    class: "text-center py-4"
+  };
+  var _hoisted_64 = /* @__PURE__ */ _withScopeId5(() => /* @__PURE__ */ (0, import_vue6.createElementVNode)("div", { class: "loading-spinner" }, null, -1));
+  var _hoisted_74 = [
+    _hoisted_64
+  ];
+  var _hoisted_84 = {
+    key: 1,
+    class: "text-center py-8 text-gray-500"
+  };
+  var _hoisted_94 = {
+    key: 2,
+    class: "activity-list"
+  };
+  var _hoisted_104 = { class: "activity-content" };
+  var _hoisted_115 = { class: "activity-title" };
+  var _hoisted_124 = { class: "activity-description" };
+  var _hoisted_133 = { class: "activity-time" };
+  function render5(_ctx, _cache, $props, $setup, $data, $options) {
+    return (0, import_vue6.openBlock)(), (0, import_vue6.createElementBlock)("div", _hoisted_114, [
+      (0, import_vue6.createElementVNode)("div", _hoisted_26, [
+        _hoisted_35,
+        (0, import_vue6.createElementVNode)("button", {
+          onClick: _cache[0] || (_cache[0] = ($event) => _ctx.$emit("refresh-data")),
+          class: "btn-refresh"
+        }, " \u{1F504} ")
+      ]),
+      (0, import_vue6.createElementVNode)("div", _hoisted_45, [
+        $props.loading ? ((0, import_vue6.openBlock)(), (0, import_vue6.createElementBlock)("div", _hoisted_55, [..._hoisted_74])) : $props.activity.length === 0 ? ((0, import_vue6.openBlock)(), (0, import_vue6.createElementBlock)("div", _hoisted_84, " No recent activity ")) : ((0, import_vue6.openBlock)(), (0, import_vue6.createElementBlock)("div", _hoisted_94, [
+          ((0, import_vue6.openBlock)(true), (0, import_vue6.createElementBlock)(import_vue6.Fragment, null, (0, import_vue6.renderList)($props.activity, (item) => {
+            return (0, import_vue6.openBlock)(), (0, import_vue6.createElementBlock)("div", {
+              key: item.id,
+              class: "activity-item"
+            }, [
+              (0, import_vue6.createElementVNode)("div", _hoisted_104, [
+                (0, import_vue6.createElementVNode)("div", _hoisted_115, (0, import_vue6.toDisplayString)($setup.formatActivityType(item.type)), 1),
+                (0, import_vue6.createElementVNode)("div", _hoisted_124, (0, import_vue6.toDisplayString)(item.description), 1),
+                (0, import_vue6.createElementVNode)("div", _hoisted_133, (0, import_vue6.toDisplayString)($setup.formatDate(item.created_at)), 1)
+              ]),
+              (0, import_vue6.createElementVNode)("div", {
+                class: (0, import_vue6.normalizeClass)(["activity-status", item.status === "success" ? "status-success" : "status-error"])
+              }, (0, import_vue6.toDisplayString)(item.status), 3)
+            ]);
+          }), 128))
+        ]))
+      ])
+    ]);
+  }
+
+  // ../invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/components/RecentActivity.vue
+  RecentActivity_default.render = render5;
+  RecentActivity_default.__file = "../invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/components/RecentActivity.vue";
+  RecentActivity_default.__scopeId = "data-v-c2850a91";
+  var RecentActivity_default2 = RecentActivity_default;
+
+  // sfc-script:/workspace/development/novizna/apps/invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/components/SyncLogs.vue?type=script
+  var SyncLogs_default = {
+    __name: "SyncLogs",
+    props: {
+      logs: {
+        type: Array,
+        default: () => []
+      },
+      loading: {
+        type: Boolean,
+        default: false
+      }
+    },
+    emits: ["open-sync-logs"],
+    setup(__props, { expose: __expose }) {
+      __expose();
+      const props = __props;
+      const formatDate = (dateString) => {
+        if (!dateString)
+          return "Never";
+        return new Date(dateString).toLocaleString();
+      };
+      const __returned__ = { props, formatDate };
+      Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
+      return __returned__;
+    }
+  };
+
+  // sfc-template:/workspace/development/novizna/apps/invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/components/SyncLogs.vue?type=template
+  var import_vue7 = __toESM(require_vue());
+  var _withScopeId6 = (n) => ((0, import_vue7.pushScopeId)("data-v-c6f7a7a7"), n = n(), (0, import_vue7.popScopeId)(), n);
+  var _hoisted_116 = { class: "dashboard-card" };
+  var _hoisted_27 = { class: "card-header" };
+  var _hoisted_36 = /* @__PURE__ */ _withScopeId6(() => /* @__PURE__ */ (0, import_vue7.createElementVNode)("h3", { class: "text-lg font-semibold text-gray-900" }, "Sync Logs", -1));
+  var _hoisted_46 = { class: "card-content" };
+  var _hoisted_56 = {
+    key: 0,
+    class: "text-center py-4"
+  };
+  var _hoisted_65 = /* @__PURE__ */ _withScopeId6(() => /* @__PURE__ */ (0, import_vue7.createElementVNode)("div", { class: "loading-spinner" }, null, -1));
+  var _hoisted_75 = [
+    _hoisted_65
+  ];
+  var _hoisted_85 = {
+    key: 1,
+    class: "text-center py-8 text-gray-500"
+  };
+  var _hoisted_95 = {
+    key: 2,
+    class: "logs-list"
+  };
+  var _hoisted_105 = { class: "log-content" };
+  var _hoisted_117 = { class: "log-title" };
+  var _hoisted_125 = { class: "log-message" };
+  var _hoisted_134 = { class: "log-time" };
+  function render6(_ctx, _cache, $props, $setup, $data, $options) {
+    return (0, import_vue7.openBlock)(), (0, import_vue7.createElementBlock)("div", _hoisted_116, [
+      (0, import_vue7.createElementVNode)("div", _hoisted_27, [
+        _hoisted_36,
+        (0, import_vue7.createElementVNode)("button", {
+          onClick: _cache[0] || (_cache[0] = ($event) => _ctx.$emit("open-sync-logs")),
+          class: "btn btn-sm btn-outline"
+        }, " View All ")
+      ]),
+      (0, import_vue7.createElementVNode)("div", _hoisted_46, [
+        $props.loading ? ((0, import_vue7.openBlock)(), (0, import_vue7.createElementBlock)("div", _hoisted_56, [..._hoisted_75])) : $props.logs.length === 0 ? ((0, import_vue7.openBlock)(), (0, import_vue7.createElementBlock)("div", _hoisted_85, " No sync logs available ")) : ((0, import_vue7.openBlock)(), (0, import_vue7.createElementBlock)("div", _hoisted_95, [
+          ((0, import_vue7.openBlock)(true), (0, import_vue7.createElementBlock)(import_vue7.Fragment, null, (0, import_vue7.renderList)($props.logs, (log) => {
+            return (0, import_vue7.openBlock)(), (0, import_vue7.createElementBlock)("div", {
+              key: log.id,
+              class: "log-item"
+            }, [
+              (0, import_vue7.createElementVNode)("div", _hoisted_105, [
+                (0, import_vue7.createElementVNode)("div", _hoisted_117, (0, import_vue7.toDisplayString)(log.sync_type) + " - " + (0, import_vue7.toDisplayString)(log.entity_type), 1),
+                (0, import_vue7.createElementVNode)("div", _hoisted_125, (0, import_vue7.toDisplayString)(log.message), 1),
+                (0, import_vue7.createElementVNode)("div", _hoisted_134, (0, import_vue7.toDisplayString)($setup.formatDate(log.created_at)), 1)
+              ]),
+              (0, import_vue7.createElementVNode)("div", {
+                class: (0, import_vue7.normalizeClass)(["log-status", log.status === "success" ? "status-success" : "status-error"])
+              }, (0, import_vue7.toDisplayString)(log.status), 3)
+            ]);
+          }), 128))
+        ]))
+      ])
+    ]);
+  }
+
+  // ../invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/components/SyncLogs.vue
+  SyncLogs_default.render = render6;
+  SyncLogs_default.__file = "../invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/components/SyncLogs.vue";
+  SyncLogs_default.__scopeId = "data-v-c6f7a7a7";
+  var SyncLogs_default2 = SyncLogs_default;
+
+  // sfc-script:/workspace/development/novizna/apps/invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/components/QuickActions.vue?type=script
+  var QuickActions_default = {
+    __name: "QuickActions",
+    emits: ["open-configuration", "open-sync-logs", "open-invoice-list", "open-customer-list"],
+    setup(__props, { expose: __expose }) {
+      __expose();
+      const __returned__ = {};
+      Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
+      return __returned__;
+    }
+  };
+
+  // sfc-template:/workspace/development/novizna/apps/invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/components/QuickActions.vue?type=template
+  var import_vue8 = __toESM(require_vue());
+  var _withScopeId7 = (n) => ((0, import_vue8.pushScopeId)("data-v-37000d8b"), n = n(), (0, import_vue8.popScopeId)(), n);
+  var _hoisted_118 = { class: "dashboard-card mt-6" };
+  var _hoisted_28 = /* @__PURE__ */ _withScopeId7(() => /* @__PURE__ */ (0, import_vue8.createElementVNode)("div", { class: "card-header" }, [
+    /* @__PURE__ */ (0, import_vue8.createElementVNode)("h3", { class: "text-lg font-semibold text-gray-900" }, "Quick Actions")
+  ], -1));
+  var _hoisted_37 = { class: "card-content" };
+  var _hoisted_47 = { class: "quick-actions" };
+  var _hoisted_57 = /* @__PURE__ */ _withScopeId7(() => /* @__PURE__ */ (0, import_vue8.createElementVNode)("div", { class: "action-icon" }, "\u2699\uFE0F", -1));
+  var _hoisted_66 = /* @__PURE__ */ _withScopeId7(() => /* @__PURE__ */ (0, import_vue8.createElementVNode)("div", { class: "action-content" }, [
+    /* @__PURE__ */ (0, import_vue8.createElementVNode)("div", { class: "action-title" }, "Configuration"),
+    /* @__PURE__ */ (0, import_vue8.createElementVNode)("div", { class: "action-description" }, "Manage API settings and sync preferences")
+  ], -1));
+  var _hoisted_76 = [
+    _hoisted_57,
+    _hoisted_66
+  ];
+  var _hoisted_86 = /* @__PURE__ */ _withScopeId7(() => /* @__PURE__ */ (0, import_vue8.createElementVNode)("div", { class: "action-icon" }, "\u{1F4CB}", -1));
+  var _hoisted_96 = /* @__PURE__ */ _withScopeId7(() => /* @__PURE__ */ (0, import_vue8.createElementVNode)("div", { class: "action-content" }, [
+    /* @__PURE__ */ (0, import_vue8.createElementVNode)("div", { class: "action-title" }, "Sync Logs"),
+    /* @__PURE__ */ (0, import_vue8.createElementVNode)("div", { class: "action-description" }, "View detailed synchronization history")
+  ], -1));
+  var _hoisted_106 = [
+    _hoisted_86,
+    _hoisted_96
+  ];
+  var _hoisted_119 = /* @__PURE__ */ _withScopeId7(() => /* @__PURE__ */ (0, import_vue8.createElementVNode)("div", { class: "action-icon" }, "\u{1F4C4}", -1));
+  var _hoisted_126 = /* @__PURE__ */ _withScopeId7(() => /* @__PURE__ */ (0, import_vue8.createElementVNode)("div", { class: "action-content" }, [
+    /* @__PURE__ */ (0, import_vue8.createElementVNode)("div", { class: "action-title" }, "Synced Invoices"),
+    /* @__PURE__ */ (0, import_vue8.createElementVNode)("div", { class: "action-description" }, "Browse invoices from Invoice Ninja")
+  ], -1));
+  var _hoisted_135 = [
+    _hoisted_119,
+    _hoisted_126
+  ];
+  var _hoisted_143 = /* @__PURE__ */ _withScopeId7(() => /* @__PURE__ */ (0, import_vue8.createElementVNode)("div", { class: "action-icon" }, "\u{1F465}", -1));
+  var _hoisted_153 = /* @__PURE__ */ _withScopeId7(() => /* @__PURE__ */ (0, import_vue8.createElementVNode)("div", { class: "action-content" }, [
+    /* @__PURE__ */ (0, import_vue8.createElementVNode)("div", { class: "action-title" }, "Synced Customers"),
+    /* @__PURE__ */ (0, import_vue8.createElementVNode)("div", { class: "action-description" }, "Manage synchronized customer data")
+  ], -1));
+  var _hoisted_163 = [
+    _hoisted_143,
+    _hoisted_153
+  ];
+  function render7(_ctx, _cache, $props, $setup, $data, $options) {
+    return (0, import_vue8.openBlock)(), (0, import_vue8.createElementBlock)("div", _hoisted_118, [
+      _hoisted_28,
+      (0, import_vue8.createElementVNode)("div", _hoisted_37, [
+        (0, import_vue8.createElementVNode)("div", _hoisted_47, [
+          (0, import_vue8.createElementVNode)("button", {
+            onClick: _cache[0] || (_cache[0] = ($event) => _ctx.$emit("open-configuration")),
+            class: "action-button"
+          }, [..._hoisted_76]),
+          (0, import_vue8.createElementVNode)("button", {
+            onClick: _cache[1] || (_cache[1] = ($event) => _ctx.$emit("open-sync-logs")),
+            class: "action-button"
+          }, [..._hoisted_106]),
+          (0, import_vue8.createElementVNode)("button", {
+            onClick: _cache[2] || (_cache[2] = ($event) => _ctx.$emit("open-invoice-list")),
+            class: "action-button"
+          }, [..._hoisted_135]),
+          (0, import_vue8.createElementVNode)("button", {
+            onClick: _cache[3] || (_cache[3] = ($event) => _ctx.$emit("open-customer-list")),
+            class: "action-button"
+          }, [..._hoisted_163])
+        ])
+      ])
+    ]);
+  }
+
+  // ../invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/components/QuickActions.vue
+  QuickActions_default.render = render7;
+  QuickActions_default.__file = "../invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/components/QuickActions.vue";
+  QuickActions_default.__scopeId = "data-v-37000d8b";
+  var QuickActions_default2 = QuickActions_default;
+
+  // sfc-script:/workspace/development/novizna/apps/invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/components/ErrorAlert.vue?type=script
+  var ErrorAlert_default = {
+    __name: "ErrorAlert",
+    props: {
+      error: {
+        type: String,
+        default: null
+      }
+    },
+    emits: ["close-error"],
+    setup(__props, { expose: __expose }) {
+      __expose();
+      const props = __props;
+      const __returned__ = { props };
+      Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
+      return __returned__;
+    }
+  };
+
+  // sfc-template:/workspace/development/novizna/apps/invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/components/ErrorAlert.vue?type=template
+  var import_vue9 = __toESM(require_vue());
+  var _withScopeId8 = (n) => ((0, import_vue9.pushScopeId)("data-v-93b3c4cb"), n = n(), (0, import_vue9.popScopeId)(), n);
+  var _hoisted_120 = {
+    key: 0,
+    class: "alert alert-error mb-6"
+  };
+  var _hoisted_29 = { class: "alert-content" };
+  var _hoisted_38 = /* @__PURE__ */ _withScopeId8(() => /* @__PURE__ */ (0, import_vue9.createElementVNode)("strong", null, "Error:", -1));
+  function render8(_ctx, _cache, $props, $setup, $data, $options) {
+    return $props.error ? ((0, import_vue9.openBlock)(), (0, import_vue9.createElementBlock)("div", _hoisted_120, [
+      (0, import_vue9.createElementVNode)("div", _hoisted_29, [
+        _hoisted_38,
+        (0, import_vue9.createTextVNode)(" " + (0, import_vue9.toDisplayString)($props.error) + " ", 1),
+        (0, import_vue9.createElementVNode)("button", {
+          onClick: _cache[0] || (_cache[0] = ($event) => _ctx.$emit("close-error")),
+          class: "alert-close"
+        }, "\xD7")
+      ])
+    ])) : (0, import_vue9.createCommentVNode)("v-if", true);
+  }
+
+  // ../invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/components/ErrorAlert.vue
+  ErrorAlert_default.render = render8;
+  ErrorAlert_default.__file = "../invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/components/ErrorAlert.vue";
+  ErrorAlert_default.__scopeId = "data-v-93b3c4cb";
+  var ErrorAlert_default2 = ErrorAlert_default;
+
+  // sfc-script:/workspace/development/novizna/apps/invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/InvoiceNinjaDashboard.vue?type=script
   var InvoiceNinjaDashboard_default = {
     __name: "InvoiceNinjaDashboard",
     setup(__props, { expose: __expose }) {
       __expose();
-      const loading = (0, import_vue.ref)(true);
-      const syncing = (0, import_vue.ref)(false);
-      const loadingMappings = (0, import_vue.ref)(false);
-      const error = (0, import_vue.ref)(null);
-      const stats = (0, import_vue.ref)({
+      const loading = (0, import_vue10.ref)(true);
+      const syncing = (0, import_vue10.ref)(false);
+      const loadingMappings = (0, import_vue10.ref)(false);
+      const error = (0, import_vue10.ref)(null);
+      const stats = (0, import_vue10.ref)({
         totalInvoices: 0,
         totalClients: 0,
         pendingPayments: 0,
@@ -36160,10 +36886,10 @@ ${codeFrame}` : message);
         lastSyncTime: null,
         syncStatus: "idle"
       });
-      const recentActivity = (0, import_vue.ref)([]);
-      const syncLogs = (0, import_vue.ref)([]);
-      const companyMappings = (0, import_vue.ref)([]);
-      const config = (0, import_vue.ref)({
+      const recentActivity = (0, import_vue10.ref)([]);
+      const syncLogs = (0, import_vue10.ref)([]);
+      const companyMappings = (0, import_vue10.ref)([]);
+      const config = (0, import_vue10.ref)({
         apiUrl: "",
         apiToken: "",
         isConnected: false,
@@ -36302,44 +37028,10 @@ ${codeFrame}` : message);
       const openCustomerList = () => {
         frappe.set_route("List", "Customer", { "invoice_ninja_id": ["!=", ""] });
       };
-      const connectionStatus = (0, import_vue.computed)(() => {
-        if (!config.value.apiUrl || !config.value.apiToken) {
-          return { text: "Not Configured", color: "text-gray-500", bg: "bg-gray-100" };
-        }
-        if (config.value.isConnected) {
-          return { text: "Connected", color: "text-green-700", bg: "bg-green-100" };
-        }
-        return { text: "Disconnected", color: "text-red-700", bg: "bg-red-100" };
-      });
-      const syncStatusDisplay = (0, import_vue.computed)(() => {
-        switch (stats.value.syncStatus) {
-          case "syncing":
-            return { text: "Syncing...", color: "text-blue-700", bg: "bg-blue-100" };
-          case "success":
-            return { text: "Up to date", color: "text-green-700", bg: "bg-green-100" };
-          case "error":
-            return { text: "Sync Error", color: "text-red-700", bg: "bg-red-100" };
-          default:
-            return { text: "Idle", color: "text-gray-700", bg: "bg-gray-100" };
-        }
-      });
-      const formatDate = (dateString) => {
-        if (!dateString)
-          return "Never";
-        return new Date(dateString).toLocaleString();
+      const handleCloseError = () => {
+        error.value = null;
       };
-      const formatActivityType = (type) => {
-        const types = {
-          "customer_sync": "Customer Sync",
-          "invoice_sync": "Invoice Sync",
-          "payment_sync": "Payment Sync",
-          "quote_sync": "Quote Sync",
-          "product_sync": "Product Sync",
-          "error": "Error"
-        };
-        return types[type] || type;
-      };
-      (0, import_vue.onMounted)(() => {
+      (0, import_vue10.onMounted)(() => {
         fetchDashboardData();
         fetchCompanyMappings();
         const refreshInterval = setInterval(() => {
@@ -36352,440 +37044,86 @@ ${codeFrame}` : message);
           clearInterval(refreshInterval);
         };
       });
-      const __returned__ = { loading, syncing, loadingMappings, error, stats, recentActivity, syncLogs, companyMappings, config, fetchDashboardData, triggerSync, testConnection, fetchCompanyMappings, refreshCompanyMappings, openConfiguration, openSettings, openSyncLogs, openInvoiceList, openCustomerList, connectionStatus, syncStatusDisplay, formatDate, formatActivityType, ref: import_vue.ref, computed: import_vue.computed, onMounted: import_vue.onMounted };
+      const __returned__ = { loading, syncing, loadingMappings, error, stats, recentActivity, syncLogs, companyMappings, config, fetchDashboardData, triggerSync, testConnection, fetchCompanyMappings, refreshCompanyMappings, openConfiguration, openSettings, openSyncLogs, openInvoiceList, openCustomerList, handleCloseError, ref: import_vue10.ref, onMounted: import_vue10.onMounted, DashboardHeader: DashboardHeader_default2, StatsGrid: StatsGrid_default2, CompanyMappings: CompanyMappings_default2, SyncControls: SyncControls_default2, RecentActivity: RecentActivity_default2, SyncLogs: SyncLogs_default2, QuickActions: QuickActions_default2, ErrorAlert: ErrorAlert_default2 };
       Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
       return __returned__;
     }
   };
 
   // sfc-template:/workspace/development/novizna/apps/invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/InvoiceNinjaDashboard.vue?type=template
-  var import_vue2 = __toESM(require_vue());
-  var _withScopeId = (n) => ((0, import_vue2.pushScopeId)("data-v-09f26faf"), n = n(), (0, import_vue2.popScopeId)(), n);
-  var _hoisted_1 = { class: "invoice-ninja-dashboard p-6 max-w-7xl mx-auto" };
-  var _hoisted_2 = {
-    key: 0,
-    class: "alert alert-error mb-6"
-  };
-  var _hoisted_3 = { class: "alert-content" };
-  var _hoisted_4 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("strong", null, "Error:", -1));
-  var _hoisted_5 = { class: "dashboard-header mb-6" };
-  var _hoisted_6 = { class: "header-content" };
-  var _hoisted_7 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", null, [
-    /* @__PURE__ */ (0, import_vue2.createElementVNode)("h1", { class: "text-2xl font-bold text-gray-900" }, "Invoice Ninja Integration"),
-    /* @__PURE__ */ (0, import_vue2.createElementVNode)("p", { class: "text-gray-600 mt-1" }, "Manage your Invoice Ninja synchronization and data")
-  ], -1));
-  var _hoisted_8 = { class: "header-actions" };
-  var _hoisted_9 = { class: "status-badges" };
-  var _hoisted_10 = { class: "stats-grid mb-8" };
-  var _hoisted_11 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "stat-icon stat-icon-blue" }, " \u{1F4C4} ", -1));
-  var _hoisted_12 = { class: "stat-content" };
-  var _hoisted_13 = { class: "stat-number" };
-  var _hoisted_14 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "stat-label" }, "Total Invoices", -1));
-  var _hoisted_15 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "stat-sublabel" }, "Synced from Invoice Ninja", -1));
-  var _hoisted_16 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "stat-icon stat-icon-green" }, " \u{1F465} ", -1));
-  var _hoisted_17 = { class: "stat-content" };
-  var _hoisted_18 = { class: "stat-number" };
-  var _hoisted_19 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "stat-label" }, "Total Clients", -1));
-  var _hoisted_20 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "stat-sublabel" }, "Synced customers", -1));
-  var _hoisted_21 = { class: "stat-card" };
-  var _hoisted_22 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "stat-icon stat-icon-orange" }, " \u{1F4B0} ", -1));
-  var _hoisted_23 = { class: "stat-content" };
-  var _hoisted_24 = { class: "stat-number" };
-  var _hoisted_25 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "stat-label" }, "Pending Payments", -1));
-  var _hoisted_26 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "stat-sublabel" }, "Awaiting payment", -1));
-  var _hoisted_27 = { class: "stat-card" };
-  var _hoisted_28 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "stat-icon stat-icon-red" }, " \u26A0\uFE0F ", -1));
-  var _hoisted_29 = { class: "stat-content" };
-  var _hoisted_30 = { class: "stat-number" };
-  var _hoisted_31 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "stat-label" }, "Overdue Invoices", -1));
-  var _hoisted_32 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "stat-sublabel" }, "Past due date", -1));
-  var _hoisted_33 = { class: "dashboard-card mb-6" };
-  var _hoisted_34 = { class: "card-header" };
-  var _hoisted_35 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("h2", { class: "text-lg font-semibold text-gray-900" }, "\u{1F3E2} Company Mappings", -1));
-  var _hoisted_36 = ["disabled"];
-  var _hoisted_37 = { class: "card-content" };
-  var _hoisted_38 = {
-    key: 0,
-    class: "empty-state"
-  };
-  var _hoisted_39 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("p", { class: "text-gray-600" }, "No company mappings configured", -1));
-  var _hoisted_40 = {
-    key: 1,
-    class: "company-mappings-list"
-  };
-  var _hoisted_41 = { class: "mapping-info" };
-  var _hoisted_42 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("span", { class: "mapping-arrow" }, "\u2194", -1));
-  var _hoisted_43 = {
-    key: 0,
-    class: "default-badge"
-  };
-  var _hoisted_44 = { class: "dashboard-card mb-6" };
-  var _hoisted_45 = { class: "card-header" };
-  var _hoisted_46 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("h2", { class: "text-lg font-semibold text-gray-900" }, "Synchronization Controls", -1));
-  var _hoisted_47 = { class: "text-sm text-gray-500" };
-  var _hoisted_48 = { class: "card-content" };
-  var _hoisted_49 = { class: "sync-controls" };
-  var _hoisted_50 = { class: "sync-buttons" };
-  var _hoisted_51 = ["disabled"];
-  var _hoisted_52 = {
-    key: 0,
-    class: "loading-spinner-sm"
-  };
-  var _hoisted_53 = { class: "sync-options" };
-  var _hoisted_54 = ["disabled"];
-  var _hoisted_55 = ["disabled"];
-  var _hoisted_56 = ["disabled"];
-  var _hoisted_57 = { class: "sync-info" };
-  var _hoisted_58 = { class: "info-item" };
-  var _hoisted_59 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("span", { class: "info-label" }, "Auto Sync:", -1));
-  var _hoisted_60 = { class: "info-item" };
-  var _hoisted_61 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("span", { class: "info-label" }, "Sync Interval:", -1));
-  var _hoisted_62 = { class: "text-gray-600" };
-  var _hoisted_63 = { class: "dashboard-grid" };
-  var _hoisted_64 = { class: "dashboard-card" };
-  var _hoisted_65 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("h3", { class: "text-lg font-semibold text-gray-900" }, "Recent Activity", -1));
-  var _hoisted_66 = { class: "card-content" };
-  var _hoisted_67 = {
-    key: 0,
-    class: "text-center py-4"
-  };
-  var _hoisted_68 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "loading-spinner" }, null, -1));
-  var _hoisted_69 = [
-    _hoisted_68
-  ];
-  var _hoisted_70 = {
-    key: 1,
-    class: "text-center py-8 text-gray-500"
-  };
-  var _hoisted_71 = {
-    key: 2,
-    class: "activity-list"
-  };
-  var _hoisted_72 = { class: "activity-content" };
-  var _hoisted_73 = { class: "activity-title" };
-  var _hoisted_74 = { class: "activity-description" };
-  var _hoisted_75 = { class: "activity-time" };
-  var _hoisted_76 = { class: "dashboard-card" };
-  var _hoisted_77 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("h3", { class: "text-lg font-semibold text-gray-900" }, "Sync Logs", -1));
-  var _hoisted_78 = { class: "card-content" };
-  var _hoisted_79 = {
-    key: 0,
-    class: "text-center py-4"
-  };
-  var _hoisted_80 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "loading-spinner" }, null, -1));
-  var _hoisted_81 = [
-    _hoisted_80
-  ];
-  var _hoisted_82 = {
-    key: 1,
-    class: "text-center py-8 text-gray-500"
-  };
-  var _hoisted_83 = {
-    key: 2,
-    class: "logs-list"
-  };
-  var _hoisted_84 = { class: "log-content" };
-  var _hoisted_85 = { class: "log-title" };
-  var _hoisted_86 = { class: "log-message" };
-  var _hoisted_87 = { class: "log-time" };
-  var _hoisted_88 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "card-header" }, [
-    /* @__PURE__ */ (0, import_vue2.createElementVNode)("h3", { class: "text-lg font-semibold text-gray-900" }, "Quick Actions")
-  ], -1));
-  var _hoisted_89 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "action-icon" }, "\u2699\uFE0F", -1));
-  var _hoisted_90 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "action-content" }, [
-    /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "action-title" }, "Configuration"),
-    /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "action-description" }, "Manage API settings and sync preferences")
-  ], -1));
-  var _hoisted_91 = [
-    _hoisted_89,
-    _hoisted_90
-  ];
-  var _hoisted_92 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "action-icon" }, "\u{1F4CB}", -1));
-  var _hoisted_93 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "action-content" }, [
-    /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "action-title" }, "Sync Logs"),
-    /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "action-description" }, "View detailed synchronization history")
-  ], -1));
-  var _hoisted_94 = [
-    _hoisted_92,
-    _hoisted_93
-  ];
-  var _hoisted_95 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "action-icon" }, "\u{1F4C4}", -1));
-  var _hoisted_96 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "action-content" }, [
-    /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "action-title" }, "Synced Invoices"),
-    /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "action-description" }, "Browse invoices from Invoice Ninja")
-  ], -1));
-  var _hoisted_97 = [
-    _hoisted_95,
-    _hoisted_96
-  ];
-  var _hoisted_98 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "action-icon" }, "\u{1F465}", -1));
-  var _hoisted_99 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "action-content" }, [
-    /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "action-title" }, "Synced Customers"),
-    /* @__PURE__ */ (0, import_vue2.createElementVNode)("div", { class: "action-description" }, "Manage synchronized customer data")
-  ], -1));
-  var _hoisted_100 = [
-    _hoisted_98,
-    _hoisted_99
-  ];
-  function render(_ctx, _cache, $props, $setup, $data, $options) {
-    return (0, import_vue2.openBlock)(), (0, import_vue2.createElementBlock)("div", _hoisted_1, [
-      (0, import_vue2.createCommentVNode)(" Error Alert "),
-      $setup.error ? ((0, import_vue2.openBlock)(), (0, import_vue2.createElementBlock)("div", _hoisted_2, [
-        (0, import_vue2.createElementVNode)("div", _hoisted_3, [
-          _hoisted_4,
-          (0, import_vue2.createTextVNode)(" " + (0, import_vue2.toDisplayString)($setup.error) + " ", 1),
-          (0, import_vue2.createElementVNode)("button", {
-            onClick: _cache[0] || (_cache[0] = ($event) => $setup.error = null),
-            class: "alert-close"
-          }, "\xD7")
-        ])
-      ])) : (0, import_vue2.createCommentVNode)("v-if", true),
-      (0, import_vue2.createCommentVNode)(" Header Section "),
-      (0, import_vue2.createElementVNode)("div", _hoisted_5, [
-        (0, import_vue2.createElementVNode)("div", _hoisted_6, [
-          _hoisted_7,
-          (0, import_vue2.createElementVNode)("div", _hoisted_8, [
-            (0, import_vue2.createElementVNode)("div", _hoisted_9, [
-              (0, import_vue2.createElementVNode)("span", {
-                class: (0, import_vue2.normalizeClass)(["status-badge", $setup.connectionStatus.bg, $setup.connectionStatus.color])
-              }, (0, import_vue2.toDisplayString)($setup.connectionStatus.text), 3),
-              (0, import_vue2.createElementVNode)("span", {
-                class: (0, import_vue2.normalizeClass)(["status-badge", $setup.syncStatusDisplay.bg, $setup.syncStatusDisplay.color])
-              }, (0, import_vue2.toDisplayString)($setup.syncStatusDisplay.text), 3)
-            ]),
-            (0, import_vue2.createElementVNode)("button", {
-              onClick: $setup.testConnection,
-              class: "btn btn-outline"
-            }, " Test Connection "),
-            (0, import_vue2.createElementVNode)("button", {
-              onClick: $setup.openConfiguration,
-              class: "btn btn-primary"
-            }, " Configure ")
-          ])
-        ])
+  var import_vue11 = __toESM(require_vue());
+  var _hoisted_121 = { class: "invoice-ninja-dashboard p-6 max-w-7xl mx-auto" };
+  var _hoisted_210 = { class: "dashboard-grid" };
+  function render9(_ctx, _cache, $props, $setup, $data, $options) {
+    return (0, import_vue11.openBlock)(), (0, import_vue11.createElementBlock)("div", _hoisted_121, [
+      (0, import_vue11.createCommentVNode)(" Error Alert "),
+      (0, import_vue11.createVNode)($setup["ErrorAlert"], {
+        error: $setup.error,
+        onCloseError: $setup.handleCloseError
+      }, null, 8, ["error"]),
+      (0, import_vue11.createCommentVNode)(" Header Section "),
+      (0, import_vue11.createVNode)($setup["DashboardHeader"], {
+        config: $setup.config,
+        stats: $setup.stats,
+        onTestConnection: $setup.testConnection,
+        onOpenConfiguration: $setup.openConfiguration
+      }, null, 8, ["config", "stats"]),
+      (0, import_vue11.createCommentVNode)(" Main Stats Grid "),
+      (0, import_vue11.createVNode)($setup["StatsGrid"], {
+        stats: $setup.stats,
+        loading: $setup.loading,
+        onOpenInvoiceList: $setup.openInvoiceList,
+        onOpenCustomerList: $setup.openCustomerList
+      }, null, 8, ["stats", "loading"]),
+      (0, import_vue11.createCommentVNode)(" Company Mappings "),
+      (0, import_vue11.createVNode)($setup["CompanyMappings"], {
+        mappings: $setup.companyMappings,
+        loading: $setup.loadingMappings,
+        onRefreshMappings: $setup.refreshCompanyMappings,
+        onOpenSettings: $setup.openSettings
+      }, null, 8, ["mappings", "loading"]),
+      (0, import_vue11.createCommentVNode)(" Sync Controls "),
+      (0, import_vue11.createVNode)($setup["SyncControls"], {
+        stats: $setup.stats,
+        config: $setup.config,
+        syncing: $setup.syncing,
+        loading: $setup.loading,
+        onTriggerSync: $setup.triggerSync
+      }, null, 8, ["stats", "config", "syncing", "loading"]),
+      (0, import_vue11.createCommentVNode)(" Two Column Layout "),
+      (0, import_vue11.createElementVNode)("div", _hoisted_210, [
+        (0, import_vue11.createCommentVNode)(" Recent Activity "),
+        (0, import_vue11.createVNode)($setup["RecentActivity"], {
+          activity: $setup.recentActivity,
+          loading: $setup.loading,
+          onRefreshData: $setup.fetchDashboardData
+        }, null, 8, ["activity", "loading"]),
+        (0, import_vue11.createCommentVNode)(" Sync Logs "),
+        (0, import_vue11.createVNode)($setup["SyncLogs"], {
+          logs: $setup.syncLogs,
+          loading: $setup.loading,
+          onOpenSyncLogs: $setup.openSyncLogs
+        }, null, 8, ["logs", "loading"])
       ]),
-      (0, import_vue2.createCommentVNode)(" Main Stats Grid "),
-      (0, import_vue2.createElementVNode)("div", _hoisted_10, [
-        (0, import_vue2.createElementVNode)("div", {
-          class: "stat-card clickable",
-          onClick: $setup.openInvoiceList
-        }, [
-          _hoisted_11,
-          (0, import_vue2.createElementVNode)("div", _hoisted_12, [
-            (0, import_vue2.createElementVNode)("div", _hoisted_13, (0, import_vue2.toDisplayString)($setup.loading ? "..." : $setup.stats.totalInvoices), 1),
-            _hoisted_14,
-            _hoisted_15
-          ])
-        ]),
-        (0, import_vue2.createElementVNode)("div", {
-          class: "stat-card clickable",
-          onClick: $setup.openCustomerList
-        }, [
-          _hoisted_16,
-          (0, import_vue2.createElementVNode)("div", _hoisted_17, [
-            (0, import_vue2.createElementVNode)("div", _hoisted_18, (0, import_vue2.toDisplayString)($setup.loading ? "..." : $setup.stats.totalClients), 1),
-            _hoisted_19,
-            _hoisted_20
-          ])
-        ]),
-        (0, import_vue2.createElementVNode)("div", _hoisted_21, [
-          _hoisted_22,
-          (0, import_vue2.createElementVNode)("div", _hoisted_23, [
-            (0, import_vue2.createElementVNode)("div", _hoisted_24, (0, import_vue2.toDisplayString)($setup.loading ? "..." : $setup.stats.pendingPayments), 1),
-            _hoisted_25,
-            _hoisted_26
-          ])
-        ]),
-        (0, import_vue2.createElementVNode)("div", _hoisted_27, [
-          _hoisted_28,
-          (0, import_vue2.createElementVNode)("div", _hoisted_29, [
-            (0, import_vue2.createElementVNode)("div", _hoisted_30, (0, import_vue2.toDisplayString)($setup.loading ? "..." : $setup.stats.overdueInvoices), 1),
-            _hoisted_31,
-            _hoisted_32
-          ])
-        ])
-      ]),
-      (0, import_vue2.createCommentVNode)(" Company Mappings "),
-      (0, import_vue2.createElementVNode)("div", _hoisted_33, [
-        (0, import_vue2.createElementVNode)("div", _hoisted_34, [
-          _hoisted_35,
-          (0, import_vue2.createElementVNode)("button", {
-            onClick: $setup.refreshCompanyMappings,
-            class: "refresh-button",
-            disabled: $setup.loadingMappings
-          }, (0, import_vue2.toDisplayString)($setup.loadingMappings ? "..." : "\u21BB Refresh"), 9, _hoisted_36)
-        ]),
-        (0, import_vue2.createElementVNode)("div", _hoisted_37, [
-          $setup.companyMappings.length === 0 ? ((0, import_vue2.openBlock)(), (0, import_vue2.createElementBlock)("div", _hoisted_38, [
-            _hoisted_39,
-            (0, import_vue2.createElementVNode)("button", {
-              onClick: $setup.openSettings,
-              class: "mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-            }, " Configure Mappings ")
-          ])) : ((0, import_vue2.openBlock)(), (0, import_vue2.createElementBlock)("div", _hoisted_40, [
-            ((0, import_vue2.openBlock)(true), (0, import_vue2.createElementBlock)(import_vue2.Fragment, null, (0, import_vue2.renderList)($setup.companyMappings, (mapping) => {
-              return (0, import_vue2.openBlock)(), (0, import_vue2.createElementBlock)("div", {
-                key: mapping.invoice_ninja_company_id,
-                class: (0, import_vue2.normalizeClass)(["mapping-item", { "default-mapping": mapping.is_default }])
-              }, [
-                (0, import_vue2.createElementVNode)("div", _hoisted_41, [
-                  (0, import_vue2.createElementVNode)("strong", null, (0, import_vue2.toDisplayString)(mapping.erpnext_company), 1),
-                  _hoisted_42,
-                  (0, import_vue2.createElementVNode)("span", null, (0, import_vue2.toDisplayString)(mapping.invoice_ninja_company_name), 1),
-                  mapping.is_default ? ((0, import_vue2.openBlock)(), (0, import_vue2.createElementBlock)("span", _hoisted_43, "Default")) : (0, import_vue2.createCommentVNode)("v-if", true)
-                ])
-              ], 2);
-            }), 128))
-          ]))
-        ])
-      ]),
-      (0, import_vue2.createCommentVNode)(" Sync Controls "),
-      (0, import_vue2.createElementVNode)("div", _hoisted_44, [
-        (0, import_vue2.createElementVNode)("div", _hoisted_45, [
-          _hoisted_46,
-          (0, import_vue2.createElementVNode)("div", _hoisted_47, " Last sync: " + (0, import_vue2.toDisplayString)($setup.formatDate($setup.stats.lastSyncTime)), 1)
-        ]),
-        (0, import_vue2.createElementVNode)("div", _hoisted_48, [
-          (0, import_vue2.createElementVNode)("div", _hoisted_49, [
-            (0, import_vue2.createElementVNode)("div", _hoisted_50, [
-              (0, import_vue2.createElementVNode)("button", {
-                onClick: _cache[1] || (_cache[1] = ($event) => $setup.triggerSync("all")),
-                disabled: $setup.syncing || $setup.loading,
-                class: "btn btn-primary"
-              }, [
-                $setup.syncing ? ((0, import_vue2.openBlock)(), (0, import_vue2.createElementBlock)("span", _hoisted_52)) : (0, import_vue2.createCommentVNode)("v-if", true),
-                (0, import_vue2.createTextVNode)(" " + (0, import_vue2.toDisplayString)($setup.syncing ? "Syncing..." : "Full Sync"), 1)
-              ], 8, _hoisted_51),
-              (0, import_vue2.createElementVNode)("div", _hoisted_53, [
-                (0, import_vue2.createElementVNode)("button", {
-                  onClick: _cache[2] || (_cache[2] = ($event) => $setup.triggerSync("customers")),
-                  disabled: $setup.syncing || $setup.loading,
-                  class: "btn btn-secondary"
-                }, " Sync Customers ", 8, _hoisted_54),
-                (0, import_vue2.createElementVNode)("button", {
-                  onClick: _cache[3] || (_cache[3] = ($event) => $setup.triggerSync("invoices")),
-                  disabled: $setup.syncing || $setup.loading,
-                  class: "btn btn-secondary"
-                }, " Sync Invoices ", 8, _hoisted_55),
-                (0, import_vue2.createElementVNode)("button", {
-                  onClick: _cache[4] || (_cache[4] = ($event) => $setup.triggerSync("payments")),
-                  disabled: $setup.syncing || $setup.loading,
-                  class: "btn btn-secondary"
-                }, " Sync Payments ", 8, _hoisted_56)
-              ])
-            ]),
-            (0, import_vue2.createElementVNode)("div", _hoisted_57, [
-              (0, import_vue2.createElementVNode)("div", _hoisted_58, [
-                _hoisted_59,
-                (0, import_vue2.createElementVNode)("span", {
-                  class: (0, import_vue2.normalizeClass)($setup.config.autoSync ? "text-green-600" : "text-gray-600")
-                }, (0, import_vue2.toDisplayString)($setup.config.autoSync ? "Enabled" : "Disabled"), 3)
-              ]),
-              (0, import_vue2.createElementVNode)("div", _hoisted_60, [
-                _hoisted_61,
-                (0, import_vue2.createElementVNode)("span", _hoisted_62, (0, import_vue2.toDisplayString)($setup.config.syncInterval) + " minutes", 1)
-              ])
-            ])
-          ])
-        ])
-      ]),
-      (0, import_vue2.createCommentVNode)(" Two Column Layout "),
-      (0, import_vue2.createElementVNode)("div", _hoisted_63, [
-        (0, import_vue2.createCommentVNode)(" Recent Activity "),
-        (0, import_vue2.createElementVNode)("div", _hoisted_64, [
-          (0, import_vue2.createElementVNode)("div", { class: "card-header" }, [
-            _hoisted_65,
-            (0, import_vue2.createElementVNode)("button", {
-              onClick: $setup.fetchDashboardData,
-              class: "btn-refresh"
-            }, " \u{1F504} ")
-          ]),
-          (0, import_vue2.createElementVNode)("div", _hoisted_66, [
-            $setup.loading ? ((0, import_vue2.openBlock)(), (0, import_vue2.createElementBlock)("div", _hoisted_67, [..._hoisted_69])) : $setup.recentActivity.length === 0 ? ((0, import_vue2.openBlock)(), (0, import_vue2.createElementBlock)("div", _hoisted_70, " No recent activity ")) : ((0, import_vue2.openBlock)(), (0, import_vue2.createElementBlock)("div", _hoisted_71, [
-              ((0, import_vue2.openBlock)(true), (0, import_vue2.createElementBlock)(import_vue2.Fragment, null, (0, import_vue2.renderList)($setup.recentActivity, (activity) => {
-                return (0, import_vue2.openBlock)(), (0, import_vue2.createElementBlock)("div", {
-                  key: activity.id,
-                  class: "activity-item"
-                }, [
-                  (0, import_vue2.createElementVNode)("div", _hoisted_72, [
-                    (0, import_vue2.createElementVNode)("div", _hoisted_73, (0, import_vue2.toDisplayString)($setup.formatActivityType(activity.type)), 1),
-                    (0, import_vue2.createElementVNode)("div", _hoisted_74, (0, import_vue2.toDisplayString)(activity.description), 1),
-                    (0, import_vue2.createElementVNode)("div", _hoisted_75, (0, import_vue2.toDisplayString)($setup.formatDate(activity.created_at)), 1)
-                  ]),
-                  (0, import_vue2.createElementVNode)("div", {
-                    class: (0, import_vue2.normalizeClass)(["activity-status", activity.status === "success" ? "status-success" : "status-error"])
-                  }, (0, import_vue2.toDisplayString)(activity.status), 3)
-                ]);
-              }), 128))
-            ]))
-          ])
-        ]),
-        (0, import_vue2.createCommentVNode)(" Sync Logs "),
-        (0, import_vue2.createElementVNode)("div", _hoisted_76, [
-          (0, import_vue2.createElementVNode)("div", { class: "card-header" }, [
-            _hoisted_77,
-            (0, import_vue2.createElementVNode)("button", {
-              onClick: $setup.openSyncLogs,
-              class: "btn btn-sm btn-outline"
-            }, " View All ")
-          ]),
-          (0, import_vue2.createElementVNode)("div", _hoisted_78, [
-            $setup.loading ? ((0, import_vue2.openBlock)(), (0, import_vue2.createElementBlock)("div", _hoisted_79, [..._hoisted_81])) : $setup.syncLogs.length === 0 ? ((0, import_vue2.openBlock)(), (0, import_vue2.createElementBlock)("div", _hoisted_82, " No sync logs available ")) : ((0, import_vue2.openBlock)(), (0, import_vue2.createElementBlock)("div", _hoisted_83, [
-              ((0, import_vue2.openBlock)(true), (0, import_vue2.createElementBlock)(import_vue2.Fragment, null, (0, import_vue2.renderList)($setup.syncLogs, (log) => {
-                return (0, import_vue2.openBlock)(), (0, import_vue2.createElementBlock)("div", {
-                  key: log.id,
-                  class: "log-item"
-                }, [
-                  (0, import_vue2.createElementVNode)("div", _hoisted_84, [
-                    (0, import_vue2.createElementVNode)("div", _hoisted_85, (0, import_vue2.toDisplayString)(log.sync_type) + " - " + (0, import_vue2.toDisplayString)(log.entity_type), 1),
-                    (0, import_vue2.createElementVNode)("div", _hoisted_86, (0, import_vue2.toDisplayString)(log.message), 1),
-                    (0, import_vue2.createElementVNode)("div", _hoisted_87, (0, import_vue2.toDisplayString)($setup.formatDate(log.created_at)), 1)
-                  ]),
-                  (0, import_vue2.createElementVNode)("div", {
-                    class: (0, import_vue2.normalizeClass)(["log-status", log.status === "success" ? "status-success" : "status-error"])
-                  }, (0, import_vue2.toDisplayString)(log.status), 3)
-                ]);
-              }), 128))
-            ]))
-          ])
-        ])
-      ]),
-      (0, import_vue2.createCommentVNode)(" Quick Actions Footer "),
-      (0, import_vue2.createElementVNode)("div", { class: "dashboard-card mt-6" }, [
-        _hoisted_88,
-        (0, import_vue2.createElementVNode)("div", { class: "card-content" }, [
-          (0, import_vue2.createElementVNode)("div", { class: "quick-actions" }, [
-            (0, import_vue2.createElementVNode)("button", {
-              onClick: $setup.openConfiguration,
-              class: "action-button"
-            }, [..._hoisted_91]),
-            (0, import_vue2.createElementVNode)("button", {
-              onClick: $setup.openSyncLogs,
-              class: "action-button"
-            }, [..._hoisted_94]),
-            (0, import_vue2.createElementVNode)("button", {
-              onClick: $setup.openInvoiceList,
-              class: "action-button"
-            }, [..._hoisted_97]),
-            (0, import_vue2.createElementVNode)("button", {
-              onClick: $setup.openCustomerList,
-              class: "action-button"
-            }, [..._hoisted_100])
-          ])
-        ])
-      ])
+      (0, import_vue11.createCommentVNode)(" Quick Actions Footer "),
+      (0, import_vue11.createVNode)($setup["QuickActions"], {
+        onOpenConfiguration: $setup.openConfiguration,
+        onOpenSyncLogs: $setup.openSyncLogs,
+        onOpenInvoiceList: $setup.openInvoiceList,
+        onOpenCustomerList: $setup.openCustomerList
+      })
     ]);
   }
 
   // ../invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/InvoiceNinjaDashboard.vue
-  InvoiceNinjaDashboard_default.render = render;
+  InvoiceNinjaDashboard_default.render = render9;
   InvoiceNinjaDashboard_default.__file = "../invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/InvoiceNinjaDashboard.vue";
   InvoiceNinjaDashboard_default.__scopeId = "data-v-09f26faf";
   var InvoiceNinjaDashboard_default2 = InvoiceNinjaDashboard_default;
 
   // ../invoice_ninja_integration/invoice_ninja_integration/public/invoice_ninja_dashboard/invoice_ninja_dashboard.bundle.js
   function setup_ij_dashboard_vue(wrapper) {
-    const app = (0, import_vue3.createApp)(InvoiceNinjaDashboard_default2);
+    const app = (0, import_vue12.createApp)(InvoiceNinjaDashboard_default2);
     app.mount(wrapper.get(0));
     return app;
   }
@@ -36794,4 +37132,4 @@ ${codeFrame}` : message);
   var invoice_ninja_dashboard_bundle_default = setup_ij_dashboard_vue;
 })();
 /*! #__NO_SIDE_EFFECTS__ */
-//# sourceMappingURL=invoice_ninja_dashboard.bundle.DDLMFCLL.js.map
+//# sourceMappingURL=invoice_ninja_dashboard.bundle.FAEPSDBZ.js.map
