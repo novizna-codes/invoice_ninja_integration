@@ -370,3 +370,172 @@ def get_invoice_ninja_companies(settings_name=None):
 	except Exception as e:
 		frappe.log_error(f"Error fetching Invoice Ninja companies: {str(e)}", "Invoice Ninja API Error")
 		return {"success": False, "error": str(e)}
+
+
+# Dashboard API Methods
+@frappe.whitelist()
+def get_configuration():
+	"""Get Invoice Ninja integration configuration for dashboard"""
+	try:
+		settings = frappe.get_single("Invoice Ninja Settings")
+		
+		return {
+			"apiUrl": settings.invoice_ninja_url or "",
+			"apiToken": bool(settings.api_token),  # Don't expose actual token
+			"isConnected": settings.enabled and bool(settings.api_token),
+			"autoSync": settings.enable_realtime_sync if hasattr(settings, 'enable_realtime_sync') else False,
+			"syncInterval": 60  # Default sync interval
+		}
+	except Exception as e:
+		frappe.log_error(f"Error getting configuration: {str(e)}")
+		return {
+			"apiUrl": "",
+			"apiToken": False,
+			"isConnected": False,
+			"autoSync": False,
+			"syncInterval": 60
+		}
+
+
+@frappe.whitelist()
+def get_dashboard_stats():
+	"""Get dashboard statistics"""
+	try:
+		# Count synced invoices
+		total_invoices = frappe.db.count("Sales Invoice", {
+			"invoice_ninja_id": ["!=", ""]
+		})
+		
+		# Count synced customers
+		total_clients = frappe.db.count("Customer", {
+			"invoice_ninja_id": ["!=", ""]
+		})
+		
+		# Count pending payments (unpaid invoices)
+		pending_payments = frappe.db.count("Sales Invoice", {
+			"invoice_ninja_id": ["!=", ""],
+			"status": ["in", ["Draft", "Unpaid", "Partially Paid"]]
+		})
+		
+		# Count overdue invoices
+		overdue_invoices = frappe.db.count("Sales Invoice", {
+			"invoice_ninja_id": ["!=", ""],
+			"status": ["in", ["Unpaid", "Partially Paid"]],
+			"due_date": ["<", frappe.utils.today()]
+		})
+		
+		# Get last sync time
+		last_sync_log = frappe.db.get_value(
+			"Invoice Ninja Sync Logs",
+			{"status": "Success"},
+			"creation",
+			order_by="creation desc"
+		)
+		
+		return {
+			"totalInvoices": total_invoices,
+			"totalClients": total_clients,
+			"pendingPayments": pending_payments,
+			"overdueInvoices": overdue_invoices,
+			"lastSyncTime": last_sync_log,
+			"syncStatus": "idle"
+		}
+	except Exception as e:
+		frappe.log_error(f"Error getting dashboard stats: {str(e)}")
+		return {
+			"totalInvoices": 0,
+			"totalClients": 0,
+			"pendingPayments": 0,
+			"overdueInvoices": 0,
+			"lastSyncTime": None,
+			"syncStatus": "error"
+		}
+
+
+@frappe.whitelist()
+def get_recent_activity(limit=10):
+	"""Get recent sync activity"""
+	try:
+		# Get recent sync logs
+		activities = frappe.db.get_all(
+			"Invoice Ninja Sync Logs",
+			fields=["name", "sync_type", "entity_type", "status", "message", "creation"],
+			order_by="creation desc",
+			limit=int(limit)
+		)
+		
+		return [{
+			"id": activity.name,
+			"type": f"{activity.sync_type}_{activity.entity_type}".lower() if activity.sync_type and activity.entity_type else "sync",
+			"description": activity.message or f"Synchronized {activity.entity_type or 'data'}",
+			"status": activity.status.lower() if activity.status else "unknown",
+			"created_at": activity.creation
+		} for activity in activities]
+		
+	except Exception as e:
+		frappe.log_error(f"Error getting recent activity: {str(e)}")
+		return []
+
+
+@frappe.whitelist()
+def get_sync_logs(limit=5):
+	"""Get sync logs"""
+	try:
+		logs = frappe.db.get_all(
+			"Invoice Ninja Sync Logs",
+			fields=["name", "sync_type", "entity_type", "status", "message", "creation"],
+			order_by="creation desc",
+			limit=int(limit)
+		)
+		
+		return [{
+			"id": log.name,
+			"sync_type": log.sync_type or "manual",
+			"entity_type": log.entity_type or "unknown",
+			"status": log.status.lower() if log.status else "unknown",
+			"message": log.message or f"Synchronized {log.entity_type or 'data'}",
+			"created_at": log.creation
+		} for log in logs]
+		
+	except Exception as e:
+		frappe.log_error(f"Error getting sync logs: {str(e)}")
+		return []
+
+
+@frappe.whitelist()
+def trigger_manual_sync(sync_type="all"):
+	"""Trigger manual synchronization"""
+	try:
+		from .tasks import (
+			sync_customers_from_invoice_ninja,
+			sync_invoices_from_invoice_ninja,
+			sync_payments_from_invoice_ninja
+		)
+		
+		if sync_type == "customers":
+			sync_customers_from_invoice_ninja()
+		elif sync_type == "invoices":
+			sync_invoices_from_invoice_ninja()
+		elif sync_type == "payments":
+			sync_payments_from_invoice_ninja()
+		elif sync_type == "all":
+			sync_customers_from_invoice_ninja()
+			sync_invoices_from_invoice_ninja() 
+			sync_payments_from_invoice_ninja()
+		else:
+			return {
+				"success": False,
+				"message": f"Invalid sync type: {sync_type}"
+			}
+		
+		return {
+			"success": True,
+			"message": f"Manual {sync_type} sync completed successfully"
+		}
+		
+	except Exception as e:
+		frappe.log_error(f"Error during manual sync: {str(e)}")
+		return {
+			"success": False,
+			"message": f"Sync failed: {str(e)}"
+		}
