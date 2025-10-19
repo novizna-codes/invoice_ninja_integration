@@ -54,10 +54,23 @@ class InvoiceNinjaClient:
 
 	def test_connection(self):
 		"""Test API connection"""
-		response = self._make_request('GET', 'ping')
-		return response is not None
+		try:
+			result = self._make_request('GET', 'ping')
+			return result is not None
+		except Exception as e:
+			frappe.log_error(f"Connection test failed: {str(e)}", "Invoice Ninja Connection Test")
+			return False
 
-	# Customer methods
+	# Company methods
+	def get_companies(self):
+		"""Get companies from Invoice Ninja"""
+		return self._make_request('GET', 'companies')
+
+	def get_company(self, company_id):
+		"""Get single company"""
+		return self._make_request('GET', f'companies/{company_id}')
+
+	# Client methods	# Customer methods
 	def get_customers(self, page=1, per_page=100):
 		"""Get customers from Invoice Ninja"""
 		params = {'page': page, 'per_page': per_page}

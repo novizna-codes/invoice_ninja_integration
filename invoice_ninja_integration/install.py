@@ -11,8 +11,8 @@ def after_migrate():
 
 
 def install_customizations():
-	"""Install custom fields and property setters from customizations folder"""
-	customizations_path = frappe.get_app_path("invoice_ninja_integration", "customizations")
+	"""Install custom fields and property setters from custom folder"""
+	customizations_path = frappe.get_app_path("invoice_ninja_integration", "invoice_ninja_integration", "custom")
 
 	if not os.path.exists(customizations_path):
 		return

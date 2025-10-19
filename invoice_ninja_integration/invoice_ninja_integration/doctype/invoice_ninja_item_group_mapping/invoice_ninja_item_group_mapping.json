@@ -1,0 +1,82 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-10-19 18:36:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "erp_group_section",
+  "item_group",
+  "column_break_rxad",
+  "item_group_name",
+  "invoice_ninja_group_section",
+  "invoice_ninja_item_group",
+  "column_break_kafy",
+  "invoice_ninja_item_group_name"
+ ],
+ "fields": [
+  {
+   "fieldname": "erp_group_section",
+   "fieldtype": "Section Break",
+   "label": "ERP Group"
+  },
+  {
+   "fieldname": "item_group",
+   "fieldtype": "Link",
+   "label": "Item Group",
+   "options": "Item Group",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_rxad",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "item_group.item_group_name",
+   "fieldname": "item_group_name",
+   "fieldtype": "Data",
+   "label": "Item Group Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "invoice_ninja_group_section",
+   "fieldtype": "Section Break",
+   "label": "Invoice Ninja Group"
+  },
+  {
+   "fieldname": "invoice_ninja_item_group",
+   "fieldtype": "Link",
+   "label": "Invoice Ninja Item Group",
+   "options": "Invoice Ninja Item Group",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_kafy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "invoice_ninja_item_group.group_name",
+   "fieldname": "invoice_ninja_item_group_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Invoice Ninja Item Group Name",
+   "reqd": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-10-19 18:36:00.000000",
+ "modified_by": "Administrator",
+ "module": "Invoice Ninja Integration",
+ "name": "Invoice Ninja Item Group Mapping",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

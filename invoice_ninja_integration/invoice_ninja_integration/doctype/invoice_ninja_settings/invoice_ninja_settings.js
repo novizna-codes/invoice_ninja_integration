@@ -3,6 +3,13 @@ frappe.ui.form.on('Invoice Ninja Settings', {
     refresh: function(frm) {
         // Add sync status indicators
         add_sync_status_indicators(frm);
+
+        // Add button to fetch companies
+        if (frm.doc.invoice_ninja_url && frm.doc.api_token) {
+            frm.add_custom_button(__('Fetch Companies'), function() {
+                fetch_invoice_ninja_companies(frm);
+            }, __('Invoice Ninja'));
+        }
     },
 
     test_connection: function(frm) {
@@ -35,6 +42,25 @@ frappe.ui.form.on('Invoice Ninja Settings', {
         frm.toggle_display('payment_sync_direction', frm.doc.enable_payment_sync);
     }
 });
+
+frappe.ui.form.on('Invoice Ninja Company Mapping', {
+    // cdt is Child DocType name i.e Quotation Item
+    // cdn is the row name for e.g bbfcb8da6a
+    invoice_ninja_company_id_add(frm, cdt, cdn) {
+
+        if (!frm._ninja_companies || frm._ninja_companies.length === 0) {
+            frappe.msgprint({
+                title: __('No Companies Found'),
+                message: __('No companies were found in your Invoice Ninja account.'),
+                indicator: 'yellow'
+            });
+            return;
+        }
+
+
+        apply_ninja_company_to_field(frm);
+    }
+})
 
 function add_sync_status_indicators(frm) {
     // Add visual indicators for sync directions
@@ -148,4 +174,55 @@ function show_manual_sync_dialog(frm) {
         }
     });
     d.show();
+}
+
+
+
+function fetch_invoice_ninja_companies(frm) {
+    frappe.call({
+        method: 'invoice_ninja_integration.api.get_invoice_ninja_companies',
+        callback: function(r) {
+            if (r.message && r.message.success) {
+                let companies = r.message.companies || [];
+
+                if (companies.length === 0) {
+                    frappe.msgprint({
+                        title: __('No Companies Found'),
+                        message: __('No companies were found in your Invoice Ninja account.'),
+                        indicator: 'yellow'
+                    });
+                    return;
+                }
+
+                // Store companies data in form for reference
+                frm._ninja_companies = companies;
+
+
+                // Refresh the child table
+                frappe.msgprint({
+                    title: __('Companies Fetched'),
+                    message: __('Successfully fetched {0} companies from Invoice Ninja', [companies.length]),
+                    indicator: 'green'
+                });
+
+            } else {
+                frappe.msgprint({
+                    title: __('Error'),
+                    message: __('Failed to fetch companies: {0}', [r.message?.error || 'Unknown error']),
+                    indicator: 'red'
+                });
+            }
+        }
+    });
+}
+
+
+function apply_ninja_company_to_field(frm) {
+    let company_options = frm._ninja_companies.map(company =>
+        `${company.id}:${company.name}`
+    ).join('\n');
+
+    // Update the field options for invoice_ninja_company_id in child table
+    frm.set_df_property('invoice_ninja_company_id', 'options', company_options);
+
 }

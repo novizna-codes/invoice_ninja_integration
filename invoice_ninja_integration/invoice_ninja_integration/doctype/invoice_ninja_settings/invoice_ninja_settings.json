@@ -16,9 +16,13 @@
   "column_break_6",
   "test_connection",
   "connection_status",
-  "company_mapping_section",
-  "company_mappings",
-  "sync_settings_section",
+   "company_mapping_section",
+   "company_mappings",
+   "customer_group_mapping_section",
+   "customer_group_mappings",
+   "item_group_mapping_section",
+   "item_group_mappings",
+   "sync_settings_section",
   "enable_customer_sync",
   "customer_sync_direction",
   "enable_invoice_sync",
@@ -99,18 +103,42 @@
    "fieldtype": "Section Break",
    "label": "Company Mappings"
   },
-  {
-   "fieldname": "company_mappings",
-   "fieldtype": "Table",
-   "label": "Company Mappings",
-   "options": "Invoice Ninja Company Mapping",
-   "description": "Map ERPNext companies to Invoice Ninja companies for proper document routing"
-  },
-  {
-   "fieldname": "sync_settings_section",
-   "fieldtype": "Section Break",
-   "label": "Sync Settings"
-  },
+   {
+    "fieldname": "company_mappings",
+    "fieldtype": "Table",
+    "label": "Company Mappings",
+    "options": "Invoice Ninja Company Mapping",
+    "description": "Map ERPNext companies to Invoice Ninja companies for proper document routing"
+   },
+   {
+    "fieldname": "customer_group_mapping_section",
+    "fieldtype": "Section Break",
+    "label": "Customer Group Mappings"
+   },
+   {
+    "fieldname": "customer_group_mappings",
+    "fieldtype": "Table",
+    "label": "Customer Group Mappings",
+    "options": "Invoice Ninja Customer Group Mapping",
+    "description": "Map ERPNext customer groups to Invoice Ninja customer groups"
+   },
+   {
+    "fieldname": "item_group_mapping_section",
+    "fieldtype": "Section Break",
+    "label": "Item Group Mappings"
+   },
+   {
+    "fieldname": "item_group_mappings",
+    "fieldtype": "Table",
+    "label": "Item Group Mappings",
+    "options": "Invoice Ninja Item Group Mapping",
+    "description": "Map ERPNext item groups to Invoice Ninja product categories"
+   },
+   {
+    "fieldname": "sync_settings_section",
+    "fieldtype": "Section Break",
+    "label": "Sync Settings"
+   },
   {
    "default": "1",
    "fieldname": "enable_customer_sync",

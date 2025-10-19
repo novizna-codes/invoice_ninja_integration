@@ -185,43 +185,47 @@ def sync_from_invoice_ninja(doctype, limit=50):
 	if not settings.enabled:
 		return {"success": False, "message": "Invoice Ninja integration is disabled"}
 
-	try:
-		client = get_client()
-		synced_count = 0
+	# try:
+	client = get_client()
+	synced_count = 0
 
-		if doctype == "Customer" and settings.enable_customer_sync:
-			customers = client.get_customers(per_page=limit)
-			if customers and customers.get('data'):
-				for customer in customers['data']:
-					sync_customer_from_invoice_ninja(customer)
-					synced_count += 1
+	if doctype == "Customer" and settings.enable_customer_sync:
+		customers = client.get_customers(per_page=limit)
+		if customers and customers.get('data'):
+			for customer in customers['data']:
+				sync_customer_from_invoice_ninja(customer)
+				synced_count += 1
 
-		elif doctype == "Sales Invoice" and settings.enable_invoice_sync:
-			invoices = client.get_invoices(per_page=limit, include='client,line_items')
-			if invoices and invoices.get('data'):
-				for invoice in invoices['data']:
-					sync_invoice_from_invoice_ninja(invoice)
-					synced_count += 1
+	elif doctype == "Sales Invoice" and settings.enable_invoice_sync:
+		invoices = client.get_invoices(per_page=limit, include='client,line_items')
+		if invoices and invoices.get('data'):
+			for invoice in invoices['data']:
+				sync_invoice_from_invoice_ninja(invoice)
+				synced_count += 1
 
-		elif doctype == "Quotation" and settings.enable_quote_sync:
-			quotes = client.get_quotes(per_page=limit, include='client,line_items')
-			if quotes and quotes.get('data'):
-				for quote in quotes['data']:
-					sync_quotation_from_invoice_ninja(quote)
-					synced_count += 1
+	elif doctype == "Quotation" and settings.enable_quote_sync:
+		quotes = client.get_quotes(per_page=limit, include='client,line_items')
+		if quotes and quotes.get('data'):
+			for quote in quotes['data']:
+				sync_quotation_from_invoice_ninja(quote)
+				synced_count += 1
 
-		elif doctype == "Item" and settings.enable_product_sync:
-			products = client.get_products(per_page=limit)
-			if products and products.get('data'):
-				for product in products['data']:
-					sync_item_from_invoice_ninja(product)
-					synced_count += 1
+	elif doctype == "Item" and settings.enable_product_sync:
+		products = client.get_products(per_page=limit)
+		if products and products.get('data'):
+			for product in products['data']:
+				sync_item_from_invoice_ninja(product)
+				synced_count += 1
 
-		return {"success": True, "message": f"Synced {synced_count} {doctype} records from Invoice Ninja"}
+	return {
+		"success": True,
+		"message": f"Synced {synced_count} {doctype} records from Invoice Ninja",
+		"synced_count": synced_count,
+	}
 
-	except Exception as e:
-		frappe.log_error(f"Error syncing {doctype} from Invoice Ninja: {str(e)}", "Invoice Ninja Sync Error")
-		return {"success": False, "message": str(e)}
+	# except Exception as e:
+	# 	frappe.log_error(f"Error syncing {doctype} from Invoice Ninja: {str(e)}", "Invoice Ninja Sync Error")
+	# 	return {"success": False, "message": str(e)}
 
 
 def sync_customer_from_invoice_ninja(customer_data):
@@ -357,11 +361,24 @@ def get_invoice_ninja_companies(settings_name=None):
 		if response and 'data' in response:
 			companies = []
 			for company in response['data']:
-				companies.append({
-					'id': company.get('id'),
-					'name': company.get('name', f"Company {company.get('id')}"),
-					'settings': company.get('settings', {})
+				# Create or update local Invoice Ninja Company doc
+				existing_company = frappe.db.get_all("Invoice Ninja Company", filters={"company_id": str(company.get('id'))}, limit=1)
+
+				if existing_company:
+					company_doc = frappe.get_doc("Invoice Ninja Company", existing_company[0].name)
+					company_doc.company_name = company.get('settings').get('name', f"Company {company.get('id')}")
+					company_doc.save(ignore_permissions=True)
+					companies.append(company_doc.as_dict())
+					continue
+
+				company_doc = frappe.get_doc({
+					"doctype": "Invoice Ninja Company",
+					"company_id": str(company.get('id')),
+					"company_name": company.get('settings').get('name', f"Company {company.get('id')}"),
 				})
+
+				company_doc.save(ignore_permissions=True)
+				companies.append(company_doc.as_dict())
 
 			return {"success": True, "companies": companies}
 		else:
@@ -510,31 +527,38 @@ def trigger_manual_sync(sync_type="all"):
 
 		sync_manager = SyncManager()
 		results = []
+		results_objects = []
 
 		if sync_type == "customers" or sync_type == "all":
 			result = sync_from_invoice_ninja("Customer", limit=100)
 			results.append(f"Customers: {result}")
+			results_objects.append(result)
 
 		if sync_type == "invoices" or sync_type == "all":
 			result = sync_from_invoice_ninja("Sales Invoice", limit=100)
 			results.append(f"Invoices: {result}")
+			results_objects.append(result)
 
 		if sync_type == "payments" or sync_type == "all":
 			# Use the existing sync_payments_from_invoice_ninja from tasks
 			from .tasks import sync_payments_from_invoice_ninja
 			result = sync_payments_from_invoice_ninja()
 			results.append(f"Payments: {result}")
+			results_objects.append(result)
 
 		if sync_type == "quotations" or sync_type == "all":
 			result = sync_from_invoice_ninja("Quotation", limit=100)
 			results.append(f"Quotations: {result}")
+			results_objects.append(result)
 
 		if sync_type == "items" or sync_type == "all":
 			result = sync_from_invoice_ninja("Item", limit=100)
 			results.append(f"Items: {result}")
+			results_objects.append(result)
 
 		return {
 			"success": True,
+			"results": results_objects,
 			"message": f"Manual {sync_type} sync completed: {'; '.join(results)}"
 		}
 
@@ -609,4 +633,117 @@ def sync_company_mappings_from_invoice_ninja():
 
 	except Exception as e:
 		frappe.log_error(f"Error syncing company mappings: {str(e)}")
+		return {"success": False, "error": str(e)}
+
+
+@frappe.whitelist()
+def get_invoice_ninja_customer_groups(settings_name=None):
+	"""Fetch customer groups from Invoice Ninja API"""
+	try:
+		settings = frappe.get_single("Invoice Ninja Settings")
+
+		if not settings.invoice_ninja_url or not settings.api_token:
+			return {"success": False, "error": "Invoice Ninja URL and API Token are required"}
+
+		# Initialize client
+		client = InvoiceNinjaClient(settings.invoice_ninja_url, settings.get_password("api_token"))
+
+		# Fetch group settings from Invoice Ninja
+		response = client._make_request('GET', 'group_settings')
+
+		if response and 'data' in response:
+			customer_groups = []
+			for group in response['data']:
+				# Create or update local Invoice Ninja Customer Group doc
+				existing_group = frappe.db.get_all("Invoice Ninja Customer Group", filters={"group_id": str(group.get('id'))}, limit=1)
+
+				if existing_group:
+					group_doc = frappe.get_doc("Invoice Ninja Customer Group", existing_group[0].name)
+					group_doc.group_name = group.get('name', f"Group {group.get('id')}")
+					group_doc.save(ignore_permissions=True)
+					customer_groups.append(group_doc.as_dict())
+					continue
+
+				group_doc = frappe.get_doc({
+					"doctype": "Invoice Ninja Customer Group",
+					"group_id": str(group.get('id')),
+					"group_name": group.get('name', f"Group {group.get('id')}"),
+				})
+
+				group_doc.save(ignore_permissions=True)
+				customer_groups.append(group_doc.as_dict())
+
+			return {"success": True, "customer_groups": customer_groups}
+		else:
+			return {"success": False, "error": "Failed to fetch customer groups from Invoice Ninja"}
+
+	except Exception as e:
+		frappe.log_error(f"Error fetching Invoice Ninja customer groups: {str(e)}", "Invoice Ninja API Error")
+		return {"success": False, "error": str(e)}
+
+
+@frappe.whitelist()
+def get_invoice_ninja_item_groups(settings_name=None):
+	"""Fetch item groups (product categories) from Invoice Ninja API"""
+	try:
+		settings = frappe.get_single("Invoice Ninja Settings")
+
+		if not settings.invoice_ninja_url or not settings.api_token:
+			return {"success": False, "error": "Invoice Ninja URL and API Token are required"}
+
+		# Initialize client
+		client = InvoiceNinjaClient(settings.invoice_ninja_url, settings.get_password("api_token"))
+
+		# Fetch products to extract categories from Invoice Ninja
+		# Note: Invoice Ninja doesn't have a dedicated categories endpoint, 
+		# so we extract categories from existing products
+		response = client._make_request('GET', 'products', params={'per_page': 500})
+
+		if response and 'data' in response:
+			item_groups = []
+			categories_seen = set()
+			
+			for product in response['data']:
+				category = product.get('category', '').strip()
+				if category and category not in categories_seen:
+					categories_seen.add(category)
+					
+					# Create or update local Invoice Ninja Item Group doc
+					existing_group = frappe.db.get_all("Invoice Ninja Item Group", filters={"group_name": category}, limit=1)
+
+					if existing_group:
+						group_doc = frappe.get_doc("Invoice Ninja Item Group", existing_group[0].name)
+						group_doc.description = f"Category extracted from Invoice Ninja products"
+						group_doc.save(ignore_permissions=True)
+						item_groups.append(group_doc.as_dict())
+						continue
+
+					group_doc = frappe.get_doc({
+						"doctype": "Invoice Ninja Item Group",
+						"group_name": category,
+						"description": f"Category extracted from Invoice Ninja products",
+					})
+
+					group_doc.save(ignore_permissions=True)
+					item_groups.append(group_doc.as_dict())
+
+			# Also add a default "Products" category if no categories found
+			if not item_groups:
+				existing_default = frappe.db.get_all("Invoice Ninja Item Group", filters={"group_name": "Products"}, limit=1)
+				
+				if not existing_default:
+					default_group = frappe.get_doc({
+						"doctype": "Invoice Ninja Item Group",
+						"group_name": "Products",
+						"description": "Default item group for Invoice Ninja products",
+					})
+					default_group.save(ignore_permissions=True)
+					item_groups.append(default_group.as_dict())
+
+			return {"success": True, "item_groups": item_groups}
+		else:
+			return {"success": False, "error": "Failed to fetch products from Invoice Ninja"}
+
+	except Exception as e:
+		frappe.log_error(f"Error fetching Invoice Ninja item groups: {str(e)}", "Invoice Ninja API Error")
 		return {"success": False, "error": str(e)}

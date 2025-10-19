@@ -22,12 +22,16 @@ class FieldMapper:
 				)
 				return None, None
 			
+			# Get customer group mapping
+			customer_group_mapping = FieldMapper.get_customer_group_mapping()
+			default_customer_group = customer_group_mapping.customer_group if customer_group_mapping else 'Commercial'
+			
 			# Basic customer mapping
 			customer_data = {
 				'doctype': 'Customer',
 				'customer_name': in_customer.get('name') or in_customer.get('display_name') or f"Customer {in_customer.get('id')}",
 				'customer_type': 'Company' if in_customer.get('is_company') else 'Individual',
-				'customer_group': 'Commercial',  # Default group
+				'customer_group': default_customer_group,
 				'territory': 'All Territories',  # Default territory
 				'invoice_ninja_id': str(in_customer.get('id')),
 				'invoice_ninja_sync_status': 'Synced',
@@ -263,11 +267,15 @@ class FieldMapper:
 	def map_product_from_invoice_ninja(in_product):
 		"""Map Invoice Ninja product to ERPNext item"""
 		try:
+			# Get item group mapping
+			item_group_mapping = FieldMapper.get_item_group_mapping()
+			default_item_group = item_group_mapping.item_group if item_group_mapping else 'Products'
+			
 			item_data = {
 				'doctype': 'Item',
 				'item_code': in_product.get('product_key') or f"IN-PROD-{in_product.get('id')}",
 				'item_name': in_product.get('notes') or in_product.get('product_key') or 'Unknown Item',
-				'item_group': 'Products',
+				'item_group': default_item_group,
 				'stock_uom': 'Nos',
 				'is_stock_item': 0,
 				'is_sales_item': 1,
@@ -509,60 +517,22 @@ class FieldMapper:
 
 		return product_data
 
-	@staticmethod
-	def map_quotation_from_invoice_ninja(in_quote):
-		"""Map Invoice Ninja quote to ERPNext quotation"""
-		try:
-			# Get customer reference
-			customer_name = FieldMapper.get_customer_by_invoice_ninja_id(in_quote.get('client_id'))
-			if not customer_name:
-				frappe.log_error(f"Customer not found for Invoice Ninja client_id: {in_quote.get('client_id')}", "Quote Mapping Error")
-				return None
 
-			quotation_data = {
-				'doctype': 'Quotation',
-				'quotation_to': 'Customer',
-				'party_name': customer_name,
-				'transaction_date': FieldMapper.parse_date(in_quote.get('date')) or nowdate(),
-				'valid_till': FieldMapper.parse_date(in_quote.get('valid_until')),
-				'currency': FieldMapper.get_currency_code(in_quote.get('currency_id')) or 'USD',
-				'conversion_rate': flt(in_quote.get('exchange_rate')) or 1.0,
-				'selling_price_list': 'Standard Selling',
-				'invoice_ninja_id': str(in_quote.get('id')),
-				'sync_status': 'Synced',
-				'terms': in_quote.get('public_notes') or '',
-				'items': []
-			}
-
-			# Add line items
-			for line_item in in_quote.get('line_items', []):
-				item_data = {
-					'doctype': 'Quotation Item',
-					'item_code': FieldMapper.get_item_code(line_item.get('product_key')),
-					'item_name': line_item.get('notes') or line_item.get('product_key'),
-					'description': line_item.get('notes') or line_item.get('product_key'),
-					'qty': flt(line_item.get('qty', 1)),
-					'rate': flt(line_item.get('cost', 0)),
-					'discount_percentage': flt(line_item.get('discount', 0))
-				}
-				quotation_data['items'].append(item_data)
-
-			return quotation_data
-
-		except Exception as e:
-			frappe.log_error(f"Error mapping quotation {in_quote.get('id')}: {str(e)}", "Quotation Mapping Error")
-			return None
 
 	@staticmethod
 	def map_item_from_invoice_ninja(in_product):
 		"""Map Invoice Ninja product to ERPNext item"""
 		try:
+			# Get item group mapping
+			item_group_mapping = FieldMapper.get_item_group_mapping()
+			default_item_group = item_group_mapping.item_group if item_group_mapping else 'Products'
+			
 			item_data = {
 				'doctype': 'Item',
 				'item_code': in_product.get('product_key') or f"IN-{in_product.get('id')}",
 				'item_name': in_product.get('notes') or in_product.get('product_key'),
 				'description': in_product.get('notes') or in_product.get('product_key'),
-				'item_group': 'Products',  # Default item group
+				'item_group': default_item_group,
 				'stock_uom': 'Nos',  # Default UOM
 				'is_stock_item': 0,  # Assume service item by default
 				'is_sales_item': 1,
@@ -654,6 +624,20 @@ class FieldMapper:
 			'France': 250
 		}
 		return country_map.get(country_name, 840)
+
+	@staticmethod
+	def get_item_code(product_key):
+		"""Get ERPNext item code from Invoice Ninja product key"""
+		if not product_key:
+			return "Service"  # Default service item
+		
+		# Try to find existing item
+		existing_item = frappe.db.get_value('Item', {'item_code': product_key}, 'name')
+		if existing_item:
+			return existing_item
+		
+		# Return the product key as item code (will be created if needed)
+		return product_key
 	
 	@staticmethod
 	def get_company_mapping(erpnext_company=None, invoice_ninja_company_id=None):
@@ -674,6 +658,54 @@ class FieldMapper:
 		
 		# Return default mapping if no specific match found
 		for mapping in settings.company_mappings:
+			if mapping.enabled and mapping.is_default:
+				return mapping
+		
+		return None
+
+	@staticmethod
+	def get_customer_group_mapping(erpnext_customer_group=None, invoice_ninja_customer_group_id=None):
+		"""Get customer group mapping between ERPNext and Invoice Ninja"""
+		settings = frappe.get_single("Invoice Ninja Settings")
+		
+		if not settings.customer_group_mappings:
+			return None
+		
+		for mapping in settings.customer_group_mappings:
+			if not mapping.enabled:
+				continue
+				
+			if erpnext_customer_group and mapping.customer_group == erpnext_customer_group:
+				return mapping
+			elif invoice_ninja_customer_group_id and str(mapping.invoice_ninja_customer_group) == str(invoice_ninja_customer_group_id):
+				return mapping
+		
+		# Return default mapping if no specific match found
+		for mapping in settings.customer_group_mappings:
+			if mapping.enabled and mapping.is_default:
+				return mapping
+		
+		return None
+
+	@staticmethod
+	def get_item_group_mapping(erpnext_item_group=None, invoice_ninja_item_group_name=None):
+		"""Get item group mapping between ERPNext and Invoice Ninja"""
+		settings = frappe.get_single("Invoice Ninja Settings")
+		
+		if not settings.item_group_mappings:
+			return None
+		
+		for mapping in settings.item_group_mappings:
+			if not mapping.enabled:
+				continue
+				
+			if erpnext_item_group and mapping.item_group == erpnext_item_group:
+				return mapping
+			elif invoice_ninja_item_group_name and mapping.invoice_ninja_item_group_name == invoice_ninja_item_group_name:
+				return mapping
+		
+		# Return default mapping if no specific match found
+		for mapping in settings.item_group_mappings:
 			if mapping.enabled and mapping.is_default:
 				return mapping
 		
@@ -718,3 +750,54 @@ class FieldMapper:
 			frappe.throw(f"No company mapping found for ERPNext company '{company}'. Please configure company mappings in Invoice Ninja Settings.")
 		
 		return mapping
+
+	@staticmethod
+	def map_product_to_invoice_ninja(item_doc):
+		"""Map ERPNext item to Invoice Ninja product format (alias for map_item_to_invoice_ninja)"""
+		return FieldMapper.map_item_to_invoice_ninja(item_doc)
+
+
+
+	@staticmethod
+	def map_quote_to_invoice_ninja(quotation_doc):
+		"""Map ERPNext quotation to Invoice Ninja quote format (alias for map_quotation_to_invoice_ninja)"""
+		return FieldMapper.map_quotation_to_invoice_ninja(quotation_doc)
+
+
+
+	@staticmethod
+	def map_payment_to_invoice_ninja(payment_doc):
+		"""Map ERPNext payment entry to Invoice Ninja payment format"""
+		try:
+			# Get related invoice(s)
+			invoice_refs = payment_doc.references or []
+			if not invoice_refs:
+				frappe.log_error(f"Payment {payment_doc.name} has no invoice references", "Payment Mapping Error")
+				return None
+
+			# Get first invoice reference (Invoice Ninja payments are typically for single invoices)
+			main_ref = invoice_refs[0]
+			if main_ref.reference_doctype != "Sales Invoice":
+				return None
+
+			# Get Invoice Ninja invoice ID
+			invoice_doc = frappe.get_doc("Sales Invoice", main_ref.reference_name)
+			invoice_ninja_id = getattr(invoice_doc, 'invoice_ninja_id', None)
+			if not invoice_ninja_id:
+				frappe.log_error(f"Invoice {invoice_doc.name} not synced to Invoice Ninja", "Payment Mapping Error")
+				return None
+
+			payment_data = {
+				'invoice_id': invoice_ninja_id,
+				'amount': float(payment_doc.paid_amount),
+				'payment_date': str(payment_doc.posting_date),
+				'payment_type_id': 1,  # Default payment type
+				'transaction_reference': payment_doc.reference_no or '',
+				'private_notes': payment_doc.remarks or ''
+			}
+
+			return payment_data
+
+		except Exception as e:
+			frappe.log_error(f"Error mapping payment {payment_doc.name}: {str(e)}", "Payment Mapping Error")
+			return None
