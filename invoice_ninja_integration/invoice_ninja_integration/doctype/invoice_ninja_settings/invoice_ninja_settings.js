@@ -226,3 +226,56 @@ function apply_ninja_company_to_field(frm) {
     frm.set_df_property('invoice_ninja_company_id', 'options', company_options);
 
 }
+function sync_invoice_ninja_customer_groups(frm) {
+    frappe.call({
+        method: 'invoice_ninja_integration.api.sync_customer_groups_to_doctype',
+        callback: function(r) {
+            if (r.message && r.message.success) {
+                let synced_count = r.message.synced_count || 0;
+                
+                frappe.msgprint({
+                    title: __('Customer Groups Synced'),
+                    message: __('Successfully synced {0} customer groups from Invoice Ninja', [synced_count]),
+                    indicator: 'green'
+                });
+                
+                // Refresh the form to show any updated data
+                frm.reload_doc();
+                
+            } else {
+                frappe.msgprint({
+                    title: __('Error'),
+                    message: __('Failed to sync customer groups: {0}', [r.message?.error || 'Unknown error']),
+                    indicator: 'red'
+                });
+            }
+        }
+    });
+}
+
+function sync_invoice_ninja_item_groups(frm) {
+    frappe.call({
+        method: 'invoice_ninja_integration.api.sync_item_groups_to_doctype',
+        callback: function(r) {
+            if (r.message && r.message.success) {
+                let synced_count = r.message.synced_count || 0;
+                
+                frappe.msgprint({
+                    title: __('Item Groups Synced'),
+                    message: __('Successfully synced {0} item groups from Invoice Ninja', [synced_count]),
+                    indicator: 'green'
+                });
+                
+                // Refresh the form to show any updated data
+                frm.reload_doc();
+                
+            } else {
+                frappe.msgprint({
+                    title: __('Error'),
+                    message: __('Failed to sync item groups: {0}', [r.message?.error || 'Unknown error']),
+                    indicator: 'red'
+                });
+            }
+        }
+    });
+}

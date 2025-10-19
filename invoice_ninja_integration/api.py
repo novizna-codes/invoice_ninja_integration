@@ -747,3 +747,85 @@ def get_invoice_ninja_item_groups(settings_name=None):
 	except Exception as e:
 		frappe.log_error(f"Error fetching Invoice Ninja item groups: {str(e)}", "Invoice Ninja API Error")
 		return {"success": False, "error": str(e)}
+
+
+@frappe.whitelist()
+def sync_customer_groups_to_doctype(settings_name=None):
+	"""Sync customer groups from Invoice Ninja and store in DocType"""
+	try:
+		# Get customer groups from Invoice Ninja
+		result = get_invoice_ninja_customer_groups(settings_name)
+		
+		if not result.get("success"):
+			return result
+		
+		customer_groups = result.get("customer_groups", [])
+		synced_count = 0
+		
+		for group in customer_groups:
+			# Check if group already exists
+			existing = frappe.db.get_all("Invoice Ninja Customer Group", 
+				filters={"group_name": group.get("group_name")}, limit=1)
+			
+			if existing:
+				# Update existing group
+				group_doc = frappe.get_doc("Invoice Ninja Customer Group", existing[0].name)
+				group_doc.description = group.get("description", "")
+				group_doc.save(ignore_permissions=True)
+			else:
+				# Create new group
+				group_doc = frappe.get_doc({
+					"doctype": "Invoice Ninja Customer Group",
+					"group_name": group.get("group_name"),
+					"description": group.get("description", ""),
+				})
+				group_doc.save(ignore_permissions=True)
+				
+			synced_count += 1
+		
+		return {"success": True, "synced_count": synced_count}
+		
+	except Exception as e:
+		frappe.log_error(f"Error syncing customer groups: {str(e)}", "Invoice Ninja Sync Error")
+		return {"success": False, "error": str(e)}
+
+
+@frappe.whitelist()
+def sync_item_groups_to_doctype(settings_name=None):
+	"""Sync item groups from Invoice Ninja and store in DocType"""
+	try:
+		# Get item groups from Invoice Ninja
+		result = get_invoice_ninja_item_groups(settings_name)
+		
+		if not result.get("success"):
+			return result
+		
+		item_groups = result.get("item_groups", [])
+		synced_count = 0
+		
+		for group in item_groups:
+			# Check if group already exists
+			existing = frappe.db.get_all("Invoice Ninja Item Group", 
+				filters={"group_name": group.get("group_name")}, limit=1)
+			
+			if existing:
+				# Update existing group
+				group_doc = frappe.get_doc("Invoice Ninja Item Group", existing[0].name)
+				group_doc.description = group.get("description", "")
+				group_doc.save(ignore_permissions=True)
+			else:
+				# Create new group
+				group_doc = frappe.get_doc({
+					"doctype": "Invoice Ninja Item Group",
+					"group_name": group.get("group_name"),
+					"description": group.get("description", ""),
+				})
+				group_doc.save(ignore_permissions=True)
+				
+			synced_count += 1
+		
+		return {"success": True, "synced_count": synced_count}
+		
+	except Exception as e:
+		frappe.log_error(f"Error syncing item groups: {str(e)}", "Invoice Ninja Sync Error")
+		return {"success": False, "error": str(e)}
