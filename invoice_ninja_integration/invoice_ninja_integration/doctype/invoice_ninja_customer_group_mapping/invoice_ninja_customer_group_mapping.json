@@ -24,6 +24,8 @@
   {
    "fieldname": "customer_group",
    "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_preview": 1,
    "label": "Customer Group",
    "options": "Customer Group",
    "reqd": 1
@@ -36,6 +38,8 @@
    "fetch_from": "customer_group.customer_group_name",
    "fieldname": "customer_group_name",
    "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_preview": 1,
    "label": "Customer Group Name",
    "reqd": 1
   },
@@ -47,6 +51,8 @@
   {
    "fieldname": "invoice_ninja_customer_group",
    "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_preview": 1,
    "label": "Invoice Ninja Customer Group",
    "options": "Invoice Ninja Customer Group",
    "reqd": 1
@@ -69,7 +75,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-10-19 18:19:28.926276",
+ "modified": "2025-10-19 20:55:02.788048",
  "modified_by": "Administrator",
  "module": "Invoice Ninja Integration",
  "name": "Invoice Ninja Customer Group Mapping",

@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "format:INCG-{####}-{group_name}",
  "creation": "2025-10-19 15:31:36.138289",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -32,10 +33,11 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-19 15:49:45.457325",
+ "modified": "2025-10-19 20:40:56.417118",
  "modified_by": "Administrator",
  "module": "Invoice Ninja Integration",
  "name": "Invoice Ninja Customer Group",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {

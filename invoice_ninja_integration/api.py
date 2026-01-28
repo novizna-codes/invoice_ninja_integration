@@ -683,149 +683,22 @@ def get_invoice_ninja_customer_groups(settings_name=None):
 
 
 @frappe.whitelist()
-def get_invoice_ninja_item_groups(settings_name=None):
-	"""Fetch item groups (product categories) from Invoice Ninja API"""
-	try:
-		settings = frappe.get_single("Invoice Ninja Settings")
-
-		if not settings.invoice_ninja_url or not settings.api_token:
-			return {"success": False, "error": "Invoice Ninja URL and API Token are required"}
-
-		# Initialize client
-		client = InvoiceNinjaClient(settings.invoice_ninja_url, settings.get_password("api_token"))
-
-		# Fetch products to extract categories from Invoice Ninja
-		# Note: Invoice Ninja doesn't have a dedicated categories endpoint, 
-		# so we extract categories from existing products
-		response = client._make_request('GET', 'products', params={'per_page': 500})
-
-		if response and 'data' in response:
-			item_groups = []
-			categories_seen = set()
-			
-			for product in response['data']:
-				category = product.get('category', '').strip()
-				if category and category not in categories_seen:
-					categories_seen.add(category)
-					
-					# Create or update local Invoice Ninja Item Group doc
-					existing_group = frappe.db.get_all("Invoice Ninja Item Group", filters={"group_name": category}, limit=1)
-
-					if existing_group:
-						group_doc = frappe.get_doc("Invoice Ninja Item Group", existing_group[0].name)
-						group_doc.description = f"Category extracted from Invoice Ninja products"
-						group_doc.save(ignore_permissions=True)
-						item_groups.append(group_doc.as_dict())
-						continue
-
-					group_doc = frappe.get_doc({
-						"doctype": "Invoice Ninja Item Group",
-						"group_name": category,
-						"description": f"Category extracted from Invoice Ninja products",
-					})
-
-					group_doc.save(ignore_permissions=True)
-					item_groups.append(group_doc.as_dict())
-
-			# Also add a default "Products" category if no categories found
-			if not item_groups:
-				existing_default = frappe.db.get_all("Invoice Ninja Item Group", filters={"group_name": "Products"}, limit=1)
-				
-				if not existing_default:
-					default_group = frappe.get_doc({
-						"doctype": "Invoice Ninja Item Group",
-						"group_name": "Products",
-						"description": "Default item group for Invoice Ninja products",
-					})
-					default_group.save(ignore_permissions=True)
-					item_groups.append(default_group.as_dict())
-
-			return {"success": True, "item_groups": item_groups}
-		else:
-			return {"success": False, "error": "Failed to fetch products from Invoice Ninja"}
-
-	except Exception as e:
-		frappe.log_error(f"Error fetching Invoice Ninja item groups: {str(e)}", "Invoice Ninja API Error")
-		return {"success": False, "error": str(e)}
-
-
-@frappe.whitelist()
 def sync_customer_groups_to_doctype(settings_name=None):
 	"""Sync customer groups from Invoice Ninja and store in DocType"""
 	try:
-		# Get customer groups from Invoice Ninja
+		# The get_invoice_ninja_customer_groups function already creates the DocType records
 		result = get_invoice_ninja_customer_groups(settings_name)
-		
+
 		if not result.get("success"):
 			return result
-		
+
+		# Count the customer groups that were processed
 		customer_groups = result.get("customer_groups", [])
-		synced_count = 0
-		
-		for group in customer_groups:
-			# Check if group already exists
-			existing = frappe.db.get_all("Invoice Ninja Customer Group", 
-				filters={"group_name": group.get("group_name")}, limit=1)
-			
-			if existing:
-				# Update existing group
-				group_doc = frappe.get_doc("Invoice Ninja Customer Group", existing[0].name)
-				group_doc.description = group.get("description", "")
-				group_doc.save(ignore_permissions=True)
-			else:
-				# Create new group
-				group_doc = frappe.get_doc({
-					"doctype": "Invoice Ninja Customer Group",
-					"group_name": group.get("group_name"),
-					"description": group.get("description", ""),
-				})
-				group_doc.save(ignore_permissions=True)
-				
-			synced_count += 1
-		
+		synced_count = len(customer_groups)
+
 		return {"success": True, "synced_count": synced_count}
-		
+
 	except Exception as e:
 		frappe.log_error(f"Error syncing customer groups: {str(e)}", "Invoice Ninja Sync Error")
 		return {"success": False, "error": str(e)}
 
-
-@frappe.whitelist()
-def sync_item_groups_to_doctype(settings_name=None):
-	"""Sync item groups from Invoice Ninja and store in DocType"""
-	try:
-		# Get item groups from Invoice Ninja
-		result = get_invoice_ninja_item_groups(settings_name)
-		
-		if not result.get("success"):
-			return result
-		
-		item_groups = result.get("item_groups", [])
-		synced_count = 0
-		
-		for group in item_groups:
-			# Check if group already exists
-			existing = frappe.db.get_all("Invoice Ninja Item Group", 
-				filters={"group_name": group.get("group_name")}, limit=1)
-			
-			if existing:
-				# Update existing group
-				group_doc = frappe.get_doc("Invoice Ninja Item Group", existing[0].name)
-				group_doc.description = group.get("description", "")
-				group_doc.save(ignore_permissions=True)
-			else:
-				# Create new group
-				group_doc = frappe.get_doc({
-					"doctype": "Invoice Ninja Item Group",
-					"group_name": group.get("group_name"),
-					"description": group.get("description", ""),
-				})
-				group_doc.save(ignore_permissions=True)
-				
-			synced_count += 1
-		
-		return {"success": True, "synced_count": synced_count}
-		
-	except Exception as e:
-		frappe.log_error(f"Error syncing item groups: {str(e)}", "Invoice Ninja Sync Error")
-		return {"success": False, "error": str(e)}

@@ -20,8 +20,6 @@
    "company_mappings",
    "customer_group_mapping_section",
    "customer_group_mappings",
-   "item_group_mapping_section",
-   "item_group_mappings",
    "sync_settings_section",
   "enable_customer_sync",
   "customer_sync_direction",
@@ -121,18 +119,6 @@
     "label": "Customer Group Mappings",
     "options": "Invoice Ninja Customer Group Mapping",
     "description": "Map ERPNext customer groups to Invoice Ninja customer groups"
-   },
-   {
-    "fieldname": "item_group_mapping_section",
-    "fieldtype": "Section Break",
-    "label": "Item Group Mappings"
-   },
-   {
-    "fieldname": "item_group_mappings",
-    "fieldtype": "Table",
-    "label": "Item Group Mappings",
-    "options": "Invoice Ninja Item Group Mapping",
-    "description": "Map ERPNext item groups to Invoice Ninja product categories"
    },
    {
     "fieldname": "sync_settings_section",

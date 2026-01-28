@@ -4,12 +4,12 @@ frappe.ui.form.on('Invoice Ninja Settings', {
         // Add sync status indicators
         add_sync_status_indicators(frm);
 
-        // Add button to fetch companies
+        // Add buttons to fetch data from Invoice Ninja - only show when properly configured
         if (frm.doc.invoice_ninja_url && frm.doc.api_token) {
             frm.add_custom_button(__('Fetch Companies'), function() {
                 fetch_invoice_ninja_companies(frm);
             }, __('Invoice Ninja'));
-
+            
             frm.add_custom_button(__('Sync Customer Groups'), function() {
                 sync_invoice_ninja_customer_groups(frm);
             }, __('Invoice Ninja'));
@@ -183,9 +183,15 @@ function show_manual_sync_dialog(frm) {
 
 
 function fetch_invoice_ninja_companies(frm) {
+    // Show loading screen
+    frappe.freeze(__('Fetching companies from Invoice Ninja...'));
+    
     frappe.call({
         method: 'invoice_ninja_integration.api.get_invoice_ninja_companies',
         callback: function(r) {
+            // Always unfreeze screen when response is received
+            frappe.unfreeze();
+            
             if (r.message && r.message.success) {
                 let companies = r.message.companies || [];
 
@@ -201,7 +207,6 @@ function fetch_invoice_ninja_companies(frm) {
                 // Store companies data in form for reference
                 frm._ninja_companies = companies;
 
-
                 // Refresh the child table
                 frappe.msgprint({
                     title: __('Companies Fetched'),
@@ -216,10 +221,60 @@ function fetch_invoice_ninja_companies(frm) {
                     indicator: 'red'
                 });
             }
+        },
+        error: function() {
+            // Always unfreeze screen even on error
+            frappe.unfreeze();
+            frappe.msgprint({
+                title: __('Error'),
+                message: __('Network error occurred while fetching companies'),
+                indicator: 'red'
+            });
         }
     });
 }
 
+function sync_invoice_ninja_customer_groups(frm) {
+    // Show loading screen
+    frappe.freeze(__('Syncing customer groups from Invoice Ninja...'));
+    
+    frappe.call({
+        method: 'invoice_ninja_integration.api.sync_customer_groups_to_doctype',
+        callback: function(r) {
+            // Always unfreeze screen when response is received
+            frappe.unfreeze();
+            
+            if (r.message && r.message.success) {
+                let synced_count = r.message.synced_count || 0;
+                
+                frappe.msgprint({
+                    title: __('Customer Groups Synced'),
+                    message: __('Successfully synced {0} customer groups from Invoice Ninja', [synced_count]),
+                    indicator: 'green'
+                });
+                
+                // Refresh the form to show any updated data
+                frm.reload_doc();
+                
+            } else {
+                frappe.msgprint({
+                    title: __('Error'),
+                    message: __('Failed to sync customer groups: {0}', [r.message?.error || 'Unknown error']),
+                    indicator: 'red'
+                });
+            }
+        },
+        error: function() {
+            // Always unfreeze screen even on error
+            frappe.unfreeze();
+            frappe.msgprint({
+                title: __('Error'),
+                message: __('Network error occurred while syncing customer groups'),
+                indicator: 'red'
+            });
+        }
+    });
+}
 
 function apply_ninja_company_to_field(frm) {
     let company_options = frm._ninja_companies.map(company =>
@@ -230,30 +285,3 @@ function apply_ninja_company_to_field(frm) {
     frm.set_df_property('invoice_ninja_company_id', 'options', company_options);
 
 }
-function sync_invoice_ninja_customer_groups(frm) {
-    frappe.call({
-        method: 'invoice_ninja_integration.api.sync_customer_groups_to_doctype',
-        callback: function(r) {
-            if (r.message && r.message.success) {
-                let synced_count = r.message.synced_count || 0;
-
-                frappe.msgprint({
-                    title: __('Customer Groups Synced'),
-                    message: __('Successfully synced {0} customer groups from Invoice Ninja', [synced_count]),
-                    indicator: 'green'
-                });
-
-                // Refresh the form to show any updated data
-                frm.reload_doc();
-
-            } else {
-                frappe.msgprint({
-                    title: __('Error'),
-                    message: __('Failed to sync customer groups: {0}', [r.message?.error || 'Unknown error']),
-                    indicator: 'red'
-                });
-            }
-        }
-    });
-}
-
