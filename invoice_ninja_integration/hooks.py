@@ -11,15 +11,7 @@ app_license = "mit"
 # required_apps = []
 
 # Each item in the list will be shown as an app in the apps page
-# add_to_apps_screen = [
-# 	{
-# 		"name": "invoice_ninja_integration",
-# 		"logo": "/assets/invoice_ninja_integration/logo.png",
-# 		"title": "Invoice Ninja Integration",
-# 		"route": "/invoice_ninja_integration",
-# 		"has_permission": "invoice_ninja_integration.api.permission.has_app_permission"
-# 	}
-# ]
+
 
 # Includes in <head>
 # ------------------
@@ -116,6 +108,16 @@ scheduler_events = {
         "invoice_ninja_integration.tasks.cleanup_sync_logs"
     ]
 }
+
+add_to_apps_screen = [
+	{
+		"name": "invoice_ninja_integration",
+		"logo": "/assets/invoice_ninja_integration/images/invoice-ninja.svg",
+		"title": "Invoice Ninja Integration",
+		"route": "/desk/invoice-ninja-integration",
+		"has_permission": "invoice_ninja_integration.utils.check_app_permission",
+	}
+]
 
 # Installation
 # ------------
