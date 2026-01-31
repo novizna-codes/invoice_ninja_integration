@@ -13,7 +13,7 @@
   "section_break_3",
   "invoice_ninja_url",
   "api_token",
-  "column_break_6",
+  "column_break_credentials",
   "test_connection",
   "connection_status",
    "company_mapping_section",
@@ -66,35 +66,36 @@
   {
    "fieldname": "section_break_3",
    "fieldtype": "Section Break",
-   "label": "Invoice Ninja Connection"
+   "label": "Master Connection (For Discovery)",
+   "description": "Master credentials are used only for discovering companies. Actual sync operations use per-company tokens."
   },
   {
    "fieldname": "invoice_ninja_url",
    "fieldtype": "Data",
    "label": "Invoice Ninja URL",
-   "reqd": 1
+   "description": "Master Invoice Ninja instance URL (e.g., https://invoicing.example.com)"
   },
   {
    "fieldname": "api_token",
    "fieldtype": "Password",
    "label": "API Token",
-   "reqd": 1
+   "description": "Master API token with access to list companies"
   },
   {
-   "fieldname": "column_break_6",
+   "fieldname": "column_break_credentials",
    "fieldtype": "Column Break"
   },
   {
    "fieldname": "test_connection",
    "fieldtype": "Button",
-   "label": "Test Connection"
+   "label": "Test Master Connection"
   },
   {
    "fieldname": "connection_status",
-   "fieldtype": "Select",
-   "label": "Connection Status",
-   "options": "Not Tested\nConnected\nFailed",
-   "read_only": 1
+   "fieldtype": "Data",
+   "label": "Last Test Result",
+   "read_only": 1,
+   "description": "Test individual companies in the Invoice Ninja Company list"
   },
   {
    "fieldname": "company_mapping_section",
@@ -288,7 +289,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-07-24 10:00:00.000000",
+ "modified": "2026-01-31 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Invoice Ninja Integration",
  "name": "Invoice Ninja Settings",

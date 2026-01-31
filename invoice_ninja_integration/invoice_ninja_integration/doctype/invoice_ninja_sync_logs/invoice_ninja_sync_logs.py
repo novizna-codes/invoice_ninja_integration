@@ -13,7 +13,8 @@ class InvoiceNinjaSyncLogs(Document):
 	@staticmethod
 	def create_log(sync_type, sync_direction, record_type, status="In Progress",
 				   record_id=None, record_name=None, message=None, error_details=None,
-				   invoice_ninja_id=None, erpnext_id=None, webhook_triggered=False, job_id=None):
+				   invoice_ninja_id=None, erpnext_id=None, webhook_triggered=False, job_id=None,
+				   invoice_ninja_company=None):
 		"""Create a new sync log entry"""
 		try:
 			log = frappe.get_doc({
@@ -30,7 +31,8 @@ class InvoiceNinjaSyncLogs(Document):
 				"invoice_ninja_id": invoice_ninja_id,
 				"erpnext_id": erpnext_id,
 				"webhook_triggered": webhook_triggered,
-				"job_id": job_id
+				"job_id": job_id,
+				"invoice_ninja_company": invoice_ninja_company
 			})
 			log.insert(ignore_permissions=True)
 			frappe.db.commit()

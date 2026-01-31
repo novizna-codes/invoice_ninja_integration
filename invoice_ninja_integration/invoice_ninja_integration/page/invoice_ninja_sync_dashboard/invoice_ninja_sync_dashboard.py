@@ -14,16 +14,16 @@ def get_sync_dashboard_data():
     try:
         # Get settings
         settings = frappe.get_single("Invoice Ninja Settings")
-        
+
         # Get recent sync logs from background jobs
         sync_logs = get_sync_logs()
-        
+
         # Get sync statistics
         sync_stats = get_sync_statistics()
-        
+
         # Get current sync configuration
         sync_config = get_sync_configuration()
-        
+
         dashboard_data = {
             "sync_enabled": settings.enabled,
             "connection_status": settings.connection_status or "Not Tested",
@@ -34,9 +34,9 @@ def get_sync_dashboard_data():
             "sync_stats": sync_stats,
             "sync_config": sync_config
         }
-        
+
         return dashboard_data
-        
+
     except Exception as e:
         frappe.log_error(f"Dashboard data error: {str(e)}", "Sync Dashboard Error")
         return {"error": str(e)}
@@ -53,7 +53,7 @@ def get_sync_logs():
         order_by="creation desc",
         limit=50
     )
-    
+
     # Get error logs
     error_logs = frappe.get_list(
         "Error Log",
@@ -64,7 +64,7 @@ def get_sync_logs():
         order_by="creation desc",
         limit=20
     )
-    
+
     return {
         "job_logs": job_logs,
         "error_logs": error_logs
@@ -74,11 +74,11 @@ def get_sync_statistics():
     """Get sync statistics for the dashboard"""
     today = datetime.now().date()
     week_ago = today - timedelta(days=7)
-    
+
     # Count successful syncs by type (from background jobs)
     successful_jobs = frappe.db.sql("""
-        SELECT 
-            CASE 
+        SELECT
+            CASE
                 WHEN job_name LIKE '%customer%' THEN 'Customer'
                 WHEN job_name LIKE '%invoice%' THEN 'Invoice'
                 WHEN job_name LIKE '%quote%' THEN 'Quotation'
@@ -88,21 +88,21 @@ def get_sync_statistics():
             END as sync_type,
             COUNT(*) as count
         FROM `tabRQ Job`
-        WHERE job_name LIKE '%invoice_ninja%' 
+        WHERE job_name LIKE '%invoice_ninja%'
             AND status = 'finished'
             AND DATE(creation) >= %s
         GROUP BY sync_type
     """, [week_ago], as_dict=1)
-    
+
     # Count failed syncs
     failed_jobs = frappe.db.sql("""
         SELECT COUNT(*) as count
         FROM `tabRQ Job`
-        WHERE job_name LIKE '%invoice_ninja%' 
+        WHERE job_name LIKE '%invoice_ninja%'
             AND status = 'failed'
             AND DATE(creation) >= %s
     """, [week_ago], as_dict=1)
-    
+
     return {
         "successful_syncs": successful_jobs,
         "failed_syncs": failed_jobs[0]["count"] if failed_jobs else 0,
@@ -112,7 +112,7 @@ def get_sync_statistics():
 def get_sync_configuration():
     """Get current sync configuration summary"""
     settings = frappe.get_single("Invoice Ninja Settings")
-    
+
     config = {
         "customer_sync": {
             "enabled": settings.enable_customer_sync,
@@ -135,7 +135,7 @@ def get_sync_configuration():
             "direction": settings.get("payment_sync_direction", "Invoice Ninja to ERPNext")
         }
     }
-    
+
     return config
 
 @frappe.whitelist()
@@ -145,21 +145,21 @@ def manual_sync(sync_type, sync_direction, record_id=None):
         # Validate inputs
         valid_types = ['Customer', 'Invoice', 'Quote', 'Product', 'Payment']
         valid_directions = ['Invoice Ninja to ERPNext', 'ERPNext to Invoice Ninja']
-        
+
         if sync_type not in valid_types:
             return {"success": False, "error": "Invalid sync type"}
-            
+
         if sync_direction not in valid_directions:
             return {"success": False, "error": "Invalid sync direction"}
-        
+
         # Check if sync is enabled
         settings = frappe.get_single("Invoice Ninja Settings")
         if not settings.enabled:
             return {"success": False, "error": "Invoice Ninja integration is disabled"}
-        
+
         # Enqueue the sync job
         job_name = f"manual_sync_{sync_type.lower()}_{sync_direction.replace(' ', '_').lower()}"
-        
+
         if sync_direction == "ERPNext to Invoice Ninja":
             # Sync from ERPNext to Invoice Ninja
             frappe.enqueue(
@@ -180,13 +180,13 @@ def manual_sync(sync_type, sync_direction, record_id=None):
                 job_name=job_name,
                 timeout=600
             )
-        
+
         return {
             "success": True,
             "message": f"Manual sync for {sync_type} started successfully",
             "job_name": job_name
         }
-        
+
     except Exception as e:
         frappe.log_error(f"Manual sync error: {str(e)}", "Manual Sync Error")
         return {"success": False, "error": str(e)}
@@ -208,7 +208,7 @@ def toggle_auto_sync(enable=True):
         settings = frappe.get_single("Invoice Ninja Settings")
         settings.enabled = int(enable)
         settings.save()
-        
+
         action = "enabled" if enable else "disabled"
         return {
             "success": True,
@@ -223,25 +223,72 @@ def clear_sync_logs():
     try:
         # Delete RQ Jobs older than 30 days
         thirty_days_ago = datetime.now() - timedelta(days=30)
-        
+
         frappe.db.sql("""
             DELETE FROM `tabRQ Job`
-            WHERE job_name LIKE '%invoice_ninja%' 
+            WHERE job_name LIKE '%invoice_ninja%'
                 AND creation < %s
         """, [thirty_days_ago])
-        
+
         # Delete Error Logs older than 30 days
         frappe.db.sql("""
             DELETE FROM `tabError Log`
-            WHERE error LIKE '%invoice_ninja%' 
+            WHERE error LIKE '%invoice_ninja%'
                 AND creation < %s
         """, [thirty_days_ago])
-        
+
         frappe.db.commit()
-        
+
         return {
             "success": True,
             "message": "Old sync logs have been cleared"
         }
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+@frappe.whitelist()
+def get_companies_sync_overview():
+    """Get sync overview for all Invoice Ninja companies"""
+    try:
+        companies = frappe.get_all(
+            "Invoice Ninja Company",
+            filters={"enabled": 1},
+            fields=["name", "company_name", "company_id", "last_sync_time", "last_sync_status",
+                    "total_synced_records", "failed_syncs_count", "connection_status",
+                    "customers_synced", "invoices_synced", "quotations_synced",
+                    "items_synced", "payments_synced"]
+        )
+
+        for company in companies:
+            # Get recent sync count (last 24 hours)
+            recent_syncs = frappe.db.count(
+                "Invoice Ninja Sync Logs",
+                filters={
+                    "invoice_ninja_company": company.name,
+                    "sync_timestamp": [">=", frappe.utils.add_days(frappe.utils.now(), -1)]
+                }
+            )
+            company["recent_syncs_24h"] = recent_syncs
+
+            # Get recent failures (last 24 hours)
+            recent_failures = frappe.db.count(
+                "Invoice Ninja Sync Logs",
+                filters={
+                    "invoice_ninja_company": company.name,
+                    "status": "Failed",
+                    "sync_timestamp": [">=", frappe.utils.add_days(frappe.utils.now(), -1)]
+                }
+            )
+            company["recent_failures_24h"] = recent_failures
+
+        return {
+            "success": True,
+            "companies": companies
+        }
+
+    except Exception as e:
+        frappe.log_error(f"Error getting companies overview: {str(e)}", "Companies Overview Error")
+        return {
+            "success": False,
+            "error": str(e)
+        }

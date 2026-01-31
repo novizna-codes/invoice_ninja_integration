@@ -8,8 +8,14 @@ class FieldMapper:
 	"""Field mapping utility for Invoice Ninja to ERPNext conversion"""
 
 	@staticmethod
-	def map_customer_from_invoice_ninja(in_customer):
-		"""Map Invoice Ninja customer to ERPNext customer"""
+	def map_customer_from_invoice_ninja(in_customer, invoice_ninja_company=None):
+		"""
+		Map Invoice Ninja customer to ERPNext customer
+
+		Args:
+			in_customer: Invoice Ninja customer data
+			invoice_ninja_company: Invoice Ninja Company doc name for linking
+		"""
 		try:
 			# Get company mapping for this customer (use settings.currency_id if no company_id)
 			company_mapping = FieldMapper.get_company_mapping(
@@ -72,6 +78,7 @@ class FieldMapper:
 				"customer_group": default_customer_group,
 				"territory": "All Territories",  # Default territory
 				"invoice_ninja_id": str(in_customer.get("id")),
+				"invoice_ninja_company": invoice_ninja_company,  # Link to IN Company doc
 				"invoice_ninja_sync_status": "Synced",
 				"company": company_mapping.erpnext_company,  # Set the mapped company
 				"default_currency": currency_code,
@@ -216,6 +223,7 @@ class FieldMapper:
 				"phone": contact.get("phone") or "",
 				"is_primary_contact": 1 if contact.get("is_primary") else 0,
 				"invoice_ninja_contact_id": str(contact.get("id")),
+				"invoice_ninja_company": invoice_ninja_company,
 				"links": [{"link_doctype": "Customer", "link_name": customer_name}],
 			}
 
@@ -230,8 +238,14 @@ class FieldMapper:
 		return contact_data_list
 
 	@staticmethod
-	def map_invoice_from_invoice_ninja(in_invoice):
-		"""Map Invoice Ninja invoice to ERPNext sales invoice"""
+	def map_invoice_from_invoice_ninja(in_invoice, invoice_ninja_company=None):
+		"""
+		Map Invoice Ninja invoice to ERPNext sales invoice
+
+		Args:
+			in_invoice: Invoice Ninja invoice data
+			invoice_ninja_company: Invoice Ninja Company doc name for linking
+		"""
 		try:
 			# Get company mapping for this invoice
 			company_mapping = FieldMapper.get_company_mapping(
@@ -265,6 +279,7 @@ class FieldMapper:
 				"conversion_rate": flt(in_invoice.get("exchange_rate")) or 1.0,
 				"selling_price_list": "Standard Selling",
 				"invoice_ninja_id": str(in_invoice.get("id")),
+				"invoice_ninja_company": invoice_ninja_company,
 				"invoice_ninja_sync_status": "Synced",
 				"invoice_ninja_number": in_invoice.get("number"),
 				"status": FieldMapper.map_invoice_status(in_invoice.get("status_id")),
@@ -329,8 +344,14 @@ class FieldMapper:
 			return None
 
 	@staticmethod
-	def map_quote_from_invoice_ninja(in_quote):
-		"""Map Invoice Ninja quote to ERPNext quotation"""
+	def map_quote_from_invoice_ninja(in_quote, invoice_ninja_company=None):
+		"""
+		Map Invoice Ninja quote to ERPNext quotation
+
+		Args:
+			in_quote: Invoice Ninja quote data
+			invoice_ninja_company: Invoice Ninja Company doc name for linking
+		"""
 		try:
 			# Get company mapping for this quote
 			company_mapping = FieldMapper.get_company_mapping(
@@ -359,6 +380,7 @@ class FieldMapper:
 				"currency": FieldMapper.get_currency_code(in_quote.get("currency_id")) or "USD",
 				"selling_price_list": "Standard Selling",
 				"invoice_ninja_id": str(in_quote.get("id")),
+				"invoice_ninja_company": invoice_ninja_company,
 				"invoice_ninja_sync_status": "Synced",
 				"invoice_ninja_number": in_quote.get("number"),
 				"status": FieldMapper.map_quote_status(in_quote.get("status_id")),
@@ -418,6 +440,7 @@ class FieldMapper:
 				"include_item_in_manufacturing": 0,
 				"description": in_product.get("notes") or "",
 				"invoice_ninja_id": str(in_product.get("id")),
+				"invoice_ninja_company": invoice_ninja_company,
 				"sync_status": "Synced",
 			}
 
@@ -992,8 +1015,14 @@ class FieldMapper:
 		return product_data
 
 	@staticmethod
-	def map_item_from_invoice_ninja(in_product):
-		"""Map Invoice Ninja product to ERPNext item"""
+	def map_item_from_invoice_ninja(in_product, invoice_ninja_company=None):
+		"""
+		Map Invoice Ninja product to ERPNext item
+
+		Args:
+			in_product: Invoice Ninja product data
+			invoice_ninja_company: Invoice Ninja Company doc name for linking
+		"""
 		try:
 			item_data = {
 				"doctype": "Item",
@@ -1006,6 +1035,7 @@ class FieldMapper:
 				"is_sales_item": 1,
 				"standard_rate": flt(in_product.get("price", 0)),
 				"invoice_ninja_id": str(in_product.get("id")),
+				"invoice_ninja_company": invoice_ninja_company,
 				"sync_status": "Synced",
 			}
 
@@ -1016,8 +1046,14 @@ class FieldMapper:
 			return None
 
 	@staticmethod
-	def map_payment_from_invoice_ninja(in_payment):
-		"""Map Invoice Ninja payment to ERPNext payment entry"""
+	def map_payment_from_invoice_ninja(in_payment, invoice_ninja_company=None):
+		"""
+		Map Invoice Ninja payment to ERPNext payment entry
+
+		Args:
+			in_payment: Invoice Ninja payment data
+			invoice_ninja_company: Invoice Ninja Company doc name for linking
+		"""
 		try:
 			# Get related invoice
 			invoice_id = in_payment.get("invoice_id")
@@ -1047,6 +1083,7 @@ class FieldMapper:
 				"reference_no": in_payment.get("transaction_reference") or "",
 				"reference_date": FieldMapper.parse_date(in_payment.get("date")),
 				"invoice_ninja_id": str(in_payment.get("id")),
+				"invoice_ninja_company": invoice_ninja_company,
 				"sync_status": "Synced",
 				"references": [
 					{

@@ -8,7 +8,27 @@
  "field_order": [
   "company_id",
   "column_break_cqok",
-  "company_name"
+  "company_name",
+  "section_break_credentials",
+  "invoice_ninja_url",
+  "api_token",
+  "column_break_credentials",
+  "enabled",
+  "test_connection",
+  "connection_status",
+  "section_break_sync_info",
+  "last_sync_time",
+  "total_synced_records",
+  "column_break_sync",
+  "last_sync_status",
+  "failed_syncs_count",
+  "section_break_sync_stats",
+  "customers_synced",
+  "invoices_synced",
+  "quotations_synced",
+  "column_break_stats",
+  "items_synced",
+  "payments_synced"
  ],
  "fields": [
   {
@@ -29,16 +49,139 @@
    "in_list_view": 1,
    "label": "Company Name",
    "reqd": 1
+  },
+  {
+   "fieldname": "section_break_credentials",
+   "fieldtype": "Section Break",
+   "label": "API Credentials"
+  },
+  {
+   "description": "Full URL to Invoice Ninja instance (e.g., https://invoicing.example.com)",
+   "fieldname": "invoice_ninja_url",
+   "fieldtype": "Data",
+   "label": "Invoice Ninja URL",
+   "reqd": 1
+  },
+  {
+   "description": "API token for this Invoice Ninja company",
+   "fieldname": "api_token",
+   "fieldtype": "Password",
+   "label": "API Token"
+  },
+  {
+   "fieldname": "column_break_credentials",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "fieldname": "test_connection",
+   "fieldtype": "Button",
+   "label": "Test Connection"
+  },
+  {
+   "default": "Not Tested",
+   "fieldname": "connection_status",
+   "fieldtype": "Select",
+   "label": "Connection Status",
+   "options": "Not Tested\nConnected\nFailed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_sync_info",
+   "fieldtype": "Section Break",
+   "label": "Sync Information"
+  },
+  {
+   "fieldname": "last_sync_time",
+   "fieldtype": "Datetime",
+   "label": "Last Sync Time",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "total_synced_records",
+   "fieldtype": "Int",
+   "label": "Total Synced Records",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_sync",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Not Synced",
+   "fieldname": "last_sync_status",
+   "fieldtype": "Select",
+   "label": "Last Sync Status",
+   "options": "Not Synced\nSuccess\nFailed\nPartial",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "failed_syncs_count",
+   "fieldtype": "Int",
+   "label": "Failed Syncs (Last 24h)",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_break_sync_stats",
+   "fieldtype": "Section Break",
+   "label": "Sync Statistics"
+  },
+  {
+   "default": "0",
+   "fieldname": "customers_synced",
+   "fieldtype": "Int",
+   "label": "Customers Synced",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "invoices_synced",
+   "fieldtype": "Int",
+   "label": "Invoices Synced",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "quotations_synced",
+   "fieldtype": "Int",
+   "label": "Quotations Synced",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_stats",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "items_synced",
+   "fieldtype": "Int",
+   "label": "Items Synced",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "payments_synced",
+   "fieldtype": "Int",
+   "label": "Payments Synced",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-19 12:15:37.695061",
+ "modified": "2026-02-01 01:23:18.213670",
  "modified_by": "Administrator",
  "module": "Invoice Ninja Integration",
  "name": "Invoice Ninja Company",
- "naming_rule": "Expression",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {

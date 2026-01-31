@@ -1,21 +1,86 @@
 import frappe
 
+from invoice_ninja_integration.utils.base_integration_service import BaseIntegrationService
 from invoice_ninja_integration.utils.company_mapper import CompanyMapper
 from invoice_ninja_integration.utils.field_mapper import FieldMapper
 from invoice_ninja_integration.utils.invoice_ninja_client import InvoiceNinjaClient
 
 
-class SyncManager:
+class SyncManager(BaseIntegrationService):
 	"""
+	Invoice Ninja Integration Service
+
+	Extends BaseIntegrationService with Invoice Ninja specific implementations.
 	Manages bidirectional synchronization between Invoice Ninja and ERPNext
 	with proper company mapping support.
 	"""
 
-	def __init__(self):
-		self.settings = frappe.get_single("Invoice Ninja Settings")
-		self.client = InvoiceNinjaClient()
+	# Settings DocType for this integration
+	SETTINGS_DOCTYPE = "Invoice Ninja Settings"
+
+	# Entity type configuration for generic fetch/sync operations
+	ENTITY_CONFIG = {
+		"Customer": {
+			"invoice_ninja_endpoint": "clients",
+			"invoice_ninja_method": "get_customers",
+			"erpnext_doctype": "Customer",
+			"include_params": "contacts,group_settings"
+		},
+		"Sales Invoice": {
+			"invoice_ninja_endpoint": "invoices",
+			"invoice_ninja_method": "get_invoices",
+			"erpnext_doctype": "Sales Invoice",
+			"include_params": "client,line_items"
+		},
+		"Quotation": {
+			"invoice_ninja_endpoint": "quotes",
+			"invoice_ninja_method": "get_quotes",
+			"erpnext_doctype": "Quotation",
+			"include_params": "client,line_items"
+		},
+		"Item": {
+			"invoice_ninja_endpoint": "products",
+			"invoice_ninja_method": "get_products",
+			"erpnext_doctype": "Item",
+			"include_params": None
+		},
+		"Payment Entry": {
+			"invoice_ninja_endpoint": "payments",
+			"invoice_ninja_method": "get_payments",
+			"erpnext_doctype": "Payment Entry",
+			"include_params": "invoice,client"
+		}
+	}
+
+	def _init_components(self):
+		"""Initialize Invoice Ninja specific components"""
+		# Don't initialize a single client - create per company as needed
 		self.mapper = FieldMapper()
 		self.company_mapper = CompanyMapper()
+		self.clients = {}  # Cache of clients per Invoice Ninja Company doc
+
+	def get_client_for_mapping(self, mapping):
+		"""
+		Get or create client for specific company mapping
+
+		Args:
+			mapping: Company mapping dict with invoice_ninja_company_id
+
+		Returns:
+			tuple: (InvoiceNinjaClient instance, Invoice Ninja Company doc name)
+		"""
+		in_company_doc = mapping.get("invoice_ninja_company_id")
+
+		if not in_company_doc:
+			frappe.throw(f"Invoice Ninja Company not found for company_id {in_company_doc}")
+
+		# Cache the client per doc to avoid recreating
+		if in_company_doc not in self.clients:
+			self.clients[in_company_doc] = InvoiceNinjaClient(
+				invoice_ninja_company=in_company_doc
+			)
+
+		return self.clients[in_company_doc], in_company_doc
 
 	def get_sync_direction(self, doc_type):
 		"""Get sync direction for a specific document type"""
@@ -61,7 +126,7 @@ class SyncManager:
 
 	def sync_document_to_invoice_ninja(self, doc):
 		"""
-		Sync ERPNext document to Invoice Ninja with company mapping
+		Sync ERPNext document to Invoice Ninja with per-company credentials
 		"""
 		if not self.is_sync_enabled(doc.doctype):
 			frappe.logger().info(f"Sync disabled for {doc.doctype}")
@@ -77,23 +142,30 @@ class SyncManager:
 			return
 
 		try:
-			# Get company context
-			company_context = self.company_mapper.set_company_context(doc)
+			# Get company mapping
+			erpnext_company = getattr(doc, 'company', None)
+			mapping = self.company_mapper.get_company_mapping(erpnext_company=erpnext_company)
 
-			# Initialize client with proper company context
-			if company_context.get("invoice_ninja_company_id"):
-				self.client.set_company_id(company_context["invoice_ninja_company_id"])
+			if not mapping:
+				frappe.throw(f"No company mapping found for {erpnext_company}")
+
+			# Get client for this company
+			client, in_company_doc = self.get_client_for_mapping(mapping)
+
+			# Get company context (for backward compatibility with sync methods)
+			company_context = self.company_mapper.set_company_context(doc)
+			company_context["invoice_ninja_company_doc"] = in_company_doc
 
 			if doc.doctype == "Customer":
-				return self._sync_customer_to_invoice_ninja(doc, company_context)
+				return self._sync_customer_to_invoice_ninja(doc, company_context, client)
 			elif doc.doctype == "Sales Invoice":
-				return self._sync_invoice_to_invoice_ninja(doc, company_context)
+				return self._sync_invoice_to_invoice_ninja(doc, company_context, client)
 			elif doc.doctype == "Quotation":
-				return self._sync_quote_to_invoice_ninja(doc, company_context)
+				return self._sync_quote_to_invoice_ninja(doc, company_context, client)
 			elif doc.doctype == "Item":
-				return self._sync_product_to_invoice_ninja(doc, company_context)
+				return self._sync_product_to_invoice_ninja(doc, company_context, client)
 			elif doc.doctype == "Payment Entry":
-				return self._sync_payment_to_invoice_ninja(doc, company_context)
+				return self._sync_payment_to_invoice_ninja(doc, company_context, client)
 
 		except Exception as e:
 			frappe.logger().error(f"Error syncing {doc.doctype} {doc.name} to Invoice Ninja: {e!s}")
@@ -111,30 +183,30 @@ class SyncManager:
 			frappe.logger().info(f"Invoice Ninja to ERPNext sync disabled for {doc_type}")
 			return
 
-		try:
-			# Get company context from Invoice Ninja data
-			company_context = self.company_mapper.set_company_context(None, invoice_ninja_data)
+		# try:
+		# Get company context from Invoice Ninja data
+		company_context = self.company_mapper.set_company_context(None, invoice_ninja_data)
 
-			if not company_context.get("erpnext_company"):
-				frappe.logger().error(
-					f"No ERPNext company mapping found for Invoice Ninja company {invoice_ninja_data.get('company_id')}"
-				)
-				return
+		if not company_context.get("erpnext_company"):
+			frappe.logger().error(
+				f"No ERPNext company mapping found for Invoice Ninja company {invoice_ninja_data.get('company_id')}"
+			)
+			return
 
-			if doc_type == "Customer":
-				return self._sync_customer_from_invoice_ninja(invoice_ninja_data, company_context)
-			elif doc_type == "Sales Invoice":
-				return self._sync_invoice_from_invoice_ninja(invoice_ninja_data)
-			elif doc_type == "Quotation":
-				return self._sync_quote_from_invoice_ninja(invoice_ninja_data)
-			elif doc_type == "Item":
-				return self._sync_product_from_invoice_ninja(invoice_ninja_data)
-			elif doc_type == "Payment Entry":
-				return self._sync_payment_from_invoice_ninja(invoice_ninja_data)
+		if doc_type == "Customer":
+			return self._sync_customer_from_invoice_ninja(invoice_ninja_data, company_context)
+		elif doc_type == "Sales Invoice":
+			return self._sync_invoice_from_invoice_ninja(invoice_ninja_data)
+		elif doc_type == "Quotation":
+			return self._sync_quote_from_invoice_ninja(invoice_ninja_data)
+		elif doc_type == "Item":
+			return self._sync_product_from_invoice_ninja(invoice_ninja_data)
+		elif doc_type == "Payment Entry":
+			return self._sync_payment_from_invoice_ninja(invoice_ninja_data)
 
-		except Exception as e:
-			frappe.logger().error(f"Error syncing {doc_type} from Invoice Ninja: {e!s}")
-			self._log_sync_error(None, "Invoice Ninja to ERPNext", str(e), invoice_ninja_data)
+		# except Exception as e:
+		# 	frappe.logger().error(f"Error syncing {doc_type} from Invoice Ninja: {e!s}")
+		# 	self._log_sync_error(None, "Invoice Ninja to ERPNext", str(e), invoice_ninja_data)
 
 	def _sync_customer_to_invoice_ninja(self, customer, company_context):
 		"""Sync ERPNext Customer to Invoice Ninja with company context"""
@@ -174,6 +246,8 @@ class SyncManager:
 
 		# Map Invoice Ninja customer to ERPNext format (returns customer, address, shipping_address, contacts)
 		mapped_data = self.mapper.map_customer_from_invoice_ninja(customer_data)
+
+		frappe.logger().info(mapped_data)
 
 		if not mapped_data or not mapped_data[0]:
 			frappe.logger().error(
@@ -706,3 +780,381 @@ class SyncManager:
 			log_doc.insert()
 		except Exception as e:
 			frappe.log_error(f"Failed to log sync error: {e!s}")
+
+	# ============================================================================
+	# FETCH OPERATIONS - Generic methods for fetching entities from Invoice Ninja
+	# ============================================================================
+
+	def fetch_entities_for_mapped_companies(self, entity_type, page=1, per_page=100, filters=None):
+		"""
+		Generic method to fetch entities from Invoice Ninja for all mapped companies
+
+		Args:
+			entity_type: Type of entity (Customer, Sales Invoice, Quotation, Item, Payment Entry)
+			page: Page number for pagination
+			per_page: Number of records per page
+			filters: Optional filters to apply
+
+		Returns:
+			dict: {
+				"success": bool,
+				"companies": [
+					{
+						"erpnext_company": str,
+						"invoice_ninja_company_id": str,
+						"invoice_ninja_company_name": str,
+						"entities": [...],
+						"entity_count": int,
+						"is_default": bool
+					}
+				],
+				"total_entities": int,
+				"entity_type": str,
+				"message": str
+			}
+		"""
+		try:
+			# Validate entity type
+			if entity_type not in self.ENTITY_CONFIG:
+				return {
+					"success": False,
+					"message": f"Invalid entity type: {entity_type}. Valid types: {list(self.ENTITY_CONFIG.keys())}",
+					"companies": [],
+					"total_entities": 0
+				}
+
+			# Check if integration is enabled
+			if not self.settings.enabled:
+				return {
+					"success": False,
+					"message": "Invoice Ninja integration is not enabled",
+					"companies": [],
+					"total_entities": 0
+				}
+
+			# Get entity configuration
+			entity_config = self.ENTITY_CONFIG[entity_type]
+
+			# Get all company mappings
+			mappings = self.company_mapper.get_all_mappings()
+
+			if not mappings:
+				return {
+					"success": False,
+					"message": "No company mappings found. Please configure company mappings in Invoice Ninja Settings.",
+					"companies": [],
+					"total_entities": 0
+				}
+
+			# Fetch entities for each company
+			companies_data = []
+			total_entities = 0
+
+			for mapping in mappings:
+				company_id = mapping.get("invoice_ninja_company_id")
+				company_name = mapping.get("invoice_ninja_company_name")
+				erpnext_company = mapping.get("erpnext_company")
+
+				# Get client for this company
+				client, in_company_doc = self.get_client_for_mapping(mapping)
+
+				# Fetch entities for this company using the client method
+				method_name = entity_config["invoice_ninja_method"]
+				client_method = getattr(client, method_name)
+
+				# Build params
+				params = {"page": int(page), "per_page": int(per_page)}
+				if entity_config["include_params"]:
+					params["include"] = entity_config["include_params"]
+
+				# Call the appropriate client method
+				if "include" in params:
+					entities_response = client_method(page=params["page"], per_page=params["per_page"], include=params["include"])
+				else:
+					entities_response = client_method(page=params["page"], per_page=params["per_page"])
+
+				entities = []
+				entity_count = 0
+
+				if entities_response and entities_response.get('data'):
+					entities = entities_response['data']
+					entity_count = len(entities)
+					total_entities += entity_count
+
+				companies_data.append({
+					"erpnext_company": erpnext_company,
+					"invoice_ninja_company_id": company_id,
+					"invoice_ninja_company_name": company_name,
+					"invoice_ninja_company_doc": in_company_doc,  # Doc reference for linking
+					"entities": entities,
+					"entity_count": entity_count,
+					"is_default": mapping.get("is_default", False)
+				})
+
+			return {
+				"success": True,
+				"companies": companies_data,
+				"total_entities": total_entities,
+				"entity_type": entity_type,
+				"message": f"Successfully fetched {total_entities} {entity_type} records from {len(mappings)} mapped companies"
+			}
+
+		except Exception as e:
+			error_msg = f"Error fetching {entity_type} for mapped companies: {str(e)}"
+			frappe.log_error(error_msg, "Entity Fetch Error")
+			return {
+				"success": False,
+				"message": error_msg,
+				"companies": [],
+				"total_entities": 0
+			}
+
+	def fetch_entities_for_company(self, entity_type, erpnext_company=None,
+									invoice_ninja_company_id=None, page=1, per_page=100, filters=None):
+		"""
+		Generic method to fetch entities from Invoice Ninja for a specific company
+
+		Args:
+			entity_type: Type of entity (Customer, Sales Invoice, Quotation, Item, Payment Entry)
+			erpnext_company: ERPNext company name (optional)
+			invoice_ninja_company_id: Invoice Ninja company ID (optional)
+			page: Page number for pagination
+			per_page: Number of records per page
+			filters: Optional filters to apply
+
+		Returns:
+			dict: {
+				"success": bool,
+				"erpnext_company": str,
+				"invoice_ninja_company_id": str,
+				"invoice_ninja_company_name": str,
+				"entities": [...],
+				"entity_count": int,
+				"entity_type": str,
+				"message": str
+			}
+		"""
+		try:
+			# Validate entity type
+			if entity_type not in self.ENTITY_CONFIG:
+				return {
+					"success": False,
+					"message": f"Invalid entity type: {entity_type}. Valid types: {list(self.ENTITY_CONFIG.keys())}"
+				}
+
+			# Check if integration is enabled
+			if not self.settings.enabled:
+				return {
+					"success": False,
+					"message": "Invoice Ninja integration is not enabled"
+				}
+
+			# Get entity configuration
+			entity_config = self.ENTITY_CONFIG[entity_type]
+
+			# Get company mapping
+			mapping = self.company_mapper.get_company_mapping(
+				erpnext_company=erpnext_company,
+				invoice_ninja_company_id=invoice_ninja_company_id
+			)
+
+			if not mapping:
+				return {
+					"success": False,
+					"message": f"No company mapping found for {erpnext_company or invoice_ninja_company_id}"
+				}
+
+			# Get client for this company
+			client, in_company_doc = self.get_client_for_mapping(mapping)
+
+			# Fetch entities for this company
+			method_name = entity_config["invoice_ninja_method"]
+			client_method = getattr(client, method_name)
+
+			# Build params
+			params = {"page": int(page), "per_page": int(per_page)}
+			if entity_config["include_params"]:
+				params["include"] = entity_config["include_params"]
+
+			# Call the appropriate client method
+			if "include" in params:
+				entities_response = client_method(page=params["page"], per_page=params["per_page"], include=params["include"])
+			else:
+				entities_response = client_method(page=params["page"], per_page=params["per_page"])
+
+			entities = []
+			entity_count = 0
+
+			if entities_response and entities_response.get('data'):
+				entities = entities_response['data']
+				entity_count = len(entities)
+
+			return {
+				"success": True,
+				"erpnext_company": mapping["erpnext_company"],
+				"invoice_ninja_company_id": mapping["invoice_ninja_company_id"],
+				"invoice_ninja_company_name": mapping["invoice_ninja_company_name"],
+				"invoice_ninja_company_doc": in_company_doc,  # Doc reference for linking
+				"entities": entities,
+				"entity_count": entity_count,
+				"entity_type": entity_type,
+				"message": f"Successfully fetched {entity_count} {entity_type} records for {mapping['invoice_ninja_company_name']}"
+			}
+
+		except Exception as e:
+			error_msg = f"Error fetching {entity_type} for company: {str(e)}"
+			frappe.log_error(error_msg, "Entity Fetch Error")
+			return {
+				"success": False,
+				"message": error_msg
+			}
+
+	def fetch_entity_by_id(self, entity_type, entity_id, erpnext_company=None,
+							invoice_ninja_company_id=None):
+		"""
+		Fetch a single entity by Invoice Ninja ID
+
+		Args:
+			entity_type: Type of entity (Customer, Sales Invoice, Quotation, Item, Payment Entry)
+			entity_id: Invoice Ninja entity ID
+			erpnext_company: ERPNext company name (optional, for company context)
+			invoice_ninja_company_id: Invoice Ninja company ID (optional, for company context)
+
+		Returns:
+			dict: {
+				"success": bool,
+				"entity": {...},
+				"entity_type": str,
+				"message": str
+			}
+		"""
+		try:
+			# Validate entity type
+			if entity_type not in self.ENTITY_CONFIG:
+				return {
+					"success": False,
+					"message": f"Invalid entity type: {entity_type}. Valid types: {list(self.ENTITY_CONFIG.keys())}"
+				}
+
+			# Check if integration is enabled
+			if not self.settings.enabled:
+				return {
+					"success": False,
+					"message": "Invoice Ninja integration is not enabled"
+				}
+
+			# Get entity configuration
+			entity_config = self.ENTITY_CONFIG[entity_type]
+
+			# If company is specified, set company context
+			if erpnext_company or invoice_ninja_company_id:
+				mapping = self.company_mapper.get_company_mapping(
+					erpnext_company=erpnext_company,
+					invoice_ninja_company_id=invoice_ninja_company_id
+				)
+				if mapping:
+					self.client.set_company_id(mapping["invoice_ninja_company_id"])
+
+			# Fetch entity using the endpoint
+			endpoint = entity_config["invoice_ninja_endpoint"]
+			entity_data = self.client.get(f"{endpoint}/{entity_id}")
+
+			if not entity_data or not entity_data.get('data'):
+				return {
+					"success": False,
+					"message": f"{entity_type} with ID {entity_id} not found"
+				}
+
+			return {
+				"success": True,
+				"entity": entity_data.get('data'),
+				"entity_type": entity_type,
+				"message": f"Successfully fetched {entity_type} with ID {entity_id}"
+			}
+
+		except Exception as e:
+			error_msg = f"Error fetching {entity_type} by ID {entity_id}: {str(e)}"
+			frappe.log_error(error_msg, "Entity Fetch Error")
+			return {
+				"success": False,
+				"message": error_msg
+			}
+
+	# ============================================================================
+	# CONVENIENCE METHODS - Entity-specific wrappers for common operations
+	# ============================================================================
+
+	# Customer methods
+	def fetch_customers_for_mapped_companies(self, page=1, per_page=100):
+		"""Fetch customers from all mapped companies"""
+		return self.fetch_entities_for_mapped_companies("Customer", page, per_page)
+
+	def fetch_customers_for_company(self, erpnext_company=None, invoice_ninja_company_id=None,
+									page=1, per_page=100):
+		"""Fetch customers for a specific company"""
+		return self.fetch_entities_for_company("Customer", erpnext_company,
+											  invoice_ninja_company_id, page, per_page)
+
+	def fetch_customer_by_id(self, customer_id, erpnext_company=None, invoice_ninja_company_id=None):
+		"""Fetch a single customer by ID"""
+		return self.fetch_entity_by_id("Customer", customer_id, erpnext_company, invoice_ninja_company_id)
+
+	# Invoice methods
+	def fetch_invoices_for_mapped_companies(self, page=1, per_page=100):
+		"""Fetch invoices from all mapped companies"""
+		return self.fetch_entities_for_mapped_companies("Sales Invoice", page, per_page)
+
+	def fetch_invoices_for_company(self, erpnext_company=None, invoice_ninja_company_id=None,
+								   page=1, per_page=100):
+		"""Fetch invoices for a specific company"""
+		return self.fetch_entities_for_company("Sales Invoice", erpnext_company,
+											  invoice_ninja_company_id, page, per_page)
+
+	def fetch_invoice_by_id(self, invoice_id, erpnext_company=None, invoice_ninja_company_id=None):
+		"""Fetch a single invoice by ID"""
+		return self.fetch_entity_by_id("Sales Invoice", invoice_id, erpnext_company, invoice_ninja_company_id)
+
+	# Quotation methods
+	def fetch_quotations_for_mapped_companies(self, page=1, per_page=100):
+		"""Fetch quotations from all mapped companies"""
+		return self.fetch_entities_for_mapped_companies("Quotation", page, per_page)
+
+	def fetch_quotations_for_company(self, erpnext_company=None, invoice_ninja_company_id=None,
+									 page=1, per_page=100):
+		"""Fetch quotations for a specific company"""
+		return self.fetch_entities_for_company("Quotation", erpnext_company,
+											  invoice_ninja_company_id, page, per_page)
+
+	def fetch_quotation_by_id(self, quotation_id, erpnext_company=None, invoice_ninja_company_id=None):
+		"""Fetch a single quotation by ID"""
+		return self.fetch_entity_by_id("Quotation", quotation_id, erpnext_company, invoice_ninja_company_id)
+
+	# Item methods
+	def fetch_items_for_mapped_companies(self, page=1, per_page=100):
+		"""Fetch items from all mapped companies"""
+		return self.fetch_entities_for_mapped_companies("Item", page, per_page)
+
+	def fetch_items_for_company(self, erpnext_company=None, invoice_ninja_company_id=None,
+								page=1, per_page=100):
+		"""Fetch items for a specific company"""
+		return self.fetch_entities_for_company("Item", erpnext_company,
+											  invoice_ninja_company_id, page, per_page)
+
+	def fetch_item_by_id(self, item_id, erpnext_company=None, invoice_ninja_company_id=None):
+		"""Fetch a single item by ID"""
+		return self.fetch_entity_by_id("Item", item_id, erpnext_company, invoice_ninja_company_id)
+
+	# Payment methods
+	def fetch_payments_for_mapped_companies(self, page=1, per_page=100):
+		"""Fetch payments from all mapped companies"""
+		return self.fetch_entities_for_mapped_companies("Payment Entry", page, per_page)
+
+	def fetch_payments_for_company(self, erpnext_company=None, invoice_ninja_company_id=None,
+								   page=1, per_page=100):
+		"""Fetch payments for a specific company"""
+		return self.fetch_entities_for_company("Payment Entry", erpnext_company,
+											  invoice_ninja_company_id, page, per_page)
+
+	def fetch_payment_by_id(self, payment_id, erpnext_company=None, invoice_ninja_company_id=None):
+		"""Fetch a single payment by ID"""
+		return self.fetch_entity_by_id("Payment Entry", payment_id, erpnext_company, invoice_ninja_company_id)

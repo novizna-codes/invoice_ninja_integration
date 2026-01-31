@@ -25,7 +25,7 @@ class CompanyMapper:
         if not self.settings.company_mappings:
             return None
 
-        for mapping in self.settings.company_mappings:
+        for mapping in self.settings.as_dict().get('company_mappings'):
             if not mapping.enabled:
                 continue
 
@@ -214,3 +214,52 @@ class CompanyMapper:
             return False
 
         return True
+
+    def get_invoice_ninja_company_doc_name(self, erpnext_company=None, invoice_ninja_company_id=None):
+        """
+        Get Invoice Ninja Company doc name for linking to synced entities
+
+        Args:
+            erpnext_company: ERPNext company name
+            invoice_ninja_company_id: Invoice Ninja company ID
+
+        Returns:
+            str: The name/ID of the Invoice Ninja Company doc (not the company_id field)
+        """
+        mapping = self.get_company_mapping(
+            erpnext_company=erpnext_company,
+            invoice_ninja_company_id=invoice_ninja_company_id
+        )
+        if not mapping:
+            return None
+
+        # The company_mappings table already links to Invoice Ninja Company doctype
+        # We need to return the actual doc name for the Link field
+        return frappe.get_value("Invoice Ninja Company",
+            {"company_id": mapping["invoice_ninja_company_id"]}, "name")
+
+    def get_credentials_for_company(self, erpnext_company=None, invoice_ninja_company_id=None):
+        """
+        Get API credentials (URL + Token) for a specific company mapping
+
+        Args:
+            erpnext_company: ERPNext company name
+            invoice_ninja_company_id: Invoice Ninja company ID
+
+        Returns:
+            dict: {"url": str, "token": str, "company_doc": str, "company_id": str} or None
+        """
+        doc_name = self.get_invoice_ninja_company_doc_name(
+            erpnext_company=erpnext_company,
+            invoice_ninja_company_id=invoice_ninja_company_id
+        )
+        if not doc_name:
+            return None
+
+        company_doc = frappe.get_doc("Invoice Ninja Company", doc_name)
+        return {
+            "url": company_doc.invoice_ninja_url,
+            "token": company_doc.get_password("api_token"),
+            "company_doc": doc_name,
+            "company_id": company_doc.company_id
+        }

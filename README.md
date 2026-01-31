@@ -20,6 +20,8 @@ A robust ERPNext app that provides seamless two-way synchronization between ERPN
 - **Selective Sync**: Enable/disable sync for specific document types
 - **Field Mapping**: Intelligent field mapping between platforms
 - **Sync Status Tracking**: Monitor sync status for each record
+- **Multi-Instance Support**: Connect to multiple Invoice Ninja instances simultaneously
+- **Easy Company Discovery**: One-click discovery of Invoice Ninja companies
 
 ## Installation
 
@@ -35,25 +37,44 @@ A robust ERPNext app that provides seamless two-way synchronization between ERPN
 
 2. **Setup Invoice Ninja Settings**
    - Go to **Settings > Invoice Ninja Settings**
-   - Configure your Invoice Ninja URL and API Token
-   - Test the connection
-   - Enable the sync options you need
+   - Configure master credentials (for company discovery)
+   - Fetch companies from Invoice Ninja
+   - Set per-company API tokens
+   - Test connections and enable sync options
 
 ## Configuration
 
-### Basic Setup
+### Basic Setup (v2.0 - Easy Discovery Method)
 
-1. **Invoice Ninja API Token**
-   - In Invoice Ninja, go to Settings > API Tokens
-   - Create a new token with appropriate permissions
-   - Copy the token to ERPNext Invoice Ninja Settings
-
-2. **Connection Settings**
+1. **Configure Master Credentials (For Discovery)**
+   - Go to **Invoice Ninja Settings**
    - Enter your Invoice Ninja URL (e.g., https://your-domain.invoiceninja.com)
-   - Paste your API Token
-   - Click "Test Connection" to verify
+   - Enter Master API Token (admin token with access to list companies)
+   - Click "Test Master Connection" to verify
 
-3. **Sync Configuration**
+2. **Discover Companies**
+   - Click "Fetch Companies from Invoice Ninja" button
+   - System will automatically:
+     - Fetch all companies from your Invoice Ninja instance
+     - Create Invoice Ninja Company docs
+     - Set company IDs, names, and URLs
+   - Review the created companies in Invoice Ninja Company list
+
+3. **Set Per-Company Tokens**
+   - Go to **Invoice Ninja Company** list
+   - For each company:
+     - Open the company document
+     - Enter the API Token specific to this company
+     - Click "Test Connection" to verify
+     - Company will auto-enable when token is set
+
+4. **Configure Company Mappings**
+   - Go back to **Invoice Ninja Settings**
+   - In "Company Mappings" section, link:
+     - ERPNext Company → Invoice Ninja Company
+   - Mark one as default if needed
+
+5. **Sync Configuration**
    - Enable sync for the document types you need:
      - ☑️ Customer Sync
      - ☑️ Invoice Sync
@@ -71,6 +92,40 @@ A robust ERPNext app that provides seamless two-way synchronization between ERPN
    - In Invoice Ninja, go to Settings > API Webhooks
    - Add a new webhook with the URL from ERPNext
    - Select the events you want to sync in real-time
+
+### Multi-Instance & Multi-Company Support
+
+The app supports connecting to multiple Invoice Ninja instances and/or multiple companies within a single instance:
+
+#### Supported Scenarios:
+1. **Multiple Invoice Ninja Instances**
+   - Connect to different Invoice Ninja servers
+   - Each with its own URL and credentials
+
+2. **Multi-Company Invoice Ninja Setup**
+   - One Invoice Ninja instance with multiple companies
+   - Each company has its own API token
+
+3. **Mixed Setup** (Most Common)
+   - Multiple instances AND multiple companies per instance
+   - Full flexibility in configuration
+
+#### Security Model:
+- **Master Credentials** (in Settings): Used ONLY for discovering companies
+- **Per-Company Tokens** (in Invoice Ninja Company): Used for all sync operations
+- Clear separation between discovery and operation credentials
+
+#### Benefits:
+- ✅ Easy company discovery with one click
+- ✅ Secure per-company token management
+- ✅ Proper document routing between systems
+- ✅ Isolated data per company
+- ✅ Accurate financial reporting
+- ✅ Compliance with multi-entity requirements
+
+📖 **Detailed documentation**:
+- [MULTI_INSTANCE_IMPLEMENTATION.md](MULTI_INSTANCE_IMPLEMENTATION.md) - Multi-instance architecture
+- [COMPANY_MAPPING.md](COMPANY_MAPPING.md) - Company mapping details
 
 ### Field Mapping
 
@@ -121,11 +176,43 @@ Each synced record shows its sync status:
 ### Configuration
 - `get_invoice_ninja_settings()`: Get current settings
 - `test_connection()`: Test Invoice Ninja API connection
+- `get_company_mappings()`: Get all company mappings from settings
+- `get_invoice_ninja_companies()`: Fetch companies from Invoice Ninja
 
 ### Sync Operations
 - `sync_from_invoice_ninja(doctype, limit)`: Pull data from Invoice Ninja
 - `manual_sync_customer(customer_name)`: Sync specific customer
 - `manual_sync_invoice(invoice_name)`: Sync specific invoice
+
+### Entity Fetch Operations (Centralized Service)
+
+All fetch operations now use the centralized `SyncManager` service for consistency and maintainability.
+
+#### Customer Methods
+- `get_customers_for_mapped_companies(page, per_page)`: Get customers from all mapped companies
+- `get_customers_for_company(erpnext_company, invoice_ninja_company_id, page, per_page)`: Get customers for a specific company
+
+#### Invoice Methods
+- `get_invoices_for_mapped_companies(page, per_page)`: Get invoices from all mapped companies
+- `get_invoices_for_company(erpnext_company, invoice_ninja_company_id, page, per_page)`: Get invoices for a specific company
+
+#### Quotation Methods
+- `get_quotations_for_mapped_companies(page, per_page)`: Get quotations from all mapped companies
+- `get_quotations_for_company(erpnext_company, invoice_ninja_company_id, page, per_page)`: Get quotations for a specific company
+
+#### Item Methods
+- `get_items_for_mapped_companies(page, per_page)`: Get items from all mapped companies
+- `get_items_for_company(erpnext_company, invoice_ninja_company_id, page, per_page)`: Get items for a specific company
+
+#### Payment Methods
+- `get_payments_for_mapped_companies(page, per_page)`: Get payments from all mapped companies
+- `get_payments_for_company(erpnext_company, invoice_ninja_company_id, page, per_page)`: Get payments for a specific company
+
+#### Generic Endpoint
+- `fetch_entities(entity_type, scope, company_identifier, page, per_page)`: Generic endpoint to fetch any entity type
+
+📖 **Detailed API documentation**: See [CUSTOMER_FETCH_API.md](CUSTOMER_FETCH_API.md)
+🏗️ **Architecture details**: See [ARCHITECTURE.md](ARCHITECTURE.md)
 
 ### Webhook Handler
 - `webhook.py`: Handles real-time webhook events from Invoice Ninja
@@ -175,19 +262,40 @@ The app adds these custom fields to ERPNext doctypes:
 ### Project Structure
 ```
 invoice_ninja_integration/
-├── api.py                 # Main API methods
-├── tasks.py              # Scheduled tasks
-├── hooks.py              # ERPNext hooks
+├── api.py                           # Main API methods (uses SyncManager)
+├── tasks.py                         # Scheduled tasks
+├── hooks.py                         # ERPNext hooks
 ├── utils/
-│   ├── invoice_ninja_client.py  # API client
-│   └── field_mapper.py          # Field mapping logic
+│   ├── base_integration_service.py # Base class for integrations (reusable)
+│   ├── sync_manager.py              # Centralized service (extends base)
+│   ├── invoice_ninja_client.py      # API client
+│   ├── field_mapper.py              # Field mapping logic
+│   └── company_mapper.py            # Multi-company mapping
 ├── doctype/
-│   └── invoice_ninja_settings/  # Settings doctype
+│   ├── invoice_ninja_settings/      # Settings doctype
+│   ├── invoice_ninja_company/       # Company doctype
+│   └── invoice_ninja_company_mapping/ # Company mapping child table
 ├── www/
-│   └── webhook.py               # Webhook handler
+│   └── webhook.py                   # Webhook handler
 └── fixtures/
-    └── custom_field.json       # Custom field definitions
+    └── custom_field.json            # Custom field definitions
 ```
+
+### Architecture
+
+The app follows a centralized service architecture:
+
+- **BaseIntegrationService**: Abstract base class providing reusable patterns for any third-party integration
+- **SyncManager**: Concrete implementation for Invoice Ninja, handling all fetch and sync operations
+- **API Layer**: Thin wrapper around SyncManager, exposing whitelisted methods
+- **Supporting Components**: Client, mappers, and company context management
+
+This architecture enables:
+- Single source of truth for all operations
+- Easy addition of new entity types via configuration
+- Reusable pattern for other integration apps (Shopify, Stripe, etc.)
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed architecture documentation.
 
 ### Contributing
 
