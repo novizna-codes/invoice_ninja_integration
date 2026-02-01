@@ -1213,10 +1213,15 @@ class FieldMapper:
 		for mapping in settings.customer_group_mappings:
 			if erpnext_customer_group and mapping.customer_group == erpnext_customer_group:
 				return mapping
-			elif invoice_ninja_customer_group_id and str(mapping.invoice_ninja_customer_group) == str(
-				invoice_ninja_customer_group_id
-			):
-				return mapping
+			elif invoice_ninja_customer_group_id and mapping.invoice_ninja_customer_group:
+				# Fetch the actual group_id from the linked Invoice Ninja Customer Group DocType
+				group_id = frappe.db.get_value(
+					"Invoice Ninja Customer Group",
+					mapping.invoice_ninja_customer_group,
+					"group_id"
+				)
+				if group_id and str(group_id) == str(invoice_ninja_customer_group_id):
+					return mapping
 
 		# No default mapping logic needed - just return None if no match
 		return None
