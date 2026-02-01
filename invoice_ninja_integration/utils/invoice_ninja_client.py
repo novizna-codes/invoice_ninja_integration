@@ -170,13 +170,15 @@ class InvoiceNinjaClient:
 		return self.get(f'companies/{company_id}')
 
 	# Client methods	# Customer methods
-	def get_customers(self, page=1, per_page=100):
+	def get_customers(self, page=1, per_page=100, include=None):
 		"""Get customers from Invoice Ninja"""
 		params = {
 			'page': page,
 			'per_page': per_page,
-			'include': 'contacts,group_settings'
 		}
+
+		if include:
+			params['include'] = include
 
 		return self.get('clients', params=params)
 
