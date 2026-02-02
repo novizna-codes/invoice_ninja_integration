@@ -28,7 +28,15 @@
   "quotations_synced",
   "column_break_stats",
   "items_synced",
-  "payments_synced"
+  "payments_synced",
+  "mappings_tab",
+  "customer_group_mapping_section",
+  "customer_group_mappings",
+  "item_group_mapping_section",
+  "item_group_mappings",
+  "tax_template_mapping_section",
+  "tax_template_mappings",
+  "default_tax_template"
  ],
  "fields": [
   {
@@ -172,6 +180,54 @@
    "fieldtype": "Int",
    "label": "Payments Synced",
    "read_only": 1
+  },
+  {
+   "fieldname": "mappings_tab",
+   "fieldtype": "Tab Break",
+   "label": "Mappings"
+  },
+  {
+   "fieldname": "customer_group_mapping_section",
+   "fieldtype": "Section Break",
+   "label": "Customer Group Mappings"
+  },
+  {
+   "fieldname": "customer_group_mappings",
+   "fieldtype": "Table",
+   "label": "Customer Group Mappings",
+   "options": "Invoice Ninja Customer Group Mapping",
+   "description": "Map ERPNext customer groups to Invoice Ninja customer groups for this company"
+  },
+  {
+   "fieldname": "item_group_mapping_section",
+   "fieldtype": "Section Break",
+   "label": "Item Group Mappings"
+  },
+  {
+   "fieldname": "item_group_mappings",
+   "fieldtype": "Table",
+   "label": "Item Group Mappings",
+   "options": "Invoice Ninja Item Group Mapping",
+   "description": "Map ERPNext item groups to Invoice Ninja tax categories for this company"
+  },
+  {
+   "fieldname": "tax_template_mapping_section",
+   "fieldtype": "Section Break",
+   "label": "Tax Template Mappings"
+  },
+  {
+   "fieldname": "tax_template_mappings",
+   "fieldtype": "Table",
+   "label": "Tax Template Mappings",
+   "options": "Invoice Ninja Tax Template Mapping",
+   "description": "Map ERPNext tax templates to Invoice Ninja tax rates for this company"
+  },
+  {
+   "fieldname": "default_tax_template",
+   "fieldtype": "Link",
+   "label": "Default Tax Template",
+   "options": "Sales Taxes and Charges Template",
+   "description": "Default tax template when no mapping found"
   }
  ],
  "grid_page_length": 50,

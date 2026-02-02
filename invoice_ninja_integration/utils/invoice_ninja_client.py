@@ -206,10 +206,12 @@ class InvoiceNinjaClient:
 
 	# Invoice methods
 	def get_invoices(self, page=1, per_page=100, include=None):
-		"""Get invoices from Invoice Ninja"""
-		params = {'page': page, 'per_page': per_page}
-		if include:
-			params['include'] = include
+		"""Get invoices from Invoice Ninja - include task data by default"""
+		params = {
+			'page': page,
+			'per_page': per_page,
+			'include': include or 'client,line_items.task'  # Include nested task data by default
+		}
 		return self.get('invoices', params=params)
 
 	def get_invoice(self, invoice_id, include=None):
@@ -280,6 +282,32 @@ class InvoiceNinjaClient:
 	def create_payment(self, payment_data):
 		"""Create payment in Invoice Ninja"""
 		return self.post('payments', data=payment_data)
+
+	# Tax Rate methods
+	def get_tax_rates(self, page=1, per_page=100):
+		"""Get tax rates from Invoice Ninja"""
+		params = {'page': page, 'per_page': per_page}
+		return self.get('tax_rates', params=params)
+
+	# Task methods
+	def get_tasks(self, page=1, per_page=100, include=None):
+		"""Get tasks from Invoice Ninja"""
+		params = {'page': page, 'per_page': per_page}
+		if include:
+			params['include'] = include
+		return self.get('tasks', params=params)
+
+	def get_task(self, task_id):
+		"""Get single task"""
+		return self.get(f'tasks/{task_id}')
+
+	def create_task(self, task_data):
+		"""Create task in Invoice Ninja"""
+		return self.post('tasks', data=task_data)
+
+	def update_task(self, task_id, task_data):
+		"""Update task in Invoice Ninja"""
+		return self.put(f'tasks/{task_id}', data=task_data)
 
 	# File methods
 	def download_invoice_pdf(self, invoice_id):

@@ -26,6 +26,20 @@ frappe.ui.form.on('Invoice Ninja Company', {
 
 		// Add sync actions dropdown if company is enabled
 		if (!frm.is_new() && frm.doc.enabled && frm.doc.api_token) {
+			// Fetch Master Data buttons
+			frm.add_custom_button(__('Fetch Tax Rates'), function() {
+				fetch_tax_rates_for_company(frm);
+			}, __('Fetch Master Data'));
+
+			frm.add_custom_button(__('Fetch Customer Groups'), function() {
+				fetch_customer_groups_for_company(frm);
+			}, __('Fetch Master Data'));
+
+			frm.add_custom_button(__('Fetch All Master Data'), function() {
+				fetch_all_master_data(frm);
+			}, __('Fetch Master Data'));
+
+			// Sync Actions buttons
 			frm.add_custom_button(__('Sync Customers'), function() {
 				sync_entity(frm, 'Customer');
 			}, __('Sync Actions'));
@@ -42,13 +56,17 @@ frappe.ui.form.on('Invoice Ninja Company', {
 				sync_entity(frm, 'Item');
 			}, __('Sync Actions'));
 
-			frm.add_custom_button(__('Sync Payments'), function() {
-				sync_entity(frm, 'Payment Entry');
-			}, __('Sync Actions'));
+		frm.add_custom_button(__('Sync Payments'), function() {
+			sync_entity(frm, 'Payment Entry');
+		}, __('Sync Actions'));
 
-			frm.add_custom_button(__('Sync All'), function() {
-				sync_all_entities(frm);
-			}, __('Sync Actions'));
+		frm.add_custom_button(__('Sync Tasks'), function() {
+			sync_tasks(frm);
+		}, __('Sync Actions'));
+
+		frm.add_custom_button(__('Sync All'), function() {
+			sync_all_entities(frm);
+		}, __('Sync Actions'));
 		}
 
 		// Add button to view sync logs
@@ -186,6 +204,38 @@ function sync_entity(frm, entity_type) {
 	);
 }
 
+function sync_tasks(frm) {
+	frappe.confirm(
+		__('Sync Tasks from Invoice Ninja for company {0}?', [frm.doc.company_name]),
+		function() {
+			frappe.call({
+				method: 'invoice_ninja_integration.api.sync_tasks_from_invoice_ninja',
+				args: {
+					invoice_ninja_company_id: frm.doc.name,
+					limit: 100
+				},
+				freeze: true,
+				freeze_message: __('Syncing Tasks...'),
+				callback: function(r) {
+					if (r.message && r.message.success) {
+						frappe.show_alert({
+							message: __('Synced {0} tasks', [r.message.synced_count]),
+							indicator: 'green'
+						});
+						frm.reload_doc();
+					} else {
+						frappe.msgprint({
+							title: __('Sync Failed'),
+							indicator: 'red',
+							message: r.message.message || __('Unknown error')
+						});
+					}
+				}
+			});
+		}
+	);
+}
+
 function sync_all_entities(frm) {
 	let d = new frappe.ui.Dialog({
 		title: __('Sync All Entities'),
@@ -297,4 +347,69 @@ function render_sync_statistics(frm, stats) {
 	`;
 
 	frm.dashboard.add_section(html, __('Sync Statistics'));
+}
+
+function fetch_tax_rates_for_company(frm) {
+	frappe.call({
+		method: 'invoice_ninja_integration.api.get_invoice_ninja_tax_rates',
+		args: {
+			invoice_ninja_company_id: frm.doc.name
+		},
+		freeze: true,
+		freeze_message: __('Fetching tax rates...'),
+		callback: function(r) {
+			if (r.message && r.message.success) {
+				frappe.show_alert({
+					message: __('Fetched {0} tax rates', [r.message.tax_rates.length]),
+					indicator: 'green'
+				});
+				frm.reload_doc();
+			} else {
+				frappe.msgprint({
+					title: __('Fetch Failed'),
+					indicator: 'red',
+					message: r.message.error || __('Unknown error')
+				});
+			}
+		}
+	});
+}
+
+function fetch_customer_groups_for_company(frm) {
+	frappe.call({
+		method: 'invoice_ninja_integration.api.get_invoice_ninja_customer_groups',
+		args: {
+			invoice_ninja_company_id: frm.doc.name
+		},
+		freeze: true,
+		freeze_message: __('Fetching customer groups...'),
+		callback: function(r) {
+			if (r.message && r.message.success) {
+				frappe.show_alert({
+					message: __('Fetched {0} customer groups', [r.message.groups.length]),
+					indicator: 'green'
+				});
+				frm.reload_doc();
+			} else {
+				frappe.msgprint({
+					title: __('Fetch Failed'),
+					indicator: 'red',
+					message: r.message.error || __('Unknown error')
+				});
+			}
+		}
+	});
+}
+
+function fetch_all_master_data(frm) {
+	frappe.confirm(
+		__('Fetch all master data (tax rates, customer groups) for {0}?', [frm.doc.company_name]),
+		function() {
+			// Call both fetch functions sequentially
+			fetch_tax_rates_for_company(frm);
+			setTimeout(function() {
+				fetch_customer_groups_for_company(frm);
+			}, 1000);
+		}
+	);
 }

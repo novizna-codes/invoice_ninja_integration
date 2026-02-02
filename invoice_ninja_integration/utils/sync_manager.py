@@ -49,6 +49,12 @@ class SyncManager(BaseIntegrationService):
 			"invoice_ninja_method": "get_payments",
 			"erpnext_doctype": "Payment Entry",
 			"include_params": "invoice,client"
+		},
+		"Invoice Ninja Task": {
+			"invoice_ninja_endpoint": "tasks",
+			"invoice_ninja_method": "get_tasks",
+			"erpnext_doctype": "Invoice Ninja Task",
+			"include_params": "client,project"
 		}
 	}
 

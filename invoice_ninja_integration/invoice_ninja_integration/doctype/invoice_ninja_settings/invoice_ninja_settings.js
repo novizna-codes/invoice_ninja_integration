@@ -13,6 +13,10 @@ frappe.ui.form.on('Invoice Ninja Settings', {
             frm.add_custom_button(__('Sync Customer Groups'), function() {
                 sync_invoice_ninja_customer_groups(frm);
             }, __('Invoice Ninja'));
+
+            frm.add_custom_button(__('Fetch Tax Rates & Categories'), function() {
+                fetch_invoice_ninja_tax_rates(frm);
+            }, __('Invoice Ninja'));
         }
     },
 
@@ -264,6 +268,49 @@ function sync_invoice_ninja_customer_groups(frm) {
                 frappe.msgprint({
                     title: __('Error'),
                     message: __('Failed to sync customer groups: {0}', [r.message?.error || 'Unknown error']),
+                    indicator: 'red'
+                });
+            }
+        }
+    });
+}
+
+function fetch_invoice_ninja_tax_rates(frm) {
+    if (!frm.doc.invoice_ninja_url || !frm.doc.api_token) {
+        frappe.msgprint({
+            title: __('Credentials Required'),
+            indicator: 'red',
+            message: __('Please enter Invoice Ninja URL and API Token first.')
+        });
+        return;
+    }
+
+    frappe.call({
+        method: 'invoice_ninja_integration.api.get_invoice_ninja_tax_rates',
+        args: {
+            settings_name: frm.doc.name
+        },
+        freeze: true,
+        freeze_message: __('Fetching tax rates from Invoice Ninja...'),
+        callback: function(r) {
+            if (r.message && r.message.success) {
+                let tax_rates = r.message.tax_rates || [];
+                let tax_categories = r.message.tax_categories || [];
+
+                frappe.msgprint({
+                    title: __('Tax Rates & Categories Fetched'),
+                    message: __('Successfully fetched {0} tax rates and {1} tax categories from Invoice Ninja',
+                        [tax_rates.length, tax_categories.length]),
+                    indicator: 'green'
+                });
+
+                // Refresh the form to show any updated data
+                frm.reload_doc();
+
+            } else {
+                frappe.msgprint({
+                    title: __('Error'),
+                    message: __('Failed to fetch tax rates: {0}', [r.message?.error || 'Unknown error']),
                     indicator: 'red'
                 });
             }

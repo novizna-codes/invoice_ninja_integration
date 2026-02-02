@@ -1,1 +1,2 @@
 invoice_ninja_integration.patches.migrate_to_per_company_credentials
+invoice_ninja_integration.patches.v2_0.migrate_mappings_to_per_company

@@ -8,6 +8,7 @@ from frappe.custom.doctype.property_setter.property_setter import make_property_
 def after_migrate():
 	"""Install customizations after migration"""
 	install_customizations()
+	setup_task_custom_fields()
 
 
 def install_customizations():
@@ -83,6 +84,48 @@ def install_customization(customization_data):
 	print(f"Installed customization for {doctype}")
 
 
+def setup_task_custom_fields():
+	"""Create custom fields for task-based invoice line items"""
+
+	custom_fields = {
+		"Sales Invoice Item": [
+			{
+				"fieldname": "invoice_ninja_task_id",
+				"fieldtype": "Data",
+				"label": "Invoice Ninja Task ID",
+				"insert_after": "item_code",
+				"read_only": 1,
+				"hidden": 1,
+				"no_copy": 1
+			},
+			{
+				"fieldname": "custom_is_task_based",
+				"fieldtype": "Check",
+				"label": "Is Task Based",
+				"insert_after": "invoice_ninja_task_id",
+				"read_only": 1,
+				"default": "0",
+				"no_copy": 1
+			}
+		],
+		"Sales Invoice": [
+			{
+				"fieldname": "invoice_ninja_tasks",
+				"fieldtype": "Small Text",
+				"label": "Invoice Ninja Tasks",
+				"insert_after": "customer",
+				"read_only": 1,
+				"description": "Task IDs from Invoice Ninja that are billed in this invoice",
+				"no_copy": 1
+			}
+		]
+	}
+
+	create_custom_fields(custom_fields, update=True)
+	frappe.db.commit()
+	print("Invoice Ninja task custom fields installed successfully")
+
+
 def uninstall_customizations():
 	"""Remove all Invoice Ninja custom fields"""
 	custom_fields_to_remove = [
@@ -116,7 +159,12 @@ def uninstall_customizations():
 		# File fields
 		"File-invoice_ninja_id",
 		"File-invoice_ninja_sync_status",
-		"File-invoice_ninja_last_sync"
+		"File-invoice_ninja_last_sync",
+
+		# Task-based invoice line item fields
+		"Sales Invoice Item-invoice_ninja_task_id",
+		"Sales Invoice Item-custom_is_task_based",
+		"Sales Invoice-invoice_ninja_tasks"
 	]
 
 	for field_name in custom_fields_to_remove:

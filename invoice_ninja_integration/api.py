@@ -252,8 +252,10 @@ def sync_customer_from_invoice_ninja(customer_data, invoice_ninja_company=None):
 def sync_invoice_from_invoice_ninja(invoice_data, invoice_ninja_company=None):
 	"""Create/update ERPNext sales invoice from Invoice Ninja data"""
 	try:
+		invoice_id = str(invoice_data.get('id'))
+
 		# Check if invoice already exists
-		existing = frappe.db.exists("Sales Invoice", {"invoice_ninja_id": str(invoice_data.get('id'))})
+		existing = frappe.db.exists("Sales Invoice", {"invoice_ninja_id": invoice_id})
 
 		if existing:
 			# Skip if already exists to avoid duplicates
@@ -266,6 +268,35 @@ def sync_invoice_from_invoice_ninja(invoice_data, invoice_ninja_company=None):
 		doc = frappe.get_doc(invoice_doc_data)
 		doc.insert()
 		frappe.db.commit()
+
+		# After invoice is created, update related tasks
+		# Collect task IDs from line items
+		task_ids = []
+		for item in doc.items:
+			if hasattr(item, 'invoice_ninja_task_id') and item.invoice_ninja_task_id:
+				task_ids.append(item.invoice_ninja_task_id)
+
+		# Update tasks with invoice link
+		if task_ids:
+			# Store task IDs in the invoice custom field
+			doc.invoice_ninja_tasks = ", ".join(task_ids)
+			doc.save(ignore_permissions=True)
+
+			# Find and update task records
+			tasks = frappe.get_all(
+				"Invoice Ninja Task",
+				filters={"task_id": ["in", task_ids]},
+				fields=["name"]
+			)
+
+			for task in tasks:
+				task_doc = frappe.get_doc("Invoice Ninja Task", task.name)
+				task_doc.status = "Invoiced"
+				task_doc.is_invoiced = 1
+				task_doc.sales_invoice = doc.name  # Link to ERPNext invoice
+				task_doc.save(ignore_permissions=True)
+
+			frappe.db.commit()
 
 	except Exception as e:
 		frappe.log_error(f"Error creating invoice from Invoice Ninja: {str(e)}", "Invoice Creation Error")
@@ -294,31 +325,46 @@ def sync_quotation_from_invoice_ninja(quote_data, invoice_ninja_company=None):
 
 
 def sync_item_from_invoice_ninja(product_data, invoice_ninja_company=None):
-	"""Create/update ERPNext item from Invoice Ninja data"""
-	try:
-		# Check if item already exists
-		existing = frappe.db.exists("Item", {"invoice_ninja_id": str(product_data.get('id'))})
+	"""Create/update Item from Invoice Ninja product - ALWAYS update if exists"""
+	product_id = str(product_data.get('id'))
 
-		item_doc_data = FieldMapper.map_item_from_invoice_ninja(product_data, invoice_ninja_company)
-		if not item_doc_data:
-			return
+	# Check if item exists by invoice_ninja_id
+	existing_by_id = frappe.db.get_value(
+		"Item",
+		{"invoice_ninja_id": product_id},
+		"name"
+	)
 
-		if existing:
-			# Update existing item
-			doc = frappe.get_doc("Item", existing)
-			for key, value in item_doc_data.items():
-				if key != 'doctype' and hasattr(doc, key):
-					setattr(doc, key, value)
-			doc.save()
-		else:
-			# Create new item
-			doc = frappe.get_doc(item_doc_data)
-			doc.insert()
+	# Also check by item_code for backwards compatibility
+	item_code = product_data.get("product_key") or f"IN-{product_id}"
+	existing_by_code = frappe.db.get_value(
+		"Item",
+		{"item_code": item_code},
+		"name"
+	) if not existing_by_id else None
 
-		frappe.db.commit()
+	existing_item = existing_by_id or existing_by_code
 
-	except Exception as e:
-		frappe.log_error(f"Error creating item from Invoice Ninja: {str(e)}", "Item Creation Error")
+	# Map product data
+	item_data = FieldMapper.map_item_from_invoice_ninja(product_data, invoice_ninja_company)
+
+	if not item_data:
+		return False
+
+	if existing_item:
+		# UPDATE existing item (even on first sync)
+		doc = frappe.get_doc("Item", existing_item)
+		for key, value in item_data.items():
+			if key != 'doctype' and hasattr(doc, key):
+				setattr(doc, key, value)
+		doc.save(ignore_permissions=True)
+	else:
+		# CREATE new item
+		doc = frappe.get_doc(item_data)
+		doc.insert(ignore_permissions=True)
+
+	frappe.db.commit()
+	return True
 
 
 def sync_payment_from_invoice_ninja(payment_data, invoice_ninja_company=None):
@@ -344,6 +390,92 @@ def sync_payment_from_invoice_ninja(payment_data, invoice_ninja_company=None):
 
 	except Exception as e:
 		frappe.log_error(f"Error creating payment entry from Invoice Ninja: {str(e)}", "Payment Creation Error")
+
+
+@frappe.whitelist()
+def sync_tasks_from_invoice_ninja(invoice_ninja_company_id, limit=100):
+	"""Sync tasks from Invoice Ninja for a specific company"""
+	try:
+		company_doc = frappe.get_doc("Invoice Ninja Company", invoice_ninja_company_id)
+
+		if not company_doc.enabled:
+			return {"success": False, "message": "Company is disabled"}
+
+		# Initialize client
+		client = InvoiceNinjaClient(invoice_ninja_company=invoice_ninja_company_id)
+
+		# Fetch tasks with pagination
+		all_tasks = []
+		page = 1
+
+		while len(all_tasks) < int(limit):
+			response = client.get_tasks(page=page, per_page=100, include="client")
+
+			if not response or not response.get('data'):
+				break
+
+			tasks = response['data']
+			if not tasks:
+				break
+
+			all_tasks.extend(tasks)
+
+			if len(tasks) < 100:
+				break
+
+			page += 1
+
+		all_tasks = all_tasks[:int(limit)]
+
+		# Process tasks
+		synced_count = 0
+		for task_data in all_tasks:
+			if sync_task_from_invoice_ninja(task_data, invoice_ninja_company_id):
+				synced_count += 1
+
+		return {
+			"success": True,
+			"synced_count": synced_count,
+			"total_fetched": len(all_tasks)
+		}
+
+	except Exception as e:
+		frappe.log_error(f"Error syncing tasks: {str(e)}", "Task Sync Error")
+		return {"success": False, "message": str(e)}
+
+
+def sync_task_from_invoice_ninja(task_data, invoice_ninja_company=None):
+	"""Create/update Invoice Ninja Task from API data"""
+	try:
+		task_id = str(task_data.get('id'))
+
+		# Check if task exists
+		existing = frappe.db.exists("Invoice Ninja Task", {"task_id": task_id})
+
+		# Map task data
+		task_doc_data = FieldMapper.map_task_from_invoice_ninja(task_data, invoice_ninja_company)
+
+		if not task_doc_data:
+			return False
+
+		if existing:
+			# Update existing
+			doc = frappe.get_doc("Invoice Ninja Task", existing)
+			for key, value in task_doc_data.items():
+				if key != 'doctype' and hasattr(doc, key):
+					setattr(doc, key, value)
+			doc.save(ignore_permissions=True)
+		else:
+			# Create new
+			doc = frappe.get_doc(task_doc_data)
+			doc.insert(ignore_permissions=True)
+
+		frappe.db.commit()
+		return True
+
+	except Exception as e:
+		frappe.log_error(f"Error syncing task {task_data.get('id')}: {str(e)}", "Task Sync Error")
+		return False
 
 
 @frappe.whitelist()
@@ -1014,48 +1146,160 @@ def sync_company_mappings_from_invoice_ninja():
 
 
 @frappe.whitelist()
-def get_invoice_ninja_customer_groups(settings_name=None):
-	"""Fetch customer groups from Invoice Ninja API"""
-	try:
-		settings = frappe.get_single("Invoice Ninja Settings")
+def get_invoice_ninja_customer_groups(invoice_ninja_company_id=None):
+	"""Fetch customer groups from Invoice Ninja API for a specific company"""
+	if not invoice_ninja_company_id:
+		return {"success": False, "error": "Invoice Ninja Company ID is required"}
 
-		if not settings.invoice_ninja_url or not settings.api_token:
-			return {"success": False, "error": "Invoice Ninja URL and API Token are required"}
+	try:
+		company_doc = frappe.get_doc("Invoice Ninja Company", invoice_ninja_company_id)
+
+		if not company_doc.enabled:
+			return {"success": False, "error": "Company is disabled"}
 
 		# Initialize client
-		client = InvoiceNinjaClient(settings.invoice_ninja_url, settings.get_password("api_token"))
+		client = InvoiceNinjaClient(invoice_ninja_company=invoice_ninja_company_id)
 
-		# Fetch group settings from Invoice Ninja
+		# Fetch group settings
 		response = client._make_request('GET', 'group_settings')
 
 		if response and 'data' in response:
-			customer_groups = []
+			groups = []
+
 			for group in response['data']:
-				# Create or update local Invoice Ninja Customer Group doc
-				existing_group = frappe.db.get_all("Invoice Ninja Customer Group", filters={"group_id": str(group.get('id'))}, limit=1)
+				group_id = str(group.get('id'))
+				group_name = group.get('name', f"Group {group.get('id')}")
+
+				# Create/update WITH company linkage
+				existing_group = frappe.db.get_all(
+					"Invoice Ninja Customer Group",
+					filters={
+						"group_id": group_id,
+						"invoice_ninja_company": invoice_ninja_company_id
+					},
+					limit=1
+				)
 
 				if existing_group:
 					group_doc = frappe.get_doc("Invoice Ninja Customer Group", existing_group[0].name)
-					group_doc.group_name = group.get('name', f"Group {group.get('id')}")
+					group_doc.group_name = group_name
 					group_doc.save(ignore_permissions=True)
-					customer_groups.append(group_doc.as_dict())
-					continue
+				else:
+					group_doc = frappe.get_doc({
+						"doctype": "Invoice Ninja Customer Group",
+						"group_id": group_id,
+						"group_name": group_name,
+						"invoice_ninja_company": invoice_ninja_company_id  # Link to company
+					})
+					group_doc.save(ignore_permissions=True)
 
-				group_doc = frappe.get_doc({
-					"doctype": "Invoice Ninja Customer Group",
-					"group_id": str(group.get('id')),
-					"group_name": group.get('name', f"Group {group.get('id')}"),
-				})
+				groups.append(group_doc.as_dict())
 
-				group_doc.save(ignore_permissions=True)
-				customer_groups.append(group_doc.as_dict())
-
-			return {"success": True, "customer_groups": customer_groups}
+			return {
+				"success": True,
+				"groups": groups,
+				"message": f"Fetched {len(groups)} customer groups for company {company_doc.company_name}"
+			}
 		else:
 			return {"success": False, "error": "Failed to fetch customer groups from Invoice Ninja"}
 
 	except Exception as e:
-		frappe.log_error(f"Error fetching Invoice Ninja customer groups: {str(e)}", "Invoice Ninja API Error")
+		frappe.log_error(f"Error fetching customer groups: {str(e)}", "Invoice Ninja API Error")
+		return {"success": False, "error": str(e)}
+
+
+@frappe.whitelist()
+def get_invoice_ninja_tax_rates(invoice_ninja_company_id=None):
+	"""Fetch tax rates from Invoice Ninja API for a specific company"""
+	if not invoice_ninja_company_id:
+		return {"success": False, "error": "Invoice Ninja Company ID is required"}
+
+	try:
+		company_doc = frappe.get_doc("Invoice Ninja Company", invoice_ninja_company_id)
+
+		if not company_doc.enabled:
+			return {"success": False, "error": "Company is disabled"}
+
+		# Initialize client for this specific company
+		client = InvoiceNinjaClient(invoice_ninja_company=invoice_ninja_company_id)
+
+		# Fetch tax rates
+		response = client.get_tax_rates()
+
+		if response and response.get('data'):
+			tax_rates = []
+			tax_categories = []
+
+			for tax_rate in response['data']:
+				tax_rate_id = str(tax_rate.get('id'))
+				tax_name = tax_rate.get('name', f"Tax {tax_rate.get('id')}")
+				rate = float(tax_rate.get('rate', 0))
+
+				# Create/update Invoice Ninja Tax Rate WITH company linkage
+				existing_rate = frappe.db.get_all(
+					"Invoice Ninja Tax Rate",
+					filters={
+						"tax_rate_id": tax_rate_id,
+						"invoice_ninja_company": invoice_ninja_company_id
+					},
+					limit=1
+				)
+
+				if existing_rate:
+					rate_doc = frappe.get_doc("Invoice Ninja Tax Rate", existing_rate[0].name)
+					rate_doc.tax_name = tax_name
+					rate_doc.rate = rate
+					rate_doc.save(ignore_permissions=True)
+				else:
+					rate_doc = frappe.get_doc({
+						"doctype": "Invoice Ninja Tax Rate",
+						"tax_rate_id": tax_rate_id,
+						"tax_name": tax_name,
+						"rate": rate,
+						"invoice_ninja_company": invoice_ninja_company_id  # Link to company
+					})
+					rate_doc.save(ignore_permissions=True)
+
+				tax_rates.append(rate_doc.as_dict())
+
+				# Also create/update Tax Categories with company linkage
+				existing_category = frappe.db.get_all(
+					"Invoice Ninja Tax Category",
+					filters={
+						"tax_category_id": tax_rate_id,
+						"invoice_ninja_company": invoice_ninja_company_id
+					},
+					limit=1
+				)
+
+				if existing_category:
+					category_doc = frappe.get_doc("Invoice Ninja Tax Category", existing_category[0].name)
+					category_doc.tax_category_name = tax_name
+					category_doc.rate = rate
+					category_doc.save(ignore_permissions=True)
+				else:
+					category_doc = frappe.get_doc({
+						"doctype": "Invoice Ninja Tax Category",
+						"tax_category_id": tax_rate_id,
+						"tax_category_name": tax_name,
+						"rate": rate,
+						"invoice_ninja_company": invoice_ninja_company_id  # Link to company
+					})
+					category_doc.save(ignore_permissions=True)
+
+				tax_categories.append(category_doc.as_dict())
+
+			return {
+				"success": True,
+				"tax_rates": tax_rates,
+				"tax_categories": tax_categories,
+				"message": f"Fetched {len(tax_rates)} tax rates for company {company_doc.company_name}"
+			}
+		else:
+			return {"success": False, "error": "Failed to fetch tax rates from Invoice Ninja"}
+
+	except Exception as e:
+		frappe.log_error(f"Error fetching Invoice Ninja tax rates: {str(e)}", "Invoice Ninja API Error")
 		return {"success": False, "error": str(e)}
 
 

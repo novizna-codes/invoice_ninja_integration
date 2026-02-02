@@ -1,7 +1,7 @@
 import re
 
 import frappe
-from frappe.utils import cint, flt, get_datetime, nowdate
+from frappe.utils import cint, flt, get_datetime, now_datetime, nowdate
 import json
 
 
@@ -42,12 +42,15 @@ class FieldMapper:
 		# Check if customer has a group setting from Invoice Ninja
 		if in_customer.get("group_settings_id"):
 			customer_group_mapping = FieldMapper.get_customer_group_mapping(
+				invoice_ninja_company=invoice_ninja_company,  # Pass company context
 				invoice_ninja_customer_group_id=in_customer.get("group_settings_id")
 			)
 
 		# If no specific mapping found, try to get default mapping
 		if not customer_group_mapping:
-			customer_group_mapping = FieldMapper.get_customer_group_mapping()
+			customer_group_mapping = FieldMapper.get_customer_group_mapping(
+				invoice_ninja_company=invoice_ninja_company  # Pass company context
+			)
 
 		# Use mapped customer group or fallback to default
 		if customer_group_mapping:
@@ -312,35 +315,61 @@ class FieldMapper:
 		# Map line items
 		line_items = in_invoice.get("line_items", [])
 		for idx, item in enumerate(line_items, 1):
-			item_data = FieldMapper.map_invoice_item(item, idx)
+			item_data = FieldMapper.map_invoice_item(item, idx, invoice_ninja_company)
 			if item_data:
 				invoice_data["items"].append(item_data)
 
 		# Map taxes if available
-		taxes = FieldMapper.map_invoice_taxes(in_invoice)
+		taxes = FieldMapper.map_invoice_taxes(in_invoice, invoice_ninja_company)
 		if taxes:
 			invoice_data["taxes"] = taxes
 
 		return invoice_data
 
 	@staticmethod
-	def map_invoice_item(in_item, idx):
-		"""Map Invoice Ninja line item to ERPNext item"""
+	def map_invoice_item(in_item, idx, invoice_ninja_company=None):
+		"""Map Invoice Ninja line item to ERPNext item - supports task-based items"""
 		try:
-			# Get or create item
-			item_code = FieldMapper.get_or_create_item(in_item)
+			# Check if this line item is task-based
+			task_id = in_item.get('task_id')
 
-			item_data = {
-				"doctype": "Sales Invoice Item",
-				"idx": idx,
-				"item_code": item_code,
-				"item_name": in_item.get("notes") or in_item.get("product_key") or "Service Item",
-				"description": in_item.get("notes") or "",
-				"qty": flt(in_item.get("quantity")) or 1.0,
-				"rate": flt(in_item.get("cost")) or 0.0,
-				"amount": flt(in_item.get("quantity", 1)) * flt(in_item.get("cost", 0)),
-				"uom": "Nos",
-			}
+			if task_id:
+				# Create/sync task inline if it doesn't exist
+				task_data = in_item.get('task')  # Invoice Ninja can include task data
+				if task_data:
+					FieldMapper.sync_task_inline(task_data, invoice_ninja_company)
+
+				# Map line item with task reference
+				item_code = FieldMapper.get_or_create_item(in_item)
+
+				item_data = {
+					"doctype": "Sales Invoice Item",
+					"idx": idx,
+					"item_code": item_code,
+					"item_name": in_item.get("notes") or in_item.get("product_key") or "Service Item",
+					"description": in_item.get("notes") or "",
+					"qty": flt(in_item.get("quantity")) or 1.0,
+					"rate": flt(in_item.get("cost")) or 0.0,
+					"amount": flt(in_item.get("quantity", 1)) * flt(in_item.get("cost", 0)),
+					"uom": "Nos",
+					"invoice_ninja_task_id": str(task_id),
+					"custom_is_task_based": 1,
+				}
+			else:
+				# Regular product-based line item
+				item_code = FieldMapper.get_or_create_item(in_item)
+
+				item_data = {
+					"doctype": "Sales Invoice Item",
+					"idx": idx,
+					"item_code": item_code,
+					"item_name": in_item.get("notes") or in_item.get("product_key") or "Service Item",
+					"description": in_item.get("notes") or "",
+					"qty": flt(in_item.get("quantity")) or 1.0,
+					"rate": flt(in_item.get("cost")) or 0.0,
+					"amount": flt(in_item.get("quantity", 1)) * flt(in_item.get("cost", 0)),
+					"uom": "Nos",
+				}
 
 			return item_data
 
@@ -860,20 +889,63 @@ class FieldMapper:
 			return None
 
 	@staticmethod
-	def map_invoice_taxes(in_invoice):
+	def map_invoice_taxes(in_invoice, invoice_ninja_company=None):
 		"""Map Invoice Ninja taxes to ERPNext taxes"""
 		taxes = []
+		settings = frappe.get_single("Invoice Ninja Settings")
 
-		# This would need proper tax mapping based on your setup
-		tax_amount = flt(in_invoice.get("tax_amount", 0))
-		if tax_amount > 0:
+		# Invoice Ninja can have multiple tax fields: tax_name1, tax_rate1, tax_name2, tax_rate2, etc.
+		for i in range(1, 4):  # Support up to 3 taxes
+			tax_name_field = f"tax_name{i}"
+			tax_rate_field = f"tax_rate{i}"
+			tax_amount_field = f"tax_amount{i}" if i > 1 else "tax_amount"
+
+			tax_name = in_invoice.get(tax_name_field)
+			tax_rate = flt(in_invoice.get(tax_rate_field, 0))
+			tax_amount = flt(in_invoice.get(tax_amount_field, 0))
+
+			if not tax_amount and not tax_rate:
+				continue
+
+			# Try to find mapping
+			tax_template = None
+
+			# Look up by tax name/ID if available
+			if tax_name:
+				# Try to find Invoice Ninja Tax Rate by name
+				tax_rate_doc = frappe.db.get_value(
+					"Invoice Ninja Tax Rate",
+					{"tax_name": tax_name},
+					["name", "tax_rate_id"],
+					as_dict=True
+				)
+
+				if tax_rate_doc:
+					tax_mapping = FieldMapper.get_tax_template_mapping(
+						invoice_ninja_company=invoice_ninja_company,  # Pass company context
+						invoice_ninja_tax_rate_id=tax_rate_doc.tax_rate_id
+					)
+					if tax_mapping:
+						tax_template = tax_mapping.tax_template
+
+			# If no mapping found, use default
+			if not tax_template and settings.default_tax_template:
+				tax_template = settings.default_tax_template
+
+			# Get the first tax account from the template
+			account_head = "VAT - Company"  # Fallback
+			if tax_template:
+				template_doc = frappe.get_doc("Sales Taxes and Charges Template", tax_template)
+				if template_doc.taxes and len(template_doc.taxes) > 0:
+					account_head = template_doc.taxes[0].account_head
+
 			tax_data = {
 				"doctype": "Sales Taxes and Charges",
-				"charge_type": "On Net Total",
-				"account_head": "VAT - Company",  # Adjust based on your chart of accounts
-				"rate": 0,  # Calculate rate if needed
+				"charge_type": "Actual",
+				"account_head": account_head,
+				"rate": tax_rate,
 				"tax_amount": tax_amount,
-				"description": "Tax from Invoice Ninja",
+				"description": tax_name or f"Tax from Invoice Ninja ({tax_rate}%)",
 			}
 			taxes.append(tax_data)
 
@@ -1023,26 +1095,77 @@ class FieldMapper:
 	@staticmethod
 	def map_item_from_invoice_ninja(in_product, invoice_ninja_company=None):
 		"""
-		Map Invoice Ninja product to ERPNext item
+		Map Invoice Ninja product to ERPNext item with tax rate
 
 		Args:
 			in_product: Invoice Ninja product data
 			invoice_ninja_company: Invoice Ninja Company doc name for linking
 		"""
+		# Get item group mapping based on Invoice Ninja tax category
+		item_group_mapping = None
+		default_item_group = "Products"  # Default fallback
+
+		# Check if product has a tax category/rate from Invoice Ninja
+		# Invoice Ninja stores tax info in tax_name or tax_rate fields on products
+		tax_category_id = in_product.get("tax_rate1") or in_product.get("tax_category_id")
+
+		if tax_category_id:
+			item_group_mapping = FieldMapper.get_item_group_mapping(
+				invoice_ninja_company=invoice_ninja_company,  # Pass company context
+				invoice_ninja_tax_category_id=str(tax_category_id)
+			)
+
+		# Use mapped item group or fallback to default
+		if item_group_mapping:
+			default_item_group = item_group_mapping.item_group
+
+		# Add tax rate application
+		tax_template = None
+		if in_product.get("tax_rate1") or in_product.get("tax_id"):
+			tax_rate_id = in_product.get("tax_rate1") or in_product.get("tax_id")
+
+			# Find matching tax rate
+			tax_rate_doc = frappe.db.get_value(
+				"Invoice Ninja Tax Rate",
+				{"tax_rate_id": str(tax_rate_id)},
+				["name", "rate", "account_head", "tax_name"],
+				as_dict=True
+			)
+
+			if tax_rate_doc and tax_rate_doc.account_head:
+				# Get ERPNext company from mapping
+				company_mapping = FieldMapper.get_company_mapping_by_invoice_ninja_company_doc(
+					invoice_ninja_company
+				)
+				company = company_mapping.company if company_mapping else None
+
+				if company:
+					# Create or get tax template for this rate
+					tax_template = FieldMapper.get_or_create_tax_template_for_rate(
+						tax_rate_doc,
+						company
+					)
+
 		item_data = {
 			"doctype": "Item",
 			"item_code": in_product.get("product_key") or f"IN-{in_product.get('id')}",
 			"item_name": in_product.get("notes") or in_product.get("product_key"),
 			"description": in_product.get("notes") or in_product.get("product_key"),
-			"item_group": "Products",
-			"stock_uom": "Nos",  # Default UOM
-			"is_stock_item": 0,  # Assume service item by default
+			"item_group": default_item_group,  # Use mapped group
+			"stock_uom": "Nos",
+			"is_stock_item": 0,
 			"is_sales_item": 1,
 			"standard_rate": flt(in_product.get("price", 0)),
 			"invoice_ninja_id": str(in_product.get("id")),
 			"invoice_ninja_company": invoice_ninja_company,
 			"sync_status": "Synced",
 		}
+
+		# Add tax template if found
+		if tax_template:
+			item_data["taxes"] = [{
+				"item_tax_template": tax_template
+			}]
 
 		return item_data
 
@@ -1104,6 +1227,91 @@ class FieldMapper:
 		)
 
 		return payment_data
+
+	@staticmethod
+	def map_task_from_invoice_ninja(in_task, invoice_ninja_company=None):
+		"""
+		Map Invoice Ninja task to ERPNext Invoice Ninja Task
+
+		Args:
+			in_task: Invoice Ninja task data
+			invoice_ninja_company: Invoice Ninja Company doc name for linking
+		"""
+		# Calculate duration in hours
+		duration_seconds = int(in_task.get('duration', 0))
+		duration_hours = duration_seconds / 3600.0 if duration_seconds > 0 else 0
+
+		# Map client to customer
+		customer = None
+		if in_task.get('client_id'):
+			customer = frappe.db.get_value(
+				"Customer",
+				{"invoice_ninja_id": str(in_task.get('client_id'))},
+				"name"
+			)
+
+		# Map project if available
+		project = None
+		if in_task.get('project_id'):
+			project = frappe.db.get_value(
+				"Project",
+				{"invoice_ninja_project_id": str(in_task.get('project_id'))},
+				"name"
+			)
+
+		# Determine status
+		status = "Logged"
+		if in_task.get('invoice_id'):
+			status = "Invoiced"
+		elif in_task.get('is_running'):
+			status = "Running"
+
+		task_data = {
+			"doctype": "Invoice Ninja Task",
+			"task_id": str(in_task.get('id')),
+			"task_number": in_task.get('number'),
+			"description": in_task.get('description') or in_task.get('notes') or "Time Entry",
+			"invoice_ninja_company": invoice_ninja_company,
+			"client_id": str(in_task.get('client_id')) if in_task.get('client_id') else None,
+			"customer": customer,
+			"project_id": str(in_task.get('project_id')) if in_task.get('project_id') else None,
+			"project": project,
+			"duration": duration_seconds,
+			"duration_hours": duration_hours,
+			"start_time": in_task.get('start_time'),
+			"end_time": in_task.get('end_time'),
+			"is_running": int(in_task.get('is_running', 0)),
+			"rate": flt(in_task.get('rate', 0)),
+			"status": status,
+			"is_invoiced": 1 if in_task.get('invoice_id') else 0,
+			"invoice_id": str(in_task.get('invoice_id')) if in_task.get('invoice_id') else None,
+			"sync_status": "Synced",
+			"last_synced": now_datetime(),
+		}
+
+		return task_data
+
+	@staticmethod
+	def sync_task_inline(task_data, invoice_ninja_company):
+		"""
+		Create/update task record inline during invoice sync
+
+		Args:
+			task_data: Task data from Invoice Ninja (can be nested in invoice)
+			invoice_ninja_company: Company reference for the task
+		"""
+		task_id = str(task_data.get('id'))
+
+		# Check if task already exists
+		existing = frappe.db.exists("Invoice Ninja Task", {"task_id": task_id})
+
+		if not existing:
+			# Create new task record
+			task_doc_data = FieldMapper.map_task_from_invoice_ninja(task_data, invoice_ninja_company)
+			if task_doc_data:
+				doc = frappe.get_doc(task_doc_data)
+				doc.insert(ignore_permissions=True)
+				frappe.db.commit()
 
 	@staticmethod
 	def get_currency_id(currency_code):
@@ -1203,28 +1411,132 @@ class FieldMapper:
 		return None
 
 	@staticmethod
-	def get_customer_group_mapping(erpnext_customer_group=None, invoice_ninja_customer_group_id=None):
-		"""Get customer group mapping between ERPNext and Invoice Ninja"""
-		settings = frappe.get_single("Invoice Ninja Settings")
+	def get_customer_group_mapping(invoice_ninja_company=None, erpnext_customer_group=None, invoice_ninja_customer_group_id=None):
+		"""Get customer group mapping for a specific Invoice Ninja Company"""
 
-		if not settings.customer_group_mappings:
+		if not invoice_ninja_company:
+			# Fallback to global settings (deprecated)
+			settings = frappe.get_single("Invoice Ninja Settings")
+			mappings = settings.customer_group_mappings
+		else:
+			# Get mappings from the specific company
+			company_doc = frappe.get_doc("Invoice Ninja Company", invoice_ninja_company)
+			mappings = company_doc.customer_group_mappings
+
+		if not mappings:
 			return None
 
-		for mapping in settings.customer_group_mappings:
+		for mapping in mappings:
 			if erpnext_customer_group and mapping.customer_group == erpnext_customer_group:
 				return mapping
 			elif invoice_ninja_customer_group_id and mapping.invoice_ninja_customer_group:
-				# Fetch the actual group_id from the linked Invoice Ninja Customer Group DocType
+				# Fetch the actual group_id from the linked DocType (filtered by company)
 				group_id = frappe.db.get_value(
 					"Invoice Ninja Customer Group",
-					mapping.invoice_ninja_customer_group,
+					{
+						"name": mapping.invoice_ninja_customer_group,
+						"invoice_ninja_company": invoice_ninja_company
+					},
 					"group_id"
 				)
 				if group_id and str(group_id) == str(invoice_ninja_customer_group_id):
 					return mapping
 
-		# No default mapping logic needed - just return None if no match
 		return None
+
+	@staticmethod
+	def get_item_group_mapping(invoice_ninja_company=None, erpnext_item_group=None, invoice_ninja_tax_category_id=None):
+		"""Get item group mapping for a specific Invoice Ninja Company"""
+
+		if not invoice_ninja_company:
+			# Fallback to global settings (deprecated)
+			settings = frappe.get_single("Invoice Ninja Settings")
+			mappings = settings.item_group_mappings
+		else:
+			# Get mappings from the specific company
+			company_doc = frappe.get_doc("Invoice Ninja Company", invoice_ninja_company)
+			mappings = company_doc.item_group_mappings
+
+		if not mappings:
+			return None
+
+		for mapping in mappings:
+			if erpnext_item_group and mapping.item_group == erpnext_item_group:
+				return mapping
+			elif invoice_ninja_tax_category_id and mapping.invoice_ninja_tax_category:
+				# Fetch tax_category_id filtered by company
+				tax_category_id = frappe.db.get_value(
+					"Invoice Ninja Tax Category",
+					{
+						"name": mapping.invoice_ninja_tax_category,
+						"invoice_ninja_company": invoice_ninja_company
+					},
+					"tax_category_id"
+				)
+				if tax_category_id and str(tax_category_id) == str(invoice_ninja_tax_category_id):
+					return mapping
+
+		return None
+
+	@staticmethod
+	def get_tax_template_mapping(invoice_ninja_company=None, erpnext_tax_template=None, invoice_ninja_tax_rate_id=None):
+		"""Get tax template mapping for a specific Invoice Ninja Company"""
+
+		if not invoice_ninja_company:
+			# Fallback to global settings (deprecated)
+			settings = frappe.get_single("Invoice Ninja Settings")
+			mappings = settings.tax_template_mappings
+		else:
+			# Get mappings from the specific company
+			company_doc = frappe.get_doc("Invoice Ninja Company", invoice_ninja_company)
+			mappings = company_doc.tax_template_mappings
+
+		if not mappings:
+			return None
+
+		for mapping in mappings:
+			if erpnext_tax_template and mapping.tax_template == erpnext_tax_template:
+				return mapping
+			elif invoice_ninja_tax_rate_id and mapping.invoice_ninja_tax_rate:
+				# Fetch tax_rate_id filtered by company
+				tax_rate_id = frappe.db.get_value(
+					"Invoice Ninja Tax Rate",
+					{
+						"name": mapping.invoice_ninja_tax_rate,
+						"invoice_ninja_company": invoice_ninja_company
+					},
+					"tax_rate_id"
+				)
+				if tax_rate_id and str(tax_rate_id) == str(invoice_ninja_tax_rate_id):
+					return mapping
+
+		return None
+
+	@staticmethod
+	def get_or_create_tax_template_for_rate(tax_rate_doc, company):
+		"""Get or create Sales Taxes and Charges Template for a tax rate"""
+
+		template_name = f"IN-{tax_rate_doc.tax_name}-{company}"
+
+		# Check if template exists
+		if frappe.db.exists("Sales Taxes and Charges Template", template_name):
+			return template_name
+
+		# Create new template
+		template = frappe.get_doc({
+			"doctype": "Sales Taxes and Charges Template",
+			"title": template_name,
+			"company": company,
+			"taxes": [{
+				"charge_type": "On Net Total",
+				"account_head": tax_rate_doc.account_head,
+				"rate": tax_rate_doc.rate,
+				"description": tax_rate_doc.tax_name
+			}]
+		})
+		template.insert(ignore_permissions=True)
+
+		return template.name
 
 	@staticmethod
 	def get_erpnext_company(invoice_ninja_company_id):
