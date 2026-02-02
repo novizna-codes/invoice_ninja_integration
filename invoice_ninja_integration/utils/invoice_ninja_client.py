@@ -128,12 +128,22 @@ class InvoiceNinjaClient:
 			else:
 				error_msg = f"API Error {response.status_code}: {response.text}"
 				frappe.log_error(error_msg, "Invoice Ninja API Error")
-				return None
+				# Return error info for better debugging
+				return {
+					"error": True,
+					"status_code": response.status_code,
+					"message": error_msg,
+					"response_text": response.text[:500]  # Limit length
+				}
 
 		except Exception as e:
 			error_msg = f"Request failed: {str(e)}"
 			frappe.log_error(error_msg, "Invoice Ninja API Error")
-			return None
+			return {
+				"error": True,
+				"message": error_msg,
+				"exception": str(e)
+			}
 
 	def get(self, endpoint, params=None):
 		"""Generic GET request"""

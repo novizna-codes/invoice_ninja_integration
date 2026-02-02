@@ -30,7 +30,7 @@ class SyncManager(BaseIntegrationService):
 			"invoice_ninja_endpoint": "invoices",
 			"invoice_ninja_method": "get_invoices",
 			"erpnext_doctype": "Sales Invoice",
-			"include_params": "client,line_items"
+			"include_params": "client.group_settings,project"
 		},
 		"Quotation": {
 			"invoice_ninja_endpoint": "quotes",
@@ -933,7 +933,7 @@ class SyncManager(BaseIntegrationService):
 				"entity_type": str,
 				"message": str
 			}
-		"""
+	"""
 		try:
 			# Validate entity type
 			if entity_type not in self.ENTITY_CONFIG:
@@ -981,6 +981,21 @@ class SyncManager(BaseIntegrationService):
 				entities_response = client_method(page=params["page"], per_page=params["per_page"], include=params["include"])
 			else:
 				entities_response = client_method(page=params["page"], per_page=params["per_page"])
+
+			# Validate response
+			if not entities_response:
+				return {
+					"success": False,
+					"message": f"No response from Invoice Ninja API for {entity_type}"
+				}
+
+			# Check for error response
+			if isinstance(entities_response, dict) and entities_response.get("error"):
+				return {
+					"success": False,
+					"message": entities_response.get("message", "API Error"),
+					"error_details": entities_response
+				}
 
 			entities = []
 			entity_count = 0

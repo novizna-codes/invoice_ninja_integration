@@ -493,24 +493,62 @@ def sync_company_entities(invoice_ninja_company, entity_type, limit=100):
 			invoice_ninja_company_id=company_doc.name
 		)
 
-
 		if not mapping:
 			return {"success": False, "message": "No company mapping found for this Invoice Ninja Company"}
 
-		# Perform sync (fetch from Invoice Ninja)
-		result = sync_manager.fetch_entities_for_company(
-			entity_type,
-			invoice_ninja_company_id=company_doc.name,
-			page=1,
-			per_page=int(limit)
-		)
+		# Perform sync with pagination (fetch from Invoice Ninja)
+		all_entities = []
+		current_page = 1
+		per_page = min(int(limit), 100)  # Max 100 per page for API limits
+		total_to_fetch = int(limit)
+
+		while len(all_entities) < total_to_fetch:
+			result = sync_manager.fetch_entities_for_company(
+				entity_type,
+				invoice_ninja_company_id=company_doc.name,
+				page=current_page,
+				per_page=per_page
+			)
+
+			# Check for errors
+			if not result.get("success"):
+				error_message = result.get("message", "Unknown error")
+				frappe.log_error(
+					f"Failed to fetch {entity_type} page {current_page}: {error_message}",
+					"Entity Sync Error"
+				)
+				# If first page fails, return error; otherwise continue with what we have
+				if current_page == 1:
+					return {
+						"success": False,
+						"message": error_message,
+						"error_details": result.get("error_details")
+					}
+				break
+
+			entities = result.get("entities", [])
+
+			# No more entities to fetch
+			if not entities:
+				break
+
+			all_entities.extend(entities)
+
+			# Check if we've fetched enough or if this was the last page
+			if len(entities) < per_page or len(all_entities) >= total_to_fetch:
+				break
+
+			current_page += 1
+
+		# Trim to limit if we fetched more
+		all_entities = all_entities[:total_to_fetch]
 
 		# Process fetched entities and create/update ERPNext docs
 		synced_count = 0
 		failed_count = 0
 
-		if result.get("success") and result.get("entities"):
-			entities = result.get("entities", [])
+		if all_entities:
+			entities = all_entities
 
 			# Map entity types to their sync functions
 			sync_function_map = {
@@ -596,10 +634,11 @@ def sync_company_entities(invoice_ninja_company, entity_type, limit=100):
 
 		return {
 			"success": synced_count > 0,
-			"message": f"Synced {synced_count} out of {len(result.get('entities', []))} {entity_type} records",
+			"message": f"Synced {synced_count} out of {len(all_entities)} {entity_type} records (fetched across {current_page} page(s))",
 			"synced_count": synced_count,
 			"failed_count": failed_count,
-			"total_fetched": len(result.get("entities", []))
+			"total_fetched": len(all_entities),
+			"pages_fetched": current_page
 		}
 
 	except Exception as e:
