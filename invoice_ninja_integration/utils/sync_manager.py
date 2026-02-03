@@ -147,35 +147,35 @@ class SyncManager(BaseIntegrationService):
 			frappe.logger().info(f"Document {doc.name} skipped - no valid company mapping")
 			return
 
-		try:
-			# Get company mapping
-			erpnext_company = getattr(doc, 'company', None)
-			mapping = self.company_mapper.get_company_mapping(erpnext_company=erpnext_company)
+		# try:
+		# Get company mapping
+		erpnext_company = getattr(doc, 'company', None)
+		mapping = self.company_mapper.get_company_mapping(erpnext_company=erpnext_company)
 
-			if not mapping:
-				frappe.throw(f"No company mapping found for {erpnext_company}")
+		if not mapping:
+			frappe.throw(f"No company mapping found for {erpnext_company}")
 
-			# Get client for this company
-			client, in_company_doc = self.get_client_for_mapping(mapping)
+		# Get client for this company
+		client, in_company_doc = self.get_client_for_mapping(mapping)
 
-			# Get company context (for backward compatibility with sync methods)
-			company_context = self.company_mapper.set_company_context(doc)
-			company_context["invoice_ninja_company_doc"] = in_company_doc
+		# Get company context (for backward compatibility with sync methods)
+		company_context = self.company_mapper.set_company_context(doc)
+		company_context["invoice_ninja_company_doc"] = in_company_doc
 
-			if doc.doctype == "Customer":
-				return self._sync_customer_to_invoice_ninja(doc, company_context, client)
-			elif doc.doctype == "Sales Invoice":
-				return self._sync_invoice_to_invoice_ninja(doc, company_context, client)
-			elif doc.doctype == "Quotation":
-				return self._sync_quote_to_invoice_ninja(doc, company_context, client)
-			elif doc.doctype == "Item":
-				return self._sync_product_to_invoice_ninja(doc, company_context, client)
-			elif doc.doctype == "Payment Entry":
-				return self._sync_payment_to_invoice_ninja(doc, company_context, client)
+		if doc.doctype == "Customer":
+			return self._sync_customer_to_invoice_ninja(doc, company_context, client)
+		elif doc.doctype == "Sales Invoice":
+			return self._sync_invoice_to_invoice_ninja(doc, company_context, client)
+		elif doc.doctype == "Quotation":
+			return self._sync_quote_to_invoice_ninja(doc, company_context, client)
+		elif doc.doctype == "Item":
+			return self._sync_product_to_invoice_ninja(doc, company_context, client)
+		elif doc.doctype == "Payment Entry":
+			return self._sync_payment_to_invoice_ninja(doc, company_context, client)
 
-		except Exception as e:
-			frappe.logger().error(f"Error syncing {doc.doctype} {doc.name} to Invoice Ninja: {e!s}")
-			self._log_sync_error(doc, "ERPNext to Invoice Ninja", str(e))
+		# except Exception as e:
+		# 	frappe.logger().error(f"Error syncing {doc.doctype} {doc.name} to Invoice Ninja: {e!s}")
+		# 	self._log_sync_error(doc, "ERPNext to Invoice Ninja", str(e))
 
 	def sync_document_from_invoice_ninja(self, invoice_ninja_data, doc_type):
 		"""

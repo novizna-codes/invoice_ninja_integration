@@ -280,6 +280,9 @@ class FieldMapper:
 			)
 			return None
 
+		# Get invoice currency
+		invoice_currency = FieldMapper.get_currency_code(in_invoice.get("currency_id")) or "USD"
+
 		# Basic invoice mapping
 		invoice_data = {
 			"doctype": "Sales Invoice",
@@ -287,7 +290,7 @@ class FieldMapper:
 			"company": company_mapping.erpnext_company,  # Set the mapped company
 			"posting_date": FieldMapper.parse_date(in_invoice.get("date")) or nowdate(),
 			"due_date": FieldMapper.parse_date(in_invoice.get("due_date")),
-			"currency": FieldMapper.get_currency_code(in_invoice.get("currency_id")) or "USD",
+			"currency": invoice_currency,
 			"conversion_rate": flt(in_invoice.get("exchange_rate")) or 1.0,
 			"selling_price_list": "Standard Selling",
 			"invoice_ninja_id": str(in_invoice.get("id")),
@@ -297,6 +300,15 @@ class FieldMapper:
 			"status": FieldMapper.map_invoice_status(in_invoice.get("status_id")),
 			"items": [],
 		}
+
+		# Set receivable account based on currency mapping (ONLY for Sales Invoices)
+		receivable_account = FieldMapper.get_receivable_account_for_currency(
+			invoice_ninja_company,
+			invoice_currency,
+			company_mapping.erpnext_company
+		)
+		if receivable_account:
+			invoice_data["debit_to"] = receivable_account
 
 		# Invoice number
 		if in_invoice.get("number"):
@@ -342,6 +354,19 @@ class FieldMapper:
 				# Map line item with task reference
 				item_code = FieldMapper.get_or_create_item(in_item)
 
+				# If item doesn't exist, create it
+				if not frappe.db.exists("Item", item_code):
+					item_doc = frappe.get_doc({
+						"doctype": "Item",
+						"item_code": item_code,
+						"item_name": in_item.get("notes") or in_item.get("product_key") or "Unknown Item",
+						"item_group": "Products",
+						"stock_uom": "Nos",
+						"is_stock_item": 0
+					})
+					item_doc.insert(ignore_permissions=True)
+					frappe.db.commit()
+
 				item_data = {
 					"doctype": "Sales Invoice Item",
 					"idx": idx,
@@ -358,6 +383,19 @@ class FieldMapper:
 			else:
 				# Regular product-based line item
 				item_code = FieldMapper.get_or_create_item(in_item)
+
+				# If item doesn't exist, create it
+				if not frappe.db.exists("Item", item_code):
+					item_doc = frappe.get_doc({
+						"doctype": "Item",
+						"item_code": item_code,
+						"item_name": in_item.get("notes") or in_item.get("product_key") or "Unknown Item",
+						"item_group": "Products",
+						"stock_uom": "Nos",
+						"is_stock_item": 0
+					})
+					item_doc.insert(ignore_permissions=True)
+					frappe.db.commit()
 
 				item_data = {
 					"doctype": "Sales Invoice Item",
@@ -488,13 +526,50 @@ class FieldMapper:
 	@staticmethod
 	def get_or_create_item(in_item):
 		"""Get existing item or create item code for line item"""
-		# Try to find existing item by product_key
-		if in_item.get("product_key"):
-			existing_item = frappe.db.get_value("Item", {"item_code": in_item.get("product_key")}, "name")
+
+		# Debug logging to identify Invoice Ninja line item structure
+		frappe.log_error(
+			f"Line item structure: {json.dumps(in_item, indent=2)}",
+			"Invoice Line Item Debug"
+		)
+
+		# Strategy 1: Look up by Invoice Ninja product ID
+		# Invoice Ninja line items may have product references in various fields
+		product_id = (
+			in_item.get("product_cost")  # Common field name
+			or in_item.get("product_id")  # Alternative field name
+			or in_item.get("id")  # Some line items have their own ID
+		)
+
+		if product_id:
+			existing_item = frappe.db.get_value(
+				"Item",
+				{"invoice_ninja_id": str(product_id)},
+				"name"
+			)
 			if existing_item:
 				return existing_item
 
-		# Create new item code
+		# Strategy 2: Try to find existing item by product_key (item_code)
+		if in_item.get("product_key"):
+			existing_item = frappe.db.get_value(
+				"Item",
+				{"item_code": in_item.get("product_key")},
+				"name"
+			)
+			if existing_item:
+				return existing_item
+
+		# Strategy 3: Return a default service item for line items without product
+		# This is common for custom/description-only line items in Invoice Ninja
+		if not in_item.get("product_key"):
+			# Check if a generic "Service" item exists
+			service_item = frappe.db.get_value("Item", {"item_code": "SERVICE"}, "name")
+			if service_item:
+				return service_item
+
+		# Strategy 4: Create new item code as last resort
+		# This will be used if the product doesn't exist in ERPNext yet
 		item_code = in_item.get("product_key") or f"IN-ITEM-{frappe.generate_hash(length=8)}"
 
 		# Ensure item code is unique
@@ -1538,6 +1613,69 @@ class FieldMapper:
 	def map_product_to_invoice_ninja(item_doc):
 		"""Map ERPNext item to Invoice Ninja product format (alias for map_item_to_invoice_ninja)"""
 		return FieldMapper.map_item_to_invoice_ninja(item_doc)
+
+	@staticmethod
+	def get_receivable_account_for_currency(invoice_ninja_company, currency, erpnext_company):
+		"""
+		Get the appropriate receivable account for a given currency
+
+		Args:
+			invoice_ninja_company: Invoice Ninja Company doc name
+			currency: Currency code (e.g., 'USD', 'EUR')
+			erpnext_company: ERPNext company name
+
+		Returns:
+			Account name or None
+		"""
+		if not invoice_ninja_company or not currency:
+			return None
+
+		# Get the Invoice Ninja Company document
+		company_doc = frappe.get_doc("Invoice Ninja Company", invoice_ninja_company)
+
+		# Look for currency mapping
+		if company_doc.currency_account_mappings:
+			for mapping in company_doc.currency_account_mappings:
+				if mapping.currency == currency:
+					# Validate that the account belongs to the correct company
+					account_company = frappe.db.get_value(
+						"Account",
+						mapping.receivable_account,
+						"company"
+					)
+					if account_company == erpnext_company:
+						return mapping.receivable_account
+
+		# If no specific mapping found, check for default mapping
+		if company_doc.currency_account_mappings:
+			for mapping in company_doc.currency_account_mappings:
+				if mapping.is_default:
+					return mapping.receivable_account
+
+		# Final fallback: return None and let ERPNext use customer default
+		return None
+
+	@staticmethod
+	def validate_currency_mapping_exists(invoice_ninja_company, currency, erpnext_company):
+		"""
+		Check if currency mapping exists for the given currency
+
+		Returns:
+			tuple: (exists: bool, account: str or None, message: str)
+		"""
+		if not invoice_ninja_company or not currency:
+			return False, None, "Missing company or currency information"
+
+		account = FieldMapper.get_receivable_account_for_currency(
+			invoice_ninja_company,
+			currency,
+			erpnext_company
+		)
+
+		if account:
+			return True, account, ""
+		else:
+			return False, None, f"No receivable account mapping found for currency {currency}"
 
 	@staticmethod
 	def map_quote_to_invoice_ninja(quotation_doc):

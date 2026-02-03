@@ -29,13 +29,15 @@
   "column_break_stats",
   "items_synced",
   "payments_synced",
-  "mappings_tab",
-  "customer_group_mapping_section",
-  "customer_group_mappings",
-  "tax_template_mapping_section",
-  "tax_template_mappings",
-  "default_tax_template"
- ],
+ "mappings_tab",
+ "customer_group_mapping_section",
+ "customer_group_mappings",
+ "tax_template_mapping_section",
+ "tax_template_mappings",
+ "default_tax_template",
+ "currency_mapping_section",
+ "currency_account_mappings"
+],
  "fields": [
   {
    "fieldname": "company_id",
@@ -214,6 +216,18 @@
    "label": "Default Tax Template",
    "options": "Sales Taxes and Charges Template",
    "description": "Default tax template when no mapping found"
+  },
+  {
+   "fieldname": "currency_mapping_section",
+   "fieldtype": "Section Break",
+   "label": "Currency Account Mapping"
+  },
+  {
+   "fieldname": "currency_account_mappings",
+   "fieldtype": "Table",
+   "label": "Currency Account Mappings",
+   "options": "Invoice Ninja Currency Account Mapping",
+   "description": "Map currencies to receivable accounts. The receivable account must support the specified currency in ERPNext."
   }
  ],
  "grid_page_length": 50,

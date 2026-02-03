@@ -150,26 +150,51 @@ def sync_from_invoice_ninja(doctype, limit=50):
 	}
 
 
-def sync_customer_from_invoice_ninja(customer_data, invoice_ninja_company=None):
-	"""Create/update ERPNext customer from Invoice Ninja data"""
+def sync_customer_from_invoice_ninja(customer_data, invoice_ninja_company=None, force_full_sync=False):
+	"""Create/update ERPNext customer from Invoice Ninja data - with incremental sync"""
+	from invoice_ninja_integration.utils.sync_hash import SyncHashManager
+
+	customer_id = str(customer_data.get('id'))
+
 	# Check if customer already exists
-	existing = frappe.db.exists("Customer", {"invoice_ninja_id": str(customer_data.get('id'))})
+	existing = frappe.db.get_value(
+		"Customer",
+		{"invoice_ninja_id": customer_id},
+		["name", "invoice_ninja_sync_hash"],
+		as_dict=True
+	)
 
 	customer_doc_data, address_data, shipping_address_data, contact_data_list = FieldMapper.map_customer_from_invoice_ninja(customer_data, invoice_ninja_company)
 	if not customer_doc_data:
-		return
+		return "skipped"
+
+	# Calculate hash of new data
+	new_hash = SyncHashManager.calculate_hash(customer_doc_data, "Customer")
 
 	if existing:
-		# Update existing customer
-		doc = frappe.get_doc("Customer", existing)
+		# Compare hashes (skip if unchanged unless force_full_sync)
+		if not force_full_sync and existing.invoice_ninja_sync_hash == new_hash:
+			# No changes, skip update
+			return "unchanged"
+
+		# Data changed, update customer
+		doc = frappe.get_doc("Customer", existing.name)
 		for key, value in customer_doc_data.items():
 			if key != 'doctype' and hasattr(doc, key):
 				setattr(doc, key, value)
 		doc.save()
+
+		# Update hash
+		SyncHashManager.store_hash(doc, new_hash)
+		sync_result = "updated"
 	else:
 		# Create new customer
 		doc = frappe.get_doc(customer_doc_data)
 		doc.insert()
+
+		# Store initial hash
+		SyncHashManager.store_hash(doc, new_hash)
+		sync_result = "created"
 
 	# Handle address if provided
 	if address_data:
@@ -233,149 +258,291 @@ def sync_customer_from_invoice_ninja(customer_data, invoice_ninja_company=None):
 				new_contact.insert()
 
 	frappe.db.commit()
+	return sync_result
 
 
-def sync_invoice_from_invoice_ninja(invoice_data, invoice_ninja_company=None):
-	"""Create/update ERPNext sales invoice from Invoice Ninja data"""
-	try:
-		invoice_id = str(invoice_data.get('id'))
+def sync_invoice_from_invoice_ninja(invoice_data, invoice_ninja_company=None, force_full_sync=False):
+	"""Create/update ERPNext sales invoice from Invoice Ninja data - with currency validation and incremental sync"""
+	from invoice_ninja_integration.utils.sync_hash import SyncHashManager
 
-		# Check if invoice already exists
-		existing = frappe.db.exists("Sales Invoice", {"invoice_ninja_id": invoice_id})
+	invoice_id = str(invoice_data.get('id'))
 
-		if existing:
-			# Skip if already exists to avoid duplicates
-			return
+	# Get currency
+	invoice_currency = FieldMapper.get_currency_code(invoice_data.get("currency_id")) or "USD"
 
-		invoice_doc_data = FieldMapper.map_invoice_from_invoice_ninja(invoice_data, invoice_ninja_company)
-		if not invoice_doc_data:
-			return
+	# Get company mapping
+	if invoice_ninja_company:
+		company_mapping = FieldMapper.get_company_mapping_by_invoice_ninja_company_doc(
+			invoice_ninja_company
+		)
+	else:
+		company_mapping = FieldMapper.get_company_mapping(
+			invoice_ninja_company_id=invoice_data.get("company_id")
+		)
 
+	if not company_mapping:
+		frappe.log_error(
+			f"No company mapping found for invoice {invoice_id}",
+			"Invoice Sync - Missing Company Mapping"
+		)
+		return "skipped"
+
+	# VALIDATE CURRENCY MAPPING EXISTS
+	mapping_exists, account, error_msg = FieldMapper.validate_currency_mapping_exists(
+		invoice_ninja_company,
+		invoice_currency,
+		company_mapping.erpnext_company
+	)
+
+	if not mapping_exists:
+		# Log warning and skip this invoice
+		frappe.log_error(
+			f"Skipped invoice {invoice_data.get('number')} (ID: {invoice_id}): {error_msg}\n"
+			f"Company: {invoice_ninja_company}\n"
+			f"Currency: {invoice_currency}\n"
+			f"Please configure currency account mapping in Invoice Ninja Company settings.",
+			"Invoice Sync - Missing Currency Mapping"
+		)
+		return "skipped"
+
+	# Check if invoice already exists
+	existing = frappe.db.get_value(
+		"Sales Invoice",
+		{"invoice_ninja_id": invoice_id},
+		["name", "invoice_ninja_sync_hash"],
+		as_dict=True
+	)
+
+	invoice_doc_data = FieldMapper.map_invoice_from_invoice_ninja(invoice_data, invoice_ninja_company)
+	if not invoice_doc_data:
+		return "skipped"
+
+	# Calculate hash of new data
+	new_hash = SyncHashManager.calculate_hash(invoice_doc_data, "Sales Invoice")
+
+	if existing:
+		# Compare hashes (skip if unchanged unless force_full_sync)
+		if not force_full_sync and existing.invoice_ninja_sync_hash == new_hash:
+			# No changes, skip update
+			return "unchanged"
+
+		# Data changed, update invoice
+		doc = frappe.get_doc("Sales Invoice", existing.name)
+		for key, value in invoice_doc_data.items():
+			if key != 'doctype' and key != 'items' and hasattr(doc, key):
+				setattr(doc, key, value)
+		# Update items
+		if 'items' in invoice_doc_data:
+			doc.items = []
+			for item in invoice_doc_data['items']:
+				doc.append('items', item)
+		doc.save(ignore_permissions=True)
+
+		# Update hash
+		SyncHashManager.store_hash(doc, new_hash)
+		sync_result = "updated"
+	else:
+		# Create new invoice
 		doc = frappe.get_doc(invoice_doc_data)
 		doc.insert()
+
+		# Store initial hash
+		SyncHashManager.store_hash(doc, new_hash)
+		sync_result = "created"
+
+	frappe.db.commit()
+
+	# After invoice is created, update related tasks
+	# Collect task IDs from line items
+	task_ids = []
+	for item in doc.items:
+		if hasattr(item, 'invoice_ninja_task_id') and item.invoice_ninja_task_id:
+			task_ids.append(item.invoice_ninja_task_id)
+
+	# Update tasks with invoice link
+	if task_ids:
+		# Store task IDs in the invoice custom field
+		doc.invoice_ninja_tasks = ", ".join(task_ids)
+		doc.save(ignore_permissions=True)
+
+		# Find and update task records
+		tasks = frappe.get_all(
+			"Invoice Ninja Task",
+			filters={"task_id": ["in", task_ids]},
+			fields=["name"]
+		)
+
+		for task in tasks:
+			task_doc = frappe.get_doc("Invoice Ninja Task", task.name)
+			task_doc.status = "Invoiced"
+			task_doc.is_invoiced = 1
+			task_doc.sales_invoice = doc.name  # Link to ERPNext invoice
+			task_doc.save(ignore_permissions=True)
+
 		frappe.db.commit()
 
-		# After invoice is created, update related tasks
-		# Collect task IDs from line items
-		task_ids = []
-		for item in doc.items:
-			if hasattr(item, 'invoice_ninja_task_id') and item.invoice_ninja_task_id:
-				task_ids.append(item.invoice_ninja_task_id)
-
-		# Update tasks with invoice link
-		if task_ids:
-			# Store task IDs in the invoice custom field
-			doc.invoice_ninja_tasks = ", ".join(task_ids)
-			doc.save(ignore_permissions=True)
-
-			# Find and update task records
-			tasks = frappe.get_all(
-				"Invoice Ninja Task",
-				filters={"task_id": ["in", task_ids]},
-				fields=["name"]
-			)
-
-			for task in tasks:
-				task_doc = frappe.get_doc("Invoice Ninja Task", task.name)
-				task_doc.status = "Invoiced"
-				task_doc.is_invoiced = 1
-				task_doc.sales_invoice = doc.name  # Link to ERPNext invoice
-				task_doc.save(ignore_permissions=True)
-
-			frappe.db.commit()
-
-	except Exception as e:
-		frappe.log_error(f"Error creating invoice from Invoice Ninja: {str(e)}", "Invoice Creation Error")
+	return sync_result
 
 
-def sync_quotation_from_invoice_ninja(quote_data, invoice_ninja_company=None):
-	"""Create/update ERPNext quotation from Invoice Ninja data"""
-	try:
-		# Check if quotation already exists
-		existing = frappe.db.exists("Quotation", {"invoice_ninja_id": str(quote_data.get('id'))})
+def sync_quotation_from_invoice_ninja(quote_data, invoice_ninja_company=None, force_full_sync=False):
+	"""Create/update ERPNext quotation from Invoice Ninja data - with incremental sync"""
+	from invoice_ninja_integration.utils.sync_hash import SyncHashManager
 
-		if existing:
-			# Skip if already exists to avoid duplicates
-			return
+	quote_id = str(quote_data.get('id'))
 
-		quotation_doc_data = FieldMapper.map_quotation_from_invoice_ninja(quote_data, invoice_ninja_company)
-		if not quotation_doc_data:
-			return
+	# Check if quotation already exists
+	existing = frappe.db.get_value(
+		"Quotation",
+		{"invoice_ninja_id": quote_id},
+		["name", "invoice_ninja_sync_hash"],
+		as_dict=True
+	)
 
+	quotation_doc_data = FieldMapper.map_quotation_from_invoice_ninja(quote_data, invoice_ninja_company)
+	if not quotation_doc_data:
+		return "skipped"
+
+	# Calculate hash of new data
+	new_hash = SyncHashManager.calculate_hash(quotation_doc_data, "Quotation")
+
+	if existing:
+		# Compare hashes (skip if unchanged unless force_full_sync)
+		if not force_full_sync and existing.invoice_ninja_sync_hash == new_hash:
+			# No changes, skip update
+			return "unchanged"
+
+		# Data changed, update quotation
+		doc = frappe.get_doc("Quotation", existing.name)
+		for key, value in quotation_doc_data.items():
+			if key != 'doctype' and key != 'items' and hasattr(doc, key):
+				setattr(doc, key, value)
+		# Update items
+		if 'items' in quotation_doc_data:
+			doc.items = []
+			for item in quotation_doc_data['items']:
+				doc.append('items', item)
+		doc.save(ignore_permissions=True)
+
+		# Update hash
+		SyncHashManager.store_hash(doc, new_hash)
+		sync_result = "updated"
+	else:
+		# Create new quotation
 		doc = frappe.get_doc(quotation_doc_data)
 		doc.insert()
-		frappe.db.commit()
 
-	except Exception as e:
-		frappe.log_error(f"Error creating quotation from Invoice Ninja: {str(e)}", "Quotation Creation Error")
+		# Store initial hash
+		SyncHashManager.store_hash(doc, new_hash)
+		sync_result = "created"
+
+	frappe.db.commit()
+	return sync_result
 
 
-def sync_item_from_invoice_ninja(product_data, invoice_ninja_company=None):
-	"""Create/update Item from Invoice Ninja product - ALWAYS update if exists"""
+def sync_item_from_invoice_ninja(product_data, invoice_ninja_company=None, force_full_sync=False):
+	"""Create/update Item from Invoice Ninja product - with incremental sync"""
+	from invoice_ninja_integration.utils.sync_hash import SyncHashManager
+
 	product_id = str(product_data.get('id'))
 
 	# Check if item exists by invoice_ninja_id
-	existing_by_id = frappe.db.get_value(
+	existing = frappe.db.get_value(
 		"Item",
 		{"invoice_ninja_id": product_id},
-		"name"
+		["name", "invoice_ninja_sync_hash"],
+		as_dict=True
 	)
 
-	# Also check by item_code for backwards compatibility
-	item_code = product_data.get("product_key") or f"IN-{product_id}"
-	existing_by_code = frappe.db.get_value(
-		"Item",
-		{"item_code": item_code},
-		"name"
-	) if not existing_by_id else None
-
-	existing_item = existing_by_id or existing_by_code
+	if not existing:
+		# Also check by item_code for backwards compatibility
+		item_code = product_data.get("product_key") or f"IN-{product_id}"
+		existing = frappe.db.get_value(
+			"Item",
+			{"item_code": item_code},
+			["name", "invoice_ninja_sync_hash"],
+			as_dict=True
+		)
 
 	# Map product data
 	item_data = FieldMapper.map_item_from_invoice_ninja(product_data, invoice_ninja_company)
 
 	if not item_data:
-		return False
+		return "skipped"
 
-	if existing_item:
-		# UPDATE existing item (even on first sync)
-		doc = frappe.get_doc("Item", existing_item)
+	# Calculate hash of new data
+	new_hash = SyncHashManager.calculate_hash(item_data, "Item")
+
+	if existing:
+		# Compare hashes (skip if unchanged unless force_full_sync)
+		if not force_full_sync and existing.invoice_ninja_sync_hash == new_hash:
+			# No changes, skip update
+			return "unchanged"
+
+		# UPDATE existing item
+		doc = frappe.get_doc("Item", existing.name)
 		for key, value in item_data.items():
 			if key != 'doctype' and hasattr(doc, key):
 				setattr(doc, key, value)
 		doc.save(ignore_permissions=True)
+
+		# Update hash
+		SyncHashManager.store_hash(doc, new_hash)
+		sync_result = "updated"
 	else:
 		# CREATE new item
 		doc = frappe.get_doc(item_data)
 		doc.insert(ignore_permissions=True)
 
+		# Store initial hash
+		SyncHashManager.store_hash(doc, new_hash)
+		sync_result = "created"
+
 	frappe.db.commit()
-	return True
+	return sync_result
 
 
-def sync_payment_from_invoice_ninja(payment_data, invoice_ninja_company=None):
-	"""Create/update ERPNext payment entry from Invoice Ninja data"""
-	try:
-		# Check if payment already exists
-		existing = frappe.db.exists("Payment Entry", {"invoice_ninja_id": str(payment_data.get('id'))})
+def sync_payment_from_invoice_ninja(payment_data, invoice_ninja_company=None, force_full_sync=False):
+	"""Create/update ERPNext payment entry from Invoice Ninja data - with incremental sync"""
+	from invoice_ninja_integration.utils.sync_hash import SyncHashManager
 
-		if existing:
-			# Skip if already exists to avoid duplicates
-			return
+	payment_id = str(payment_data.get('id'))
 
-		payment_doc_data = FieldMapper.map_payment_from_invoice_ninja(payment_data, invoice_ninja_company)
-		if not payment_doc_data:
-			return
+	# Check if payment already exists
+	existing = frappe.db.get_value(
+		"Payment Entry",
+		{"invoice_ninja_id": payment_id},
+		["name", "invoice_ninja_sync_hash"],
+		as_dict=True
+	)
 
+	payment_doc_data = FieldMapper.map_payment_from_invoice_ninja(payment_data, invoice_ninja_company)
+	if not payment_doc_data:
+		return "skipped"
+
+	# Calculate hash of new data
+	new_hash = SyncHashManager.calculate_hash(payment_doc_data, "Payment Entry")
+
+	if existing:
+		# Compare hashes (skip if unchanged unless force_full_sync)
+		if not force_full_sync and existing.invoice_ninja_sync_hash == new_hash:
+			# No changes, skip update
+			return "unchanged"
+
+		# For payment entries, we generally don't update after creation
+		# (they're typically submitted/locked), but we'll mark as unchanged
+		return "unchanged"
+	else:
 		# Create new payment entry
 		doc = frappe.get_doc(payment_doc_data)
 		doc.insert()
 		doc.submit()  # Auto-submit payment entries
 
-		frappe.db.commit()
+		# Store initial hash
+		SyncHashManager.store_hash(doc, new_hash)
+		sync_result = "created"
 
-	except Exception as e:
-		frappe.log_error(f"Error creating payment entry from Invoice Ninja: {str(e)}", "Payment Creation Error")
+		frappe.db.commit()
+		return sync_result
 
 
 @frappe.whitelist()
@@ -582,187 +749,203 @@ def fetch_and_create_invoice_ninja_companies():
 
 # Company-Specific Sync API Methods
 @frappe.whitelist()
-def sync_company_entities(invoice_ninja_company, entity_type, limit=100):
+def sync_company_entities(invoice_ninja_company, entity_type, limit=100, force_full_sync=False):
 	"""
-	Sync specific entity type for a single Invoice Ninja Company
+	Sync specific entity type for a single Invoice Ninja Company with incremental sync
 
 	Args:
 		invoice_ninja_company: Name of Invoice Ninja Company doc
 		entity_type: Customer, Sales Invoice, Quotation, Item, Payment Entry
 		limit: Number of records to sync
+		force_full_sync: If True, re-sync all records regardless of changes (default: False)
 
 	Returns:
-		{success, message, synced_count, failed_count, logs}
+		{success, message, synced_count, failed_count, statistics, skipped_details}
 	"""
 	from .utils.sync_manager import SyncManager
 	from datetime import datetime
 
 	start_time = datetime.now()
 
-	try:
-		# Validate company
-		company_doc = frappe.get_doc("Invoice Ninja Company", invoice_ninja_company)
-		if not company_doc.enabled:
-			return {"success": False, "message": "Company is disabled"}
+	# try:
+	# Validate company
+	company_doc = frappe.get_doc("Invoice Ninja Company", invoice_ninja_company)
+	if not company_doc.enabled:
+		return {"success": False, "message": "Company is disabled"}
 
-		# Get company mapping
-		sync_manager = SyncManager()
-		mapping = sync_manager.company_mapper.get_company_mapping(
-			invoice_ninja_company_id=company_doc.name
+	# Get company mapping
+	sync_manager = SyncManager()
+	mapping = sync_manager.company_mapper.get_company_mapping(
+		invoice_ninja_company_id=company_doc.name
+	)
+
+	if not mapping:
+		return {"success": False, "message": "No company mapping found for this Invoice Ninja Company"}
+
+	# Perform sync with pagination (fetch from Invoice Ninja)
+	all_entities = []
+	current_page = 1
+	per_page = min(int(limit), 100)  # Max 100 per page for API limits
+	total_to_fetch = int(limit)
+
+	while len(all_entities) < total_to_fetch:
+		result = sync_manager.fetch_entities_for_company(
+			entity_type,
+			invoice_ninja_company_id=company_doc.name,
+			page=current_page,
+			per_page=per_page
 		)
 
-		if not mapping:
-			return {"success": False, "message": "No company mapping found for this Invoice Ninja Company"}
-
-		# Perform sync with pagination (fetch from Invoice Ninja)
-		all_entities = []
-		current_page = 1
-		per_page = min(int(limit), 100)  # Max 100 per page for API limits
-		total_to_fetch = int(limit)
-
-		while len(all_entities) < total_to_fetch:
-			result = sync_manager.fetch_entities_for_company(
-				entity_type,
-				invoice_ninja_company_id=company_doc.name,
-				page=current_page,
-				per_page=per_page
+		# Check for errors
+		if not result.get("success"):
+			error_message = result.get("message", "Unknown error")
+			frappe.log_error(
+				f"Failed to fetch {entity_type} page {current_page}: {error_message}",
+				"Entity Sync Error"
 			)
-
-			# Check for errors
-			if not result.get("success"):
-				error_message = result.get("message", "Unknown error")
-				frappe.log_error(
-					f"Failed to fetch {entity_type} page {current_page}: {error_message}",
-					"Entity Sync Error"
-				)
-				# If first page fails, return error; otherwise continue with what we have
-				if current_page == 1:
-					return {
-						"success": False,
-						"message": error_message,
-						"error_details": result.get("error_details")
-					}
-				break
-
-			entities = result.get("entities", [])
-
-			# No more entities to fetch
-			if not entities:
-				break
-
-			all_entities.extend(entities)
-
-			# Check if we've fetched enough or if this was the last page
-			if len(entities) < per_page or len(all_entities) >= total_to_fetch:
-				break
-
-			current_page += 1
-
-		# Trim to limit if we fetched more
-		all_entities = all_entities[:total_to_fetch]
-
-		# Process fetched entities and create/update ERPNext docs
-		synced_count = 0
-		failed_count = 0
-
-		if all_entities:
-			entities = all_entities
-
-			# Map entity types to their sync functions
-			sync_function_map = {
-				"Customer": sync_customer_from_invoice_ninja,
-				"Sales Invoice": sync_invoice_from_invoice_ninja,
-				"Quotation": sync_quotation_from_invoice_ninja,
-				"Item": sync_item_from_invoice_ninja,
-				"Payment Entry": sync_payment_from_invoice_ninja
-			}
-
-			sync_function = sync_function_map.get(entity_type)
-
-			if not sync_function:
+			# If first page fails, return error; otherwise continue with what we have
+			if current_page == 1:
 				return {
 					"success": False,
-					"message": f"No sync function found for entity type: {entity_type}"
+					"message": error_message,
+					"error_details": result.get("error_details")
 				}
+			break
 
-			# Process each entity
-			for entity in entities:
-				try:
-					# Call the appropriate sync function to create/update ERPNext doc
-					sync_function(entity, invoice_ninja_company=invoice_ninja_company)
-					synced_count += 1
+		entities = result.get("entities", [])
 
-					# Create success log
-					from .invoice_ninja_integration.doctype.invoice_ninja_sync_logs.invoice_ninja_sync_logs import InvoiceNinjaSyncLogs
-					InvoiceNinjaSyncLogs.create_log(
-						sync_type="Manual",
-						sync_direction="Invoice Ninja to ERPNext",
-						record_type=entity_type,
-						status="Success",
-						record_id=entity.get("id"),
-						record_name=entity.get("name") or entity.get("number") or str(entity.get("id")),
-						invoice_ninja_id=str(entity.get("id")),
-						invoice_ninja_company=invoice_ninja_company,
-						message=f"Successfully synced {entity_type}"
-					)
+		# No more entities to fetch
+		if not entities:
+			break
 
-				except Exception as e:
-					failed_count += 1
-					frappe.log_error(
-						f"Failed to sync {entity_type} {entity.get('id')}: {str(e)}",
-						"Entity Sync Error"
-					)
+		all_entities.extend(entities)
 
-					# Create failure log
-					from .invoice_ninja_integration.doctype.invoice_ninja_sync_logs.invoice_ninja_sync_logs import InvoiceNinjaSyncLogs
-					InvoiceNinjaSyncLogs.create_log(
-						sync_type="Manual",
-						sync_direction="Invoice Ninja to ERPNext",
-						record_type=entity_type,
-						status="Failed",
-						record_id=entity.get("id"),
-						record_name=entity.get("name") or entity.get("number") or str(entity.get("id")),
-						invoice_ninja_id=str(entity.get("id")),
-						invoice_ninja_company=invoice_ninja_company,
-						message=f"Failed to sync {entity_type}",
-						error_details=str(e)
-					)
+		# Check if we've fetched enough or if this was the last page
+		if len(entities) < per_page or len(all_entities) >= total_to_fetch:
+			break
 
-			frappe.db.commit()
+		current_page += 1
 
-		duration = (datetime.now() - start_time).total_seconds()
+	# Trim to limit if we fetched more
+	all_entities = all_entities[:total_to_fetch]
 
-		# Update company sync stats with actual synced count
-		if synced_count > 0:
-			update_company_sync_stats(
-				invoice_ninja_company,
-				entity_type,
-				synced_count,
-				"Success" if failed_count == 0 else "Partial",
-				duration
-			)
-		else:
-			update_company_sync_stats(
-				invoice_ninja_company,
-				entity_type,
-				0,
-				"Failed",
-				duration
-			)
+	# Process fetched entities and create/update ERPNext docs
+	synced_count = 0
+	failed_count = 0
 
-		return {
-			"success": synced_count > 0,
-			"message": f"Synced {synced_count} out of {len(all_entities)} {entity_type} records (fetched across {current_page} page(s))",
-			"synced_count": synced_count,
-			"failed_count": failed_count,
-			"total_fetched": len(all_entities),
-			"pages_fetched": current_page
+	if all_entities:
+		entities = all_entities
+
+		# Map entity types to their sync functions
+		sync_function_map = {
+			"Customer": sync_customer_from_invoice_ninja,
+			"Sales Invoice": sync_invoice_from_invoice_ninja,
+			"Quotation": sync_quotation_from_invoice_ninja,
+			"Item": sync_item_from_invoice_ninja,
+			"Payment Entry": sync_payment_from_invoice_ninja
 		}
 
-	except Exception as e:
-		duration = (datetime.now() - start_time).total_seconds()
-		frappe.log_error(f"Company sync failed: {str(e)}", "Company Sync Error")
+		sync_function = sync_function_map.get(entity_type)
 
+		if not sync_function:
+			return {
+				"success": False,
+				"message": f"No sync function found for entity type: {entity_type}"
+			}
+
+	# Track sync statistics
+	sync_stats = {
+		"new_records": 0,
+		"updated_records": 0,
+		"unchanged_records": 0,
+		"skipped_records": 0,
+		"failed_records": 0
+	}
+
+	skipped_details = []  # Track skipped invoices for currency mapping issues
+
+	# Convert force_full_sync to boolean
+	force_sync = bool(int(force_full_sync)) if isinstance(force_full_sync, (str, int)) else force_full_sync
+
+	# Process each entity
+	for entity in entities:
+		try:
+			# Call the appropriate sync function to create/update ERPNext doc
+			result = sync_function(entity, invoice_ninja_company=invoice_ninja_company, force_full_sync=force_sync)
+
+			# Track statistics based on result
+			if result == "created":
+				sync_stats["new_records"] += 1
+				synced_count += 1
+			elif result == "updated":
+				sync_stats["updated_records"] += 1
+				synced_count += 1
+			elif result == "unchanged":
+				sync_stats["unchanged_records"] += 1
+			elif result == "skipped":
+				sync_stats["skipped_records"] += 1
+				# Track skipped details for reporting
+				if entity_type == "Sales Invoice":
+					invoice_currency = FieldMapper.get_currency_code(entity.get("currency_id")) or "USD"
+					skipped_details.append({
+						"invoice_number": entity.get("number"),
+						"invoice_id": entity.get("id"),
+						"currency": invoice_currency,
+						"reason": "Missing currency mapping"
+					})
+
+			# Create success/info log for created and updated records
+			if result in ["created", "updated"]:
+				from .invoice_ninja_integration.doctype.invoice_ninja_sync_logs.invoice_ninja_sync_logs import InvoiceNinjaSyncLogs
+				InvoiceNinjaSyncLogs.create_log(
+					sync_type="Manual",
+					sync_direction="Invoice Ninja to ERPNext",
+					record_type=entity_type,
+					status="Success",
+					record_id=entity.get("id"),
+					record_name=entity.get("name") or entity.get("number") or str(entity.get("id")),
+					invoice_ninja_id=str(entity.get("id")),
+					invoice_ninja_company=invoice_ninja_company,
+					message=f"Successfully {result} {entity_type}"
+				)
+
+		except Exception as e:
+			sync_stats["failed_records"] += 1
+			failed_count += 1
+			frappe.log_error(
+				f"Failed to sync {entity_type} {entity.get('id')}: {str(e)}",
+				"Entity Sync Error"
+			)
+
+			# Create failure log
+			from .invoice_ninja_integration.doctype.invoice_ninja_sync_logs.invoice_ninja_sync_logs import InvoiceNinjaSyncLogs
+			InvoiceNinjaSyncLogs.create_log(
+				sync_type="Manual",
+				sync_direction="Invoice Ninja to ERPNext",
+				record_type=entity_type,
+				status="Failed",
+				record_id=entity.get("id"),
+				record_name=entity.get("name") or entity.get("number") or str(entity.get("id")),
+				invoice_ninja_id=str(entity.get("id")),
+				invoice_ninja_company=invoice_ninja_company,
+				message=f"Failed to sync {entity_type}",
+				error_details=str(e)
+			)
+
+	frappe.db.commit()
+
+	duration = (datetime.now() - start_time).total_seconds()
+
+	# Update company sync stats with actual synced count
+	if synced_count > 0:
+		update_company_sync_stats(
+			invoice_ninja_company,
+			entity_type,
+			synced_count,
+			"Success" if failed_count == 0 else "Partial",
+			duration
+		)
+	else:
 		update_company_sync_stats(
 			invoice_ninja_company,
 			entity_type,
@@ -771,10 +954,41 @@ def sync_company_entities(invoice_ninja_company, entity_type, limit=100):
 			duration
 		)
 
-		return {
-			"success": False,
-			"message": f"Sync failed: {str(e)}"
-		}
+	# Build message with statistics
+	msg = f"✓ {sync_stats['new_records']} new, {sync_stats['updated_records']} updated, " \
+	      f"○ {sync_stats['unchanged_records']} unchanged"
+	if sync_stats['skipped_records'] > 0:
+		msg += f", ⚠ {sync_stats['skipped_records']} skipped"
+	if sync_stats['failed_records'] > 0:
+		msg += f", ✗ {sync_stats['failed_records']} failed"
+
+	return {
+		"success": synced_count > 0 or len(all_entities) == 0,
+		"message": msg,
+		"synced_count": synced_count,
+		"failed_count": failed_count,
+		"total_fetched": len(all_entities),
+		"pages_fetched": current_page,
+		"statistics": sync_stats,
+		"skipped_details": skipped_details if skipped_details else None
+	}
+
+	# except Exception as e:
+	# 	duration = (datetime.now() - start_time).total_seconds()
+	# 	frappe.log_error(f"Company sync failed: {str(e)}", "Company Sync Error")
+	#
+	# 	update_company_sync_stats(
+	# 		invoice_ninja_company,
+	# 		entity_type,
+	# 		0,
+	# 		"Failed",
+	# 		duration
+	# 	)
+	#
+	# 	return {
+	# 		"success": False,
+	# 		"message": f"Sync failed: {str(e)}"
+	# 	}
 
 
 @frappe.whitelist()
@@ -1723,5 +1937,87 @@ def fetch_entities(entity_type, scope="all_companies", company_identifier=None, 
 		return {
 			"success": False,
 			"message": error_msg
+		}
+
+
+@frappe.whitelist()
+def suggest_currency_mappings(invoice_ninja_company):
+	"""
+	Analyze existing invoices and suggest currency account mappings
+	"""
+	company_doc = frappe.get_doc("Invoice Ninja Company", invoice_ninja_company)
+
+	# Get the ERPNext company from mapping
+	settings = frappe.get_single("Invoice Ninja Settings")
+	erpnext_company = None
+
+	if settings.company_mappings:
+		for mapping in settings.company_mappings:
+			if mapping.invoice_ninja_company_id == company_doc.company_id:
+				erpnext_company = mapping.erpnext_company
+				break
+
+	if not erpnext_company:
+		return {
+			"success": False,
+			"message": "This Invoice Ninja Company is not mapped to an ERPNext company yet. Please configure company mapping first."
+		}
+
+	# Find all currencies used in existing Invoice Ninja invoices for this company
+	currencies = frappe.db.sql("""
+		SELECT DISTINCT currency
+		FROM `tabSales Invoice`
+		WHERE invoice_ninja_company = %s
+		AND docstatus < 2
+	""", (invoice_ninja_company,), as_dict=True)
+
+	if not currencies:
+		return {
+			"success": False,
+			"message": "No invoices found for this company yet. Sync some invoices first."
+		}
+
+	# Find available receivable accounts for the ERPNext company
+	accounts = frappe.get_all(
+		"Account",
+		filters={
+			"company": erpnext_company,
+			"account_type": "Receivable",
+			"is_group": 0
+		},
+		fields=["name", "account_currency", "account_name"]
+	)
+
+	suggestions = []
+	for curr in currencies:
+		currency_code = curr.get("currency")
+		# Find matching account
+		matching_account = next(
+			(acc for acc in accounts if acc.account_currency == currency_code),
+			None
+		)
+
+		if matching_account:
+			suggestions.append({
+				"currency": currency_code,
+				"receivable_account": matching_account.name,
+				"is_default": 0
+			})
+
+	# Add suggested mappings to the document
+	if suggestions:
+		company_doc.currency_account_mappings = []
+		for suggestion in suggestions:
+			company_doc.append("currency_account_mappings", suggestion)
+		company_doc.save()
+
+		return {
+			"success": True,
+			"message": f"Added {len(suggestions)} currency mappings based on existing invoices."
+		}
+	else:
+		return {
+			"success": False,
+			"message": "Could not find matching receivable accounts for the currencies used. Please set up currency-specific receivable accounts first."
 		}
 

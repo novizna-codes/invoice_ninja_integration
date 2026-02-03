@@ -106,30 +106,30 @@ def process_customer_webhook(event_type, customer_data):
 
 def process_invoice_webhook(event_type, invoice_data):
 	"""Process invoice webhook events"""
-	try:
-		settings = frappe.get_single("Invoice Ninja Settings")
-		if not settings.enable_invoice_sync:
-			return {"success": True, "message": "Invoice sync disabled"}
+	# try:
+	settings = frappe.get_single("Invoice Ninja Settings")
+	if not settings.enable_invoice_sync:
+		return {"success": True, "message": "Invoice sync disabled"}
 
-		if event_type in ['created', 'updated']:
-			from .api import sync_invoice_from_invoice_ninja
-			sync_invoice_from_invoice_ninja(invoice_data)
-			return {"success": True, "message": f"Invoice {event_type} processed"}
+	if event_type in ['created', 'updated']:
+		from .api import sync_invoice_from_invoice_ninja
+		sync_invoice_from_invoice_ninja(invoice_data)
+		return {"success": True, "message": f"Invoice {event_type} processed"}
 
-		elif event_type == 'deleted':
-			# Handle invoice deletion
-			existing = frappe.db.exists("Sales Invoice", {"invoice_ninja_id": str(invoice_data.get('id'))})
-			if existing:
-				invoice_doc = frappe.get_doc("Sales Invoice", existing)
-				invoice_doc.db_set('sync_status', 'Deleted in Invoice Ninja')
-			return {"success": True, "message": "Invoice deletion processed"}
+	elif event_type == 'deleted':
+		# Handle invoice deletion
+		existing = frappe.db.exists("Sales Invoice", {"invoice_ninja_id": str(invoice_data.get('id'))})
+		if existing:
+			invoice_doc = frappe.get_doc("Sales Invoice", existing)
+			invoice_doc.db_set('sync_status', 'Deleted in Invoice Ninja')
+		return {"success": True, "message": "Invoice deletion processed"}
 
-		else:
-			return {"success": True, "message": f"Invoice event {event_type} not handled"}
+	else:
+		return {"success": True, "message": f"Invoice event {event_type} not handled"}
 
-	except Exception as e:
-		frappe.log_error(f"Invoice webhook error: {str(e)}", "Invoice Webhook Error")
-		return {"success": False, "error": str(e)}
+	# except Exception as e:
+	# 	frappe.log_error(f"Invoice webhook error: {str(e)}", "Invoice Webhook Error")
+	# 	return {"success": False, "error": str(e)}
 
 
 def process_quote_webhook(event_type, quote_data):

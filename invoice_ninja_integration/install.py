@@ -9,6 +9,7 @@ def after_migrate():
 	"""Install customizations after migration"""
 	install_customizations()
 	setup_task_custom_fields()
+	add_sync_hash_fields()
 
 
 def install_customizations():
@@ -124,6 +125,36 @@ def setup_task_custom_fields():
 	create_custom_fields(custom_fields, update=True)
 	frappe.db.commit()
 	print("Invoice Ninja task custom fields installed successfully")
+
+
+def add_sync_hash_fields():
+	"""Add invoice_ninja_sync_hash field to all synced doctypes"""
+	doctypes = ["Customer", "Sales Invoice", "Quotation", "Item", "Payment Entry", "Invoice Ninja Task"]
+
+	for doctype in doctypes:
+		field_name = f"{doctype}-invoice_ninja_sync_hash"
+		if not frappe.db.exists("Custom Field", field_name):
+			try:
+				frappe.get_doc({
+					"doctype": "Custom Field",
+					"dt": doctype,
+					"fieldname": "invoice_ninja_sync_hash",
+					"fieldtype": "Data",
+					"label": "Invoice Ninja Sync Hash",
+					"hidden": 1,
+					"read_only": 1,
+					"no_copy": 1,
+					"print_hide": 1,
+					"report_hide": 1,
+					"length": 32,
+					"insert_after": "invoice_ninja_id"
+				}).insert(ignore_permissions=True)
+				print(f"Added sync hash field to {doctype}")
+			except Exception as e:
+				print(f"Error adding sync hash field to {doctype}: {str(e)}")
+
+	frappe.db.commit()
+	print("Invoice Ninja sync hash fields installed successfully")
 
 
 def uninstall_customizations():

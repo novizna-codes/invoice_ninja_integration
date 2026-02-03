@@ -67,6 +67,11 @@ frappe.ui.form.on('Invoice Ninja Company', {
 		frm.add_custom_button(__('Sync All'), function() {
 			sync_all_entities(frm);
 		}, __('Sync Actions'));
+
+		// Setup Currency Mappings button
+		frm.add_custom_button(__('Setup Currency Mappings'), function() {
+			setup_currency_mappings(frm);
+		}, __('Actions'));
 		}
 
 		// Add button to view sync logs
@@ -185,10 +190,32 @@ function sync_entity(frm, entity_type) {
 				freeze_message: __('Syncing {0}...', [entity_type]),
 				callback: function(r) {
 					if (r.message && r.message.success) {
-						frappe.show_alert({
-							message: __('Synced {0} {1} records',
-								[r.message.synced_count || r.message.total_fetched || 0, entity_type]),
-							indicator: 'green'
+						let stats = r.message.statistics;
+						let msg = `<b>Sync Complete for ${entity_type}:</b><br><br>` +
+						          `✓ ${stats.new_records} new records created<br>` +
+						          `✓ ${stats.updated_records} records updated<br>` +
+						          `○ ${stats.unchanged_records} records unchanged (skipped)<br>`;
+
+						if (stats.skipped_records > 0) {
+							msg += `⚠ ${stats.skipped_records} records skipped (check logs)<br>`;
+						}
+
+						if (stats.failed_records > 0) {
+							msg += `✗ ${stats.failed_records} records failed<br>`;
+						}
+
+						// Show skipped invoice details if available
+						if (r.message.skipped_details && r.message.skipped_details.length > 0) {
+							msg += `<br><b>Skipped Invoices (Missing Currency Mapping):</b><br>`;
+							r.message.skipped_details.forEach(function(detail) {
+								msg += `- Invoice ${detail.invoice_number} (${detail.currency})<br>`;
+							});
+						}
+
+						frappe.msgprint({
+							title: __('Sync Statistics'),
+							message: msg,
+							indicator: stats.failed_records > 0 ? 'orange' : 'green'
 						});
 						frm.reload_doc();
 					} else {
@@ -413,3 +440,80 @@ function fetch_all_master_data(frm) {
 		}
 	);
 }
+
+function setup_currency_mappings(frm) {
+	frappe.call({
+		method: 'invoice_ninja_integration.api.suggest_currency_mappings',
+		args: {
+			invoice_ninja_company: frm.doc.name
+		},
+		freeze: true,
+		freeze_message: __('Analyzing invoices and setting up currency mappings...'),
+		callback: function(r) {
+			if (r.message) {
+				frappe.msgprint({
+					title: __('Currency Mapping Suggestions'),
+					message: r.message.message,
+					indicator: r.message.success ? 'green' : 'orange'
+				});
+				if (r.message.success) {
+					frm.reload_doc();
+				}
+			}
+		}
+	});
+}
+
+// Currency Account Mapping child table handlers
+frappe.ui.form.on('Invoice Ninja Currency Account Mapping', {
+	currency: function(frm, cdt, cdn) {
+		let row = locals[cdt][cdn];
+
+		// Get the ERPNext company for this Invoice Ninja Company
+		frappe.call({
+			method: 'frappe.client.get_value',
+			args: {
+				doctype: 'Invoice Ninja Company Mapping',
+				filters: {
+					invoice_ninja_company_id: frm.doc.company_id
+				},
+				fieldname: 'erpnext_company'
+			},
+			callback: function(r) {
+				if (r.message && r.message.erpnext_company) {
+					const erpnext_company = r.message.erpnext_company;
+
+					// Filter receivable accounts by company and optionally by currency
+					frappe.call({
+						method: 'frappe.client.get_list',
+						args: {
+							doctype: 'Account',
+							filters: {
+								company: erpnext_company,
+								account_type: 'Receivable',
+								is_group: 0
+							},
+							fields: ['name', 'account_currency']
+						},
+						callback: function(r) {
+							if (r.message) {
+								// Show accounts that match the selected currency or have no currency set
+								let matching_accounts = r.message.filter(acc =>
+									!acc.account_currency || acc.account_currency === row.currency
+								);
+
+								if (matching_accounts.length === 0) {
+									frappe.msgprint({
+										title: __('No Matching Accounts'),
+										message: __(`No receivable accounts found for currency ${row.currency}. You may need to create one in Chart of Accounts.`),
+										indicator: 'orange'
+									});
+								}
+							}
+						}
+					});
+				}
+			}
+		});
+	}
+});
