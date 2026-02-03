@@ -1217,94 +1217,64 @@ def get_invoice_ninja_tax_rates(invoice_ninja_company_id=None):
 	if not invoice_ninja_company_id:
 		return {"success": False, "error": "Invoice Ninja Company ID is required"}
 
-	# try:
-	company_doc = frappe.get_doc("Invoice Ninja Company", invoice_ninja_company_id)
+	try:
+		company_doc = frappe.get_doc("Invoice Ninja Company", invoice_ninja_company_id)
 
-	if not company_doc.enabled:
-		return {"success": False, "error": "Company is disabled"}
+		if not company_doc.enabled:
+			return {"success": False, "error": "Company is disabled"}
 
-	# Initialize client for this specific company
-	client = InvoiceNinjaClient(invoice_ninja_company=invoice_ninja_company_id)
+		# Initialize client for this specific company
+		client = InvoiceNinjaClient(invoice_ninja_company=invoice_ninja_company_id)
 
-	# Fetch tax rates
-	response = client.get_tax_rates()
-	print(response)
+		# Fetch tax rates
+		response = client.get_tax_rates()
 
-	if response and response.get('data'):
-		tax_rates = []
-		tax_categories = []
+		if response and response.get('data'):
+			tax_rates = []
 
-		for tax_rate in response['data']:
-			tax_rate_id = str(tax_rate.get('id'))
-			tax_name = tax_rate.get('name', f"Tax {tax_rate.get('id')}")
-			rate = float(tax_rate.get('rate', 0))
+			for tax_rate in response['data']:
+				tax_rate_id = str(tax_rate.get('id'))
+				tax_name = tax_rate.get('name', f"Tax {tax_rate.get('id')}")
+				rate = float(tax_rate.get('rate', 0))
 
-			# Create/update Invoice Ninja Tax Rate WITH company linkage
-			existing_rate = frappe.db.get_all(
-				"Invoice Ninja Tax Rate",
-				filters={
-					"tax_rate_id": tax_rate_id,
-					"invoice_ninja_company": invoice_ninja_company_id
-				},
-				limit=1
-			)
+				# Create/update Invoice Ninja Tax Rate WITH company linkage
+				existing_rate = frappe.db.get_all(
+					"Invoice Ninja Tax Rate",
+					filters={
+						"tax_rate_id": tax_rate_id,
+						"invoice_ninja_company": invoice_ninja_company_id
+					},
+					limit=1
+				)
 
-			if existing_rate:
-				rate_doc = frappe.get_doc("Invoice Ninja Tax Rate", existing_rate[0].name)
-				rate_doc.tax_name = tax_name
-				rate_doc.rate = rate
-				rate_doc.save(ignore_permissions=True)
-			else:
-				rate_doc = frappe.get_doc({
-					"doctype": "Invoice Ninja Tax Rate",
-					"tax_rate_id": tax_rate_id,
-					"tax_name": tax_name,
-					"rate": rate,
-					"invoice_ninja_company": invoice_ninja_company_id  # Link to company
-				})
-				rate_doc.save(ignore_permissions=True)
+				if existing_rate:
+					rate_doc = frappe.get_doc("Invoice Ninja Tax Rate", existing_rate[0].name)
+					rate_doc.tax_name = tax_name
+					rate_doc.rate = rate
+					rate_doc.save(ignore_permissions=True)
+				else:
+					rate_doc = frappe.get_doc({
+						"doctype": "Invoice Ninja Tax Rate",
+						"tax_rate_id": tax_rate_id,
+						"tax_name": tax_name,
+						"rate": rate,
+						"invoice_ninja_company": invoice_ninja_company_id  # Link to company
+					})
+					rate_doc.save(ignore_permissions=True)
 
-			tax_rates.append(rate_doc.as_dict())
+				tax_rates.append(rate_doc.as_dict())
 
-			# Also create/update Tax Categories with company linkage
-			existing_category = frappe.db.get_all(
-				"Invoice Ninja Tax Category",
-				filters={
-					"tax_category_id": tax_rate_id,
-					"invoice_ninja_company": invoice_ninja_company_id
-				},
-				limit=1
-			)
+			return {
+				"success": True,
+				"tax_rates": tax_rates,
+				"message": f"Fetched {len(tax_rates)} tax rates for company {company_doc.company_name}"
+			}
+		else:
+			return {"success": False, "error": "Failed to fetch tax rates from Invoice Ninja"}
 
-			if existing_category:
-				category_doc = frappe.get_doc("Invoice Ninja Tax Category", existing_category[0].name)
-				category_doc.tax_category_name = tax_name
-				category_doc.rate = rate
-				category_doc.save(ignore_permissions=True)
-			else:
-				category_doc = frappe.get_doc({
-					"doctype": "Invoice Ninja Tax Category",
-					"tax_category_id": tax_rate_id,
-					"tax_category_name": tax_name,
-					"rate": rate,
-					"invoice_ninja_company": invoice_ninja_company_id  # Link to company
-				})
-				category_doc.save(ignore_permissions=True)
-
-			tax_categories.append(category_doc.as_dict())
-
-		return {
-			"success": True,
-			"tax_rates": tax_rates,
-			"tax_categories": tax_categories,
-			"message": f"Fetched {len(tax_rates)} tax rates for company {company_doc.company_name}"
-		}
-	else:
-		return {"success": False, "error": "Failed to fetch tax rates from Invoice Ninja"}
-
-	# except Exception as e:
-	# 	frappe.log_error(f"Error fetching Invoice Ninja tax rates: {str(e)}", "Invoice Ninja API Error")
-	# 	return {"success": False, "error": str(e)}
+	except Exception as e:
+		frappe.log_error(f"Error fetching Invoice Ninja tax rates: {str(e)}", "Invoice Ninja API Error")
+		return {"success": False, "error": str(e)}
 
 
 @frappe.whitelist()

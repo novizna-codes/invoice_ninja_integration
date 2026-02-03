@@ -97,16 +97,6 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Invoice Ninja Tax Category",
-   "link_count": 1,
-   "link_to": "Invoice Ninja Tax Category",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
    "label": "Invoice Ninja Task",
    "link_count": 1,
    "link_to": "Invoice Ninja Task",

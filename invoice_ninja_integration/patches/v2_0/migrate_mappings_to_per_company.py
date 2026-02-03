@@ -19,7 +19,7 @@ def execute():
 	# Verify the parent DocType has been synced with new fields
 	meta = frappe.get_meta("Invoice Ninja Company")
 	has_mappings = any(
-		field.fieldname in ['customer_group_mappings', 'item_group_mappings', 'tax_template_mappings']
+		field.fieldname in ['customer_group_mappings', 'tax_template_mappings']
 		for field in meta.fields
 	)
 
@@ -45,14 +45,6 @@ def execute():
 					company_doc.append("customer_group_mappings", {
 						"customer_group": mapping.customer_group,
 						"invoice_ninja_customer_group": mapping.invoice_ninja_customer_group
-					})
-
-			# Copy item group mappings
-			if settings.item_group_mappings and not company_doc.item_group_mappings:
-				for mapping in settings.item_group_mappings:
-					company_doc.append("item_group_mappings", {
-						"item_group": mapping.item_group,
-						"invoice_ninja_tax_category": mapping.invoice_ninja_tax_category
 					})
 
 			# Copy tax template mappings

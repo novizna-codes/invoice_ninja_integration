@@ -1102,22 +1102,8 @@ class FieldMapper:
 			invoice_ninja_company: Invoice Ninja Company doc name for linking
 		"""
 		# Get item group mapping based on Invoice Ninja tax category
-		item_group_mapping = None
-		default_item_group = "Products"  # Default fallback
-
-		# Check if product has a tax category/rate from Invoice Ninja
-		# Invoice Ninja stores tax info in tax_name or tax_rate fields on products
-		tax_category_id = in_product.get("tax_rate1") or in_product.get("tax_category_id")
-
-		if tax_category_id:
-			item_group_mapping = FieldMapper.get_item_group_mapping(
-				invoice_ninja_company=invoice_ninja_company,  # Pass company context
-				invoice_ninja_tax_category_id=str(tax_category_id)
-			)
-
-		# Use mapped item group or fallback to default
-		if item_group_mapping:
-			default_item_group = item_group_mapping.item_group
+		# Use default item group for all items
+		default_item_group = "Products"
 
 		# Add tax rate application
 		tax_template = None
@@ -1440,40 +1426,6 @@ class FieldMapper:
 					"group_id"
 				)
 				if group_id and str(group_id) == str(invoice_ninja_customer_group_id):
-					return mapping
-
-		return None
-
-	@staticmethod
-	def get_item_group_mapping(invoice_ninja_company=None, erpnext_item_group=None, invoice_ninja_tax_category_id=None):
-		"""Get item group mapping for a specific Invoice Ninja Company"""
-
-		if not invoice_ninja_company:
-			# Fallback to global settings (deprecated)
-			settings = frappe.get_single("Invoice Ninja Settings")
-			mappings = settings.item_group_mappings
-		else:
-			# Get mappings from the specific company
-			company_doc = frappe.get_doc("Invoice Ninja Company", invoice_ninja_company)
-			mappings = company_doc.item_group_mappings
-
-		if not mappings:
-			return None
-
-		for mapping in mappings:
-			if erpnext_item_group and mapping.item_group == erpnext_item_group:
-				return mapping
-			elif invoice_ninja_tax_category_id and mapping.invoice_ninja_tax_category:
-				# Fetch tax_category_id filtered by company
-				tax_category_id = frappe.db.get_value(
-					"Invoice Ninja Tax Category",
-					{
-						"name": mapping.invoice_ninja_tax_category,
-						"invoice_ninja_company": invoice_ninja_company
-					},
-					"tax_category_id"
-				)
-				if tax_category_id and str(tax_category_id) == str(invoice_ninja_tax_category_id):
 					return mapping
 
 		return None
