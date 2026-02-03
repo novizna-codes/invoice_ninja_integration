@@ -340,17 +340,42 @@ scheduler_events = {
     ]
 }
 
-# In tasks.py
+# In tasks.py (UPDATED - Per-Company Sync)
 def sync_all_customers():
-    """Scheduled task to sync customers from Invoice Ninja"""
-    from invoice_ninja_integration.api import sync_from_invoice_ninja
+    """Scheduled task to sync customers from Invoice Ninja - uses per-company sync"""
+    import frappe
+    from invoice_ninja_integration.api import sync_company_entities
 
-    result = sync_from_invoice_ninja("Customer", limit=200)
+    # Get all enabled Invoice Ninja companies
+    companies = frappe.get_all(
+        "Invoice Ninja Company",
+        filters={"enabled": 1},
+        fields=["name"]
+    )
 
-    if result.get("success"):
-        frappe.log(f"Synced {result.get('synced_count')} customers")
-    else:
-        frappe.log_error(result.get("message"), "Customer Sync Failed")
+    if not companies:
+        frappe.log_error("No enabled Invoice Ninja companies found", "Customer Sync")
+        return
+
+    total_synced = 0
+    for company in companies:
+        try:
+            result = sync_company_entities(
+                invoice_ninja_company=company.name,
+                entity_type="Customer",
+                limit=200
+            )
+
+            if result.get("success"):
+                synced = result.get("synced_count", 0)
+                total_synced += synced
+                frappe.log(f"Synced {synced} customers for {company.name}")
+            else:
+                frappe.log_error(result.get("message"), f"Customer Sync Failed - {company.name}")
+        except Exception as e:
+            frappe.log_error(str(e), f"Customer Sync Error - {company.name}")
+
+    frappe.log(f"Total customers synced: {total_synced} across {len(companies)} companies")
 ```
 
 ### 3. Custom Report

@@ -18,14 +18,6 @@
   "connection_status",
    "company_mapping_section",
    "company_mappings",
-   "customer_group_mapping_section",
-   "customer_group_mappings",
-   "item_group_mapping_section",
-   "item_group_mappings",
-   "tax_template_mapping_section",
-   "tax_template_mappings",
-   "default_tax_template",
-   "default_tax_rate",
    "sync_settings_section",
   "enable_customer_sync",
   "customer_sync_direction",
@@ -116,59 +108,6 @@
     "label": "Company Mappings",
     "options": "Invoice Ninja Company Mapping",
     "description": "Map ERPNext companies to Invoice Ninja companies for proper document routing"
-   },
-   {
-    "fieldname": "customer_group_mapping_section",
-    "fieldtype": "Section Break",
-    "label": "Customer Group Mappings (DEPRECATED)",
-    "description": "These global mappings are deprecated. Configure mappings per Invoice Ninja Company instead."
-   },
-   {
-    "fieldname": "customer_group_mappings",
-    "fieldtype": "Table",
-    "label": "Customer Group Mappings",
-    "options": "Invoice Ninja Customer Group Mapping",
-    "description": "Map ERPNext customer groups to Invoice Ninja customer groups"
-   },
-   {
-    "fieldname": "item_group_mapping_section",
-    "fieldtype": "Section Break",
-    "label": "Item Group Mappings (DEPRECATED)",
-    "description": "These global mappings are deprecated. Configure mappings per Invoice Ninja Company instead."
-   },
-   {
-    "fieldname": "item_group_mappings",
-    "fieldtype": "Table",
-    "label": "Item Group Mappings",
-    "options": "Invoice Ninja Item Group Mapping",
-    "description": "Map ERPNext item groups to Invoice Ninja tax categories"
-   },
-   {
-    "fieldname": "tax_template_mapping_section",
-    "fieldtype": "Section Break",
-    "label": "Tax Template Mappings (DEPRECATED)",
-    "description": "These global mappings are deprecated. Configure mappings per Invoice Ninja Company instead."
-   },
-   {
-    "fieldname": "tax_template_mappings",
-    "fieldtype": "Table",
-    "label": "Tax Template Mappings",
-    "options": "Invoice Ninja Tax Template Mapping",
-    "description": "Map ERPNext tax templates to Invoice Ninja tax rates"
-   },
-   {
-    "fieldname": "default_tax_template",
-    "fieldtype": "Link",
-    "label": "Default Tax Template",
-    "options": "Sales Taxes and Charges Template",
-    "description": "Default tax template when no mapping found"
-   },
-   {
-    "fieldname": "default_tax_rate",
-    "fieldtype": "Link",
-    "label": "Default Tax Rate",
-    "options": "Invoice Ninja Tax Rate",
-    "description": "Default tax rate for products synced from Invoice Ninja"
    },
    {
     "fieldname": "sync_settings_section",

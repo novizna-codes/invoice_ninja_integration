@@ -179,10 +179,29 @@ Each synced record shows its sync status:
 - `get_company_mappings()`: Get all company mappings from settings
 - `get_invoice_ninja_companies()`: Fetch companies from Invoice Ninja
 
-### Sync Operations
-- `sync_from_invoice_ninja(doctype, limit)`: Pull data from Invoice Ninja
-- `manual_sync_customer(customer_name)`: Sync specific customer
-- `manual_sync_invoice(invoice_name)`: Sync specific invoice
+### Sync Operations (Updated)
+
+**Recommended**: Use per-company sync functions
+- `sync_company_entities(company_name, entity_type, limit)`: Sync specific entity for a company
+- `sync_company_all_entities(company_name, entity_types, limit)`: Sync multiple entities for a company
+- `trigger_manual_sync(sync_type)`: Manual sync for all enabled companies
+- `manual_sync_customer(customer_name)`: Sync specific customer to Invoice Ninja
+- `manual_sync_invoice(invoice_name)`: Sync specific invoice to Invoice Ninja
+
+**Deprecated** (will be removed in future):
+- `sync_from_invoice_ninja(doctype, limit)`: Old function without per-company support
+
+**Example**:
+```python
+# New way - with per-company mappings
+from invoice_ninja_integration.api import sync_company_entities
+
+result = sync_company_entities(
+    invoice_ninja_company="IN-COM-YourCompany-000001",
+    entity_type="Customer",
+    limit=100
+)
+```
 
 ### Entity Fetch Operations (Centralized Service)
 

@@ -26,11 +26,12 @@ This document summarizes the cleanup work performed to reduce code bloat and rem
 
 ### 2. tasks.py
 **Original:** 318 lines
-**Final:** 105 lines
-**Reduction:** 213 lines (67%)
+**Final:** 106 lines (updated with per-company sync)
+**Reduction:** 212 lines (67%)
 
 **Changes:**
-- Added proper `sync_from_invoice_ninja()` wrapper function for scheduler
+- **Updated `sync_from_invoice_ninja()` to use per-company sync architecture** (uses `sync_company_entities()`)
+- Now syncs all enabled Invoice Ninja companies with proper per-company mappings
 - Removed unused function `sync_invoice_ninja_data()`
 - Removed unused function `full_sync_check()`
 - Removed 4 helper functions:
@@ -44,7 +45,7 @@ This document summarizes the cleanup work performed to reduce code bloat and rem
 - Removed unused function `weekly_sync_report()` (not scheduled)
 - Removed commented-out code blocks
 - Kept only actively used functions:
-  - `sync_from_invoice_ninja()` (scheduled hourly)
+  - `sync_from_invoice_ninja()` (scheduled hourly - **UPDATED to use per-company sync**)
   - `cleanup_sync_logs()` (scheduled daily)
   - `sync_payments_from_invoice_ninja()` (called from api.py)
   - `_create_payment_entry_from_invoice_ninja()` (called from webhook.py)
@@ -112,7 +113,33 @@ bench --site novizna-v16 execute invoice_ninja_integration.tasks.sync_from_invoi
 bench --site novizna-v16 execute invoice_ninja_integration.api.manual_sync_customer --args "['Customer Name']"
 ```
 
+## Recent Updates (Per-Company Architecture)
+
+### Deprecation of Old Sync Function
+
+The old `sync_from_invoice_ninja()` function in `api.py` has been **deprecated** because it did not support per-company mappings. It has been replaced with a backward-compatible wrapper that:
+
+1. Logs a deprecation warning
+2. Syncs all enabled Invoice Ninja companies using the new `sync_company_entities()` function
+3. Returns proper results with a deprecation warning in the response
+
+**Deprecated Function:**
+- `sync_from_invoice_ninja(doctype, limit)` - Use `sync_company_entities()` instead
+
+**New Recommended Functions:**
+- `sync_company_entities(company_name, entity_type, limit)` - Sync specific entity for a company with proper per-company mappings
+- `sync_company_all_entities(company_name, entity_types, limit)` - Sync multiple entities for a company
+- `trigger_manual_sync(sync_type)` - **UPDATED** to sync all enabled companies with per-company configuration
+
+### Updated Functions
+
+1. **`tasks.py::sync_from_invoice_ninja()`** - Now iterates through all enabled Invoice Ninja companies and uses `sync_company_entities()` for each
+2. **`api.py::trigger_manual_sync()`** - Now syncs all enabled companies with per-company mappings instead of using the deprecated function
+3. **`api.py::sync_from_invoice_ninja()`** - Deprecated, logs warnings, calls new functions for backward compatibility
+
 ## Conclusion
 
 This cleanup successfully reduced the codebase size by removing approximately 400 lines of unused, duplicated, or dead code. All functionality has been preserved, and the code is now more maintainable and follows the centralized `SyncManager` pattern consistently.
+
+The recent architectural update to support per-company configurations ensures that all sync operations now use the correct mappings (customer groups, item groups, tax templates) for each Invoice Ninja company instance.
 

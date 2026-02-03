@@ -97,70 +97,56 @@ def manual_sync_invoice(invoice_name):
 
 @frappe.whitelist()
 def sync_from_invoice_ninja(doctype, limit=50):
-	"""Sync data from Invoice Ninja to ERPNext"""
-	settings = frappe.get_single("Invoice Ninja Settings")
-	if not settings.enabled:
-		return {"success": False, "message": "Invoice Ninja integration is disabled"}
+	"""
+	DEPRECATED: This function does not support per-company mappings.
+	Use sync_company_entities() instead for proper per-company configuration.
 
-	client = get_client()
+	This function will be removed in a future version.
+	"""
+	frappe.log_error(
+		f"Deprecated function sync_from_invoice_ninja called for {doctype}. "
+		"Please use sync_company_entities() instead.",
+		"Deprecated API Call"
+	)
 
-	# Get all company mappings
-	from .utils.company_mapper import CompanyMapper
-	company_mapper = CompanyMapper()
-	mappings = company_mapper.get_all_mappings()
+	# For backward compatibility, sync all enabled companies
+	companies = frappe.get_all(
+		"Invoice Ninja Company",
+		filters={"enabled": 1},
+		fields=["name"]
+	)
 
-	# If no mappings, use default context (None)
-	if not mappings:
-		mappings = [{"invoice_ninja_company_id": None, "invoice_ninja_company_name": "Default"}]
+	if not companies:
+		return {
+			"success": False,
+			"message": "No enabled Invoice Ninja companies found. Please configure companies first."
+		}
 
-	total_synced_count = 0
+	total_synced = 0
+	results = []
 
-	for mapping in mappings:
-		company_id = mapping.get("invoice_ninja_company_id")
-
-		# Set company context
-		client.set_company_id(company_id)
-
-		synced_count = 0
-
-		if doctype == "Customer" and settings.enable_customer_sync:
-			customers = client.get_customers(per_page=limit)
-			if customers and customers.get('data'):
-				for customer in customers['data']:
-					# Pass company context to sync function if needed, or rely on mapper inside
-					# Currently sync_customer_from_invoice_ninja doesn't accept context arg in definition below
-					# We should update it to accept context or handle it inside
-					# Let's pass the context to the sync function
-					sync_customer_from_invoice_ninja(customer) # We need to update this signature next
-					synced_count += 1
-
-		elif doctype == "Sales Invoice" and settings.enable_invoice_sync:
-			invoices = client.get_invoices(per_page=limit, include='client,line_items')
-			if invoices and invoices.get('data'):
-				for invoice in invoices['data']:
-					sync_invoice_from_invoice_ninja(invoice)
-					synced_count += 1
-
-		elif doctype == "Quotation" and settings.enable_quote_sync:
-			quotes = client.get_quotes(per_page=limit, include='client,line_items')
-			if quotes and quotes.get('data'):
-				for quote in quotes['data']:
-					sync_quotation_from_invoice_ninja(quote)
-					synced_count += 1
-
-		elif doctype == "Item" and settings.enable_product_sync:
-			products = client.get_products(per_page=limit)
-			if products and products.get('data'):
-				for product in products['data']:
-					sync_item_from_invoice_ninja(product)
-					synced_count += 1
-
-		total_synced_count += synced_count
+	for company in companies:
+		try:
+			result = sync_company_entities(
+				invoice_ninja_company=company.name,
+				entity_type=doctype,
+				limit=limit
+			)
+			if result.get("success"):
+				total_synced += result.get("synced_count", 0)
+				results.append(f"{company.name}: {result.get('synced_count', 0)} records")
+		except Exception as e:
+			frappe.log_error(
+				f"Error syncing {doctype} for company {company.name}: {str(e)}",
+				"Sync Error"
+			)
 
 	return {
 		"success": True,
-		"message": f"Synced {total_synced_count} {doctype} records from Invoice Ninja across {len(mappings)} companies",
-		"synced_count": total_synced_count,
+		"message": f"Synced {total_synced} {doctype} records across {len(companies)} companies",
+		"synced_count": total_synced,
+		"details": results,
+		"warning": "DEPRECATED: Please use sync_company_entities() for per-company sync"
 	}
 
 
@@ -1030,40 +1016,57 @@ def get_sync_logs(limit=5):
 
 @frappe.whitelist()
 def trigger_manual_sync(sync_type="all"):
-	"""Trigger manual synchronization with company mapping support"""
-	try:
-		from .utils.sync_manager import SyncManager
+	"""
+	Trigger manual synchronization - syncs all enabled companies
 
-		sync_manager = SyncManager()
+	Args:
+		sync_type: "customers", "invoices", "quotations", "items", "payments", "all"
+	"""
+	try:
+		companies = frappe.get_all(
+			"Invoice Ninja Company",
+			filters={"enabled": 1},
+			fields=["name"]
+		)
+
+		if not companies:
+			return {
+				"success": False,
+				"message": "No enabled Invoice Ninja companies found"
+			}
+
 		results = []
 		results_objects = []
 
-		if sync_type == "customers" or sync_type == "all":
-			result = sync_from_invoice_ninja("Customer", limit=100)
-			results.append(f"Customers: {result}")
-			results_objects.append(result)
+		for company in companies:
+			company_results = []
 
-		if sync_type == "invoices" or sync_type == "all":
-			result = sync_from_invoice_ninja("Sales Invoice", limit=100)
-			results.append(f"Invoices: {result}")
-			results_objects.append(result)
+			if sync_type == "customers" or sync_type == "all":
+				result = sync_company_entities(company.name, "Customer", limit=100)
+				company_results.append(f"Customers: {result.get('synced_count', 0)}")
+				results_objects.append(result)
 
-		if sync_type == "payments" or sync_type == "all":
-			# Use the existing sync_payments_from_invoice_ninja from tasks
-			from .tasks import sync_payments_from_invoice_ninja
-			result = sync_payments_from_invoice_ninja()
-			results.append(f"Payments: {result}")
-			results_objects.append(result)
+			if sync_type == "invoices" or sync_type == "all":
+				result = sync_company_entities(company.name, "Sales Invoice", limit=100)
+				company_results.append(f"Invoices: {result.get('synced_count', 0)}")
+				results_objects.append(result)
 
-		if sync_type == "quotations" or sync_type == "all":
-			result = sync_from_invoice_ninja("Quotation", limit=100)
-			results.append(f"Quotations: {result}")
-			results_objects.append(result)
+			if sync_type == "quotations" or sync_type == "all":
+				result = sync_company_entities(company.name, "Quotation", limit=100)
+				company_results.append(f"Quotations: {result.get('synced_count', 0)}")
+				results_objects.append(result)
 
-		if sync_type == "items" or sync_type == "all":
-			result = sync_from_invoice_ninja("Item", limit=100)
-			results.append(f"Items: {result}")
-			results_objects.append(result)
+			if sync_type == "items" or sync_type == "all":
+				result = sync_company_entities(company.name, "Item", limit=100)
+				company_results.append(f"Items: {result.get('synced_count', 0)}")
+				results_objects.append(result)
+
+			if sync_type == "payments" or sync_type == "all":
+				result = sync_company_entities(company.name, "Payment Entry", limit=100)
+				company_results.append(f"Payments: {result.get('synced_count', 0)}")
+				results_objects.append(result)
+
+			results.append(f"{company.name}: {', '.join(company_results)}")
 
 		return {
 			"success": True,
@@ -1214,93 +1217,94 @@ def get_invoice_ninja_tax_rates(invoice_ninja_company_id=None):
 	if not invoice_ninja_company_id:
 		return {"success": False, "error": "Invoice Ninja Company ID is required"}
 
-	try:
-		company_doc = frappe.get_doc("Invoice Ninja Company", invoice_ninja_company_id)
+	# try:
+	company_doc = frappe.get_doc("Invoice Ninja Company", invoice_ninja_company_id)
 
-		if not company_doc.enabled:
-			return {"success": False, "error": "Company is disabled"}
+	if not company_doc.enabled:
+		return {"success": False, "error": "Company is disabled"}
 
-		# Initialize client for this specific company
-		client = InvoiceNinjaClient(invoice_ninja_company=invoice_ninja_company_id)
+	# Initialize client for this specific company
+	client = InvoiceNinjaClient(invoice_ninja_company=invoice_ninja_company_id)
 
-		# Fetch tax rates
-		response = client.get_tax_rates()
+	# Fetch tax rates
+	response = client.get_tax_rates()
+	print(response)
 
-		if response and response.get('data'):
-			tax_rates = []
-			tax_categories = []
+	if response and response.get('data'):
+		tax_rates = []
+		tax_categories = []
 
-			for tax_rate in response['data']:
-				tax_rate_id = str(tax_rate.get('id'))
-				tax_name = tax_rate.get('name', f"Tax {tax_rate.get('id')}")
-				rate = float(tax_rate.get('rate', 0))
+		for tax_rate in response['data']:
+			tax_rate_id = str(tax_rate.get('id'))
+			tax_name = tax_rate.get('name', f"Tax {tax_rate.get('id')}")
+			rate = float(tax_rate.get('rate', 0))
 
-				# Create/update Invoice Ninja Tax Rate WITH company linkage
-				existing_rate = frappe.db.get_all(
-					"Invoice Ninja Tax Rate",
-					filters={
-						"tax_rate_id": tax_rate_id,
-						"invoice_ninja_company": invoice_ninja_company_id
-					},
-					limit=1
-				)
+			# Create/update Invoice Ninja Tax Rate WITH company linkage
+			existing_rate = frappe.db.get_all(
+				"Invoice Ninja Tax Rate",
+				filters={
+					"tax_rate_id": tax_rate_id,
+					"invoice_ninja_company": invoice_ninja_company_id
+				},
+				limit=1
+			)
 
-				if existing_rate:
-					rate_doc = frappe.get_doc("Invoice Ninja Tax Rate", existing_rate[0].name)
-					rate_doc.tax_name = tax_name
-					rate_doc.rate = rate
-					rate_doc.save(ignore_permissions=True)
-				else:
-					rate_doc = frappe.get_doc({
-						"doctype": "Invoice Ninja Tax Rate",
-						"tax_rate_id": tax_rate_id,
-						"tax_name": tax_name,
-						"rate": rate,
-						"invoice_ninja_company": invoice_ninja_company_id  # Link to company
-					})
-					rate_doc.save(ignore_permissions=True)
+			if existing_rate:
+				rate_doc = frappe.get_doc("Invoice Ninja Tax Rate", existing_rate[0].name)
+				rate_doc.tax_name = tax_name
+				rate_doc.rate = rate
+				rate_doc.save(ignore_permissions=True)
+			else:
+				rate_doc = frappe.get_doc({
+					"doctype": "Invoice Ninja Tax Rate",
+					"tax_rate_id": tax_rate_id,
+					"tax_name": tax_name,
+					"rate": rate,
+					"invoice_ninja_company": invoice_ninja_company_id  # Link to company
+				})
+				rate_doc.save(ignore_permissions=True)
 
-				tax_rates.append(rate_doc.as_dict())
+			tax_rates.append(rate_doc.as_dict())
 
-				# Also create/update Tax Categories with company linkage
-				existing_category = frappe.db.get_all(
-					"Invoice Ninja Tax Category",
-					filters={
-						"tax_category_id": tax_rate_id,
-						"invoice_ninja_company": invoice_ninja_company_id
-					},
-					limit=1
-				)
+			# Also create/update Tax Categories with company linkage
+			existing_category = frappe.db.get_all(
+				"Invoice Ninja Tax Category",
+				filters={
+					"tax_category_id": tax_rate_id,
+					"invoice_ninja_company": invoice_ninja_company_id
+				},
+				limit=1
+			)
 
-				if existing_category:
-					category_doc = frappe.get_doc("Invoice Ninja Tax Category", existing_category[0].name)
-					category_doc.tax_category_name = tax_name
-					category_doc.rate = rate
-					category_doc.save(ignore_permissions=True)
-				else:
-					category_doc = frappe.get_doc({
-						"doctype": "Invoice Ninja Tax Category",
-						"tax_category_id": tax_rate_id,
-						"tax_category_name": tax_name,
-						"rate": rate,
-						"invoice_ninja_company": invoice_ninja_company_id  # Link to company
-					})
-					category_doc.save(ignore_permissions=True)
+			if existing_category:
+				category_doc = frappe.get_doc("Invoice Ninja Tax Category", existing_category[0].name)
+				category_doc.tax_category_name = tax_name
+				category_doc.rate = rate
+				category_doc.save(ignore_permissions=True)
+			else:
+				category_doc = frappe.get_doc({
+					"doctype": "Invoice Ninja Tax Category",
+					"tax_category_id": tax_rate_id,
+					"tax_category_name": tax_name,
+					"rate": rate,
+					"invoice_ninja_company": invoice_ninja_company_id  # Link to company
+				})
+				category_doc.save(ignore_permissions=True)
 
-				tax_categories.append(category_doc.as_dict())
+			tax_categories.append(category_doc.as_dict())
 
-			return {
-				"success": True,
-				"tax_rates": tax_rates,
-				"tax_categories": tax_categories,
-				"message": f"Fetched {len(tax_rates)} tax rates for company {company_doc.company_name}"
-			}
-		else:
-			return {"success": False, "error": "Failed to fetch tax rates from Invoice Ninja"}
+		return {
+			"success": True,
+			"tax_rates": tax_rates,
+			"tax_categories": tax_categories,
+			"message": f"Fetched {len(tax_rates)} tax rates for company {company_doc.company_name}"
+		}
+	else:
+		return {"success": False, "error": "Failed to fetch tax rates from Invoice Ninja"}
 
-	except Exception as e:
-		frappe.log_error(f"Error fetching Invoice Ninja tax rates: {str(e)}", "Invoice Ninja API Error")
-		return {"success": False, "error": str(e)}
+	# except Exception as e:
+	# 	frappe.log_error(f"Error fetching Invoice Ninja tax rates: {str(e)}", "Invoice Ninja API Error")
+	# 	return {"success": False, "error": str(e)}
 
 
 @frappe.whitelist()

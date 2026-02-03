@@ -5,30 +5,59 @@ from .api import get_client
 
 def sync_from_invoice_ninja():
 	"""Hourly scheduled task to sync data from Invoice Ninja to ERPNext"""
-	from .api import sync_from_invoice_ninja as api_sync
+	from .api import sync_company_entities
+
+	# Get all enabled companies
+	companies = frappe.get_all(
+		"Invoice Ninja Company",
+		filters={"enabled": 1},
+		fields=["name"]
+	)
+
+	if not companies:
+		frappe.log_error("No enabled Invoice Ninja companies found", "Scheduled Sync")
+		return
 
 	settings = frappe.get_single("Invoice Ninja Settings")
 	if not settings.enabled:
 		return
 
-	try:
-		# Sync all enabled entity types
-		if settings.enable_customer_sync:
-			api_sync("Customer", limit=100)
+	# Sync each company's data
+	total_synced = 0
+	for company in companies:
+		try:
+			# Sync each entity type that's enabled in settings
+			if settings.enable_customer_sync:
+				result = sync_company_entities(company.name, "Customer", limit=100)
+				total_synced += result.get("synced_count", 0)
 
-		if settings.enable_invoice_sync:
-			api_sync("Sales Invoice", limit=100)
+			if settings.enable_invoice_sync:
+				result = sync_company_entities(company.name, "Sales Invoice", limit=100)
+				total_synced += result.get("synced_count", 0)
 
-		if settings.enable_quote_sync:
-			api_sync("Quotation", limit=100)
+			if settings.enable_quote_sync:
+				result = sync_company_entities(company.name, "Quotation", limit=100)
+				total_synced += result.get("synced_count", 0)
 
-		if settings.enable_product_sync:
-			api_sync("Item", limit=100)
+			if settings.enable_product_sync:
+				result = sync_company_entities(company.name, "Item", limit=100)
+				total_synced += result.get("synced_count", 0)
 
-		frappe.log_error("Hourly sync completed successfully", "Invoice Ninja Sync Success")
+			if settings.enable_payment_sync:
+				result = sync_company_entities(company.name, "Payment Entry", limit=100)
+				total_synced += result.get("synced_count", 0)
 
-	except Exception as e:
-		frappe.log_error(f"Hourly sync failed: {str(e)}", "Invoice Ninja Sync Error")
+		except Exception as e:
+			frappe.log_error(
+				f"Scheduled sync error for {company.name}: {str(e)}",
+				"Scheduled Sync Error"
+			)
+
+	if total_synced > 0:
+		frappe.log_error(
+			f"Hourly sync completed successfully: {total_synced} records synced across {len(companies)} companies",
+			"Invoice Ninja Sync Success"
+		)
 
 
 
