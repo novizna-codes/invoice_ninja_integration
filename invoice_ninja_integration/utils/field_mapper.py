@@ -1144,7 +1144,7 @@ class FieldMapper:
 			"standard_rate": flt(in_product.get("price", 0)),
 			"invoice_ninja_id": str(in_product.get("id")),
 			"invoice_ninja_company": invoice_ninja_company,
-			"sync_status": "Synced",
+			"invoice_ninja_sync_status": "Synced",
 		}
 
 		# Add tax template if found
