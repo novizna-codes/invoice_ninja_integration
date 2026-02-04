@@ -320,3 +320,149 @@ class InvoiceNinjaClient:
 		except Exception as e:
 			frappe.log_error(f"Failed to download PDF: {str(e)}", "Invoice Ninja PDF Download")
 		return None
+
+	# Webhook methods
+	def get_webhooks(self):
+		"""Get all webhooks for this company"""
+		return self.get('webhooks')
+
+	def get_webhook(self, webhook_id):
+		"""Get single webhook"""
+		return self.get(f'webhooks/{webhook_id}')
+
+	def create_webhook(self, webhook_data):
+		"""
+		Create webhook in Invoice Ninja
+
+		Args:
+			webhook_data: Dictionary with webhook configuration
+				{
+					"target_url": "https://your-site.com/api/method/webhook_handler",
+					"event_id": "1",  # Event type ID (create_client, create_invoice, etc.)
+					"format": "JSON"
+				}
+
+		Returns:
+			Response from Invoice Ninja API
+		"""
+		return self.post('webhooks', data=webhook_data)
+
+	def update_webhook(self, webhook_id, webhook_data):
+		"""Update webhook in Invoice Ninja"""
+		return self.put(f'webhooks/{webhook_id}', data=webhook_data)
+
+	def delete_webhook(self, webhook_id):
+		"""Delete webhook in Invoice Ninja"""
+		return self.delete(f'webhooks/{webhook_id}')
+
+	def register_webhooks_for_entity(self, entity_type, target_url):
+		"""
+		Register webhooks for all events of a specific entity type
+
+		Args:
+			entity_type: Type of entity (client, invoice, quote, product, payment)
+			target_url: Full URL to receive webhook notifications
+
+		Returns:
+			List of created webhook IDs
+		"""
+		# Invoice Ninja event IDs mapping
+		event_map = {
+			'client': {
+				'create': '1',
+				'update': '2',
+				'delete': '3',
+			},
+			'invoice': {
+				'create': '4',
+				'update': '5',
+				'delete': '6',
+			},
+			'quote': {
+				'create': '7',
+				'update': '8',
+				'delete': '9',
+			},
+			'payment': {
+				'create': '10',
+				'update': '11',
+				'delete': '12',
+			},
+			'product': {
+				'create': '16',
+				'update': '17',
+				'delete': '18',
+			},
+		}
+
+		if entity_type not in event_map:
+			frappe.throw(f"Unsupported entity type: {entity_type}")
+
+		created_webhooks = []
+		events = event_map[entity_type]
+
+		for event_name, event_id in events.items():
+			webhook_data = {
+				"target_url": target_url,
+				"event_id": event_id,
+				"format": "JSON"
+			}
+
+			try:
+				result = self.create_webhook(webhook_data)
+				if result and not result.get('error'):
+					webhook_id = result.get('data', {}).get('id')
+					if webhook_id:
+						created_webhooks.append({
+							'id': webhook_id,
+							'entity': entity_type,
+							'event': event_name,
+							'event_id': event_id
+						})
+						frappe.logger().info(
+							f"Created webhook for {entity_type}.{event_name} (ID: {webhook_id})"
+						)
+				else:
+					frappe.log_error(
+						f"Failed to create webhook for {entity_type}.{event_name}: {result}",
+						"Webhook Registration Error"
+					)
+			except Exception as e:
+				frappe.log_error(
+					f"Exception creating webhook for {entity_type}.{event_name}: {str(e)}",
+					"Webhook Registration Exception"
+				)
+
+		return created_webhooks
+
+	def unregister_all_webhooks(self):
+		"""
+		Delete all webhooks for this company
+
+		Returns:
+			Number of webhooks deleted
+		"""
+		try:
+			webhooks_response = self.get_webhooks()
+			if not webhooks_response or webhooks_response.get('error'):
+				return 0
+
+			webhooks = webhooks_response.get('data', [])
+			deleted_count = 0
+
+			for webhook in webhooks:
+				webhook_id = webhook.get('id')
+				if webhook_id:
+					result = self.delete_webhook(webhook_id)
+					if result and not result.get('error'):
+						deleted_count += 1
+						frappe.logger().info(f"Deleted webhook ID: {webhook_id}")
+
+			return deleted_count
+
+		except Exception as e:
+			frappe.log_error(
+				f"Error unregistering webhooks: {str(e)}",
+				"Webhook Unregistration Error"
+			)
+			return 0

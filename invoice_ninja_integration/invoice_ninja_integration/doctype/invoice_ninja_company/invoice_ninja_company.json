@@ -14,8 +14,16 @@
   "api_token",
   "column_break_credentials",
   "enabled",
+  "default_product_uom",
   "test_connection",
   "connection_status",
+  "section_break_webhooks",
+  "webhooks_registered",
+  "webhook_url",
+  "column_break_webhooks",
+  "register_webhooks_btn",
+  "unregister_webhooks_btn",
+  "webhook_ids",
   "section_break_sync_info",
   "last_sync_time",
   "total_synced_records",
@@ -87,6 +95,14 @@
    "label": "Enabled"
   },
   {
+   "default": "Nos",
+   "description": "Default unit of measure for products synced from Invoice Ninja",
+   "fieldname": "default_product_uom",
+   "fieldtype": "Link",
+   "label": "Default Product UOM",
+   "options": "UOM"
+  },
+  {
    "fieldname": "test_connection",
    "fieldtype": "Button",
    "label": "Test Connection"
@@ -97,6 +113,47 @@
    "fieldtype": "Select",
    "label": "Connection Status",
    "options": "Not Tested\nConnected\nFailed",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_break_webhooks",
+   "fieldtype": "Section Break",
+   "label": "Webhook Configuration"
+  },
+  {
+   "default": "0",
+   "fieldname": "webhooks_registered",
+   "fieldtype": "Check",
+   "label": "Webhooks Registered",
+   "read_only": 1
+  },
+  {
+   "fieldname": "webhook_url",
+   "fieldtype": "Data",
+   "label": "Webhook URL",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_webhooks",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "register_webhooks_btn",
+   "fieldtype": "Button",
+   "label": "Register Webhooks"
+  },
+  {
+   "fieldname": "unregister_webhooks_btn",
+   "fieldtype": "Button",
+   "label": "Unregister Webhooks"
+  },
+  {
+   "description": "JSON data of registered webhook IDs",
+   "fieldname": "webhook_ids",
+   "fieldtype": "Long Text",
+   "hidden": 1,
+   "label": "Webhook IDs",
    "read_only": 1
   },
   {

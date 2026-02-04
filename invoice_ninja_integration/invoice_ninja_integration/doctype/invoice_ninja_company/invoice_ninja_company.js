@@ -85,6 +85,19 @@ frappe.ui.form.on('Invoice Ninja Company', {
 		if (!frm.is_new() && frm.doc.enabled) {
 			show_sync_statistics_dashboard(frm);
 		}
+
+		// Update webhook button labels
+		if (!frm.is_new()) {
+			update_webhook_button_labels(frm);
+		}
+	},
+
+	register_webhooks_btn: function(frm) {
+		register_webhooks(frm);
+	},
+
+	unregister_webhooks_btn: function(frm) {
+		unregister_webhooks(frm);
 	},
 
 	invoice_ninja_url: function(frm) {
@@ -517,3 +530,119 @@ frappe.ui.form.on('Invoice Ninja Currency Account Mapping', {
 		});
 	}
 });
+
+function update_webhook_button_labels(frm) {
+	// Update button labels based on webhook status
+	if (frm.doc.webhooks_registered) {
+		frm.fields_dict.register_webhooks_btn.$input.val(__('Refresh Webhooks'));
+		frm.fields_dict.unregister_webhooks_btn.$input.val(__('Unregister Webhooks'));
+	} else {
+		frm.fields_dict.register_webhooks_btn.$input.val(__('Register Webhooks'));
+		frm.fields_dict.unregister_webhooks_btn.$input.val(__('Unregister Webhooks'));
+	}
+}
+
+function register_webhooks(frm) {
+	if (!frm.doc.enabled || !frm.doc.api_token) {
+		frappe.msgprint({
+			title: __('Cannot Register Webhooks'),
+			indicator: 'red',
+			message: __('Please enable the company and set API token before registering webhooks.')
+		});
+		return;
+	}
+
+	const action = frm.doc.webhooks_registered ? 'refresh' : 'register';
+	const action_label = frm.doc.webhooks_registered ? __('Refresh') : __('Register');
+
+	frappe.confirm(
+		__('{0} webhooks for {1}? This will set up real-time sync for customers, invoices, quotes, items, and payments.',
+			[action_label, frm.doc.company_name]),
+		function() {
+			const method = frm.doc.webhooks_registered ?
+				'invoice_ninja_integration.webhook_manager.refresh_webhooks' :
+				'invoice_ninja_integration.webhook_manager.register_webhooks';
+
+			frappe.call({
+				method: method,
+				args: {
+					invoice_ninja_company: frm.doc.name
+				},
+				freeze: true,
+				freeze_message: __('Registering webhooks...'),
+				callback: function(r) {
+					if (r.message && r.message.success) {
+						frappe.msgprint({
+							title: __('Webhooks Registered'),
+							indicator: 'green',
+							message: __('Successfully registered {0} webhooks.<br><br><b>Webhook URL:</b><br>{1}',
+								[r.message.webhooks.length, r.message.webhook_url])
+						});
+						frm.reload_doc();
+					} else {
+						frappe.msgprint({
+							title: __('Registration Failed'),
+							indicator: 'red',
+							message: r.message.message || __('Unknown error')
+						});
+					}
+				},
+				error: function(r) {
+					frappe.msgprint({
+						title: __('Registration Failed'),
+						indicator: 'red',
+						message: __('Failed to register webhooks. Please check error logs.')
+					});
+				}
+			});
+		}
+	);
+}
+
+function unregister_webhooks(frm) {
+	if (!frm.doc.webhooks_registered) {
+		frappe.msgprint({
+			title: __('No Webhooks Registered'),
+			indicator: 'orange',
+			message: __('There are no webhooks registered for this company.')
+		});
+		return;
+	}
+
+	frappe.confirm(
+		__('Unregister all webhooks for {0}? This will disable real-time sync and you will need to rely on scheduled syncs.',
+			[frm.doc.company_name]),
+		function() {
+			frappe.call({
+				method: 'invoice_ninja_integration.webhook_manager.unregister_webhooks',
+				args: {
+					invoice_ninja_company: frm.doc.name
+				},
+				freeze: true,
+				freeze_message: __('Unregistering webhooks...'),
+				callback: function(r) {
+					if (r.message && r.message.success) {
+						frappe.show_alert({
+							message: __('Successfully unregistered {0} webhooks', [r.message.deleted_count]),
+							indicator: 'green'
+						});
+						frm.reload_doc();
+					} else {
+						frappe.msgprint({
+							title: __('Unregistration Failed'),
+							indicator: 'red',
+							message: r.message.message || __('Unknown error')
+						});
+					}
+				},
+				error: function(r) {
+					frappe.msgprint({
+						title: __('Unregistration Failed'),
+						indicator: 'red',
+						message: __('Failed to unregister webhooks. Please check error logs.')
+					});
+				}
+			});
+		}
+	);
+}

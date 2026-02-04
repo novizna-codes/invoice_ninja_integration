@@ -283,13 +283,26 @@ class FieldMapper:
 		# Get invoice currency
 		invoice_currency = FieldMapper.get_currency_code(in_invoice.get("currency_id")) or "USD"
 
+		# Parse dates
+		posting_date = FieldMapper.parse_date(in_invoice.get("date")) or nowdate()
+		due_date = FieldMapper.parse_date(in_invoice.get("due_date"))
+
+		# Ensure due_date is not before posting_date
+		if due_date and due_date < posting_date:
+			due_date = posting_date
+		elif not due_date:
+			# If no due_date provided, set it to posting_date to avoid validation issues
+			due_date = posting_date
+
 		# Basic invoice mapping
 		invoice_data = {
 			"doctype": "Sales Invoice",
 			"customer": customer_name,
 			"company": company_mapping.erpnext_company,  # Set the mapped company
-			"posting_date": FieldMapper.parse_date(in_invoice.get("date")) or nowdate(),
-			"due_date": FieldMapper.parse_date(in_invoice.get("due_date")),
+			"posting_date": posting_date,
+			"posting_time": get_datetime(now_datetime()).time(),
+			"set_posting_time": True,
+			"due_date": due_date,
 			"currency": invoice_currency,
 			"conversion_rate": flt(in_invoice.get("exchange_rate")) or 1.0,
 			"selling_price_list": "Standard Selling",
@@ -344,6 +357,9 @@ class FieldMapper:
 	def map_invoice_item(in_item, idx, invoice_ninja_company=None):
 		"""Map Invoice Ninja line item to ERPNext item - supports task-based items"""
 		try:
+			# Get default UOM for this company
+			default_uom = FieldMapper.get_default_product_uom(invoice_ninja_company)
+
 			# Check if this line item is task-based
 			task_id = in_item.get('task_id')
 
@@ -363,7 +379,7 @@ class FieldMapper:
 						"item_code": item_code,
 						"item_name": in_item.get("notes") or in_item.get("product_key") or "Unknown Item",
 						"item_group": "Products",
-						"stock_uom": "Nos",
+						"stock_uom": default_uom,
 						"is_stock_item": 0
 					})
 					item_doc.insert(ignore_permissions=True)
@@ -378,7 +394,7 @@ class FieldMapper:
 					"qty": flt(in_item.get("quantity")) or 1.0,
 					"rate": flt(in_item.get("cost")) or 0.0,
 					"amount": flt(in_item.get("quantity", 1)) * flt(in_item.get("cost", 0)),
-					"uom": "Nos",
+					"uom": default_uom,
 					"invoice_ninja_task_id": str(task_id),
 					"custom_is_task_based": 1,
 				}
@@ -393,7 +409,7 @@ class FieldMapper:
 						"item_code": item_code,
 						"item_name": in_item.get("notes") or in_item.get("product_key") or "Unknown Item",
 						"item_group": "Products",
-						"stock_uom": "Nos",
+						"stock_uom": default_uom,
 						"is_stock_item": 0
 					})
 					item_doc.insert(ignore_permissions=True)
@@ -408,7 +424,7 @@ class FieldMapper:
 					"qty": flt(in_item.get("quantity")) or 1.0,
 					"rate": flt(in_item.get("cost")) or 0.0,
 					"amount": flt(in_item.get("quantity", 1)) * flt(in_item.get("cost", 0)),
-					"uom": "Nos",
+					"uom": default_uom,
 				}
 
 			return item_data
@@ -469,16 +485,19 @@ class FieldMapper:
 		# Map line items
 		line_items = in_quote.get("line_items", [])
 		for idx, item in enumerate(line_items, 1):
-			item_data = FieldMapper.map_quotation_item(item, idx)
+			item_data = FieldMapper.map_quotation_item(item, idx, invoice_ninja_company)
 			if item_data:
 				quote_data["items"].append(item_data)
 
 		return quote_data
 
 	@staticmethod
-	def map_quotation_item(in_item, idx):
+	def map_quotation_item(in_item, idx, invoice_ninja_company=None):
 		"""Map Invoice Ninja quote item to ERPNext quotation item"""
 		try:
+			# Get default UOM for this company
+			default_uom = FieldMapper.get_default_product_uom(invoice_ninja_company)
+
 			item_code = FieldMapper.get_or_create_item(in_item)
 
 			item_data = {
@@ -490,7 +509,7 @@ class FieldMapper:
 				"qty": flt(in_item.get("quantity")) or 1.0,
 				"rate": flt(in_item.get("cost")) or 0.0,
 				"amount": flt(in_item.get("quantity", 1)) * flt(in_item.get("cost", 0)),
-				"uom": "Nos",
+				"uom": default_uom,
 			}
 
 			return item_data
@@ -503,12 +522,15 @@ class FieldMapper:
 	def map_product_from_invoice_ninja(in_product, invoice_ninja_company=None):
 		"""Map Invoice Ninja product to ERPNext item"""
 		try:
+			# Get default UOM for this company
+			default_uom = FieldMapper.get_default_product_uom(invoice_ninja_company)
+
 			item_data = {
 				"doctype": "Item",
 				"item_code": in_product.get("product_key") or f"IN-PROD-{in_product.get('id')}",
 				"item_name": in_product.get("notes") or in_product.get("product_key") or "Unknown Item",
 				"item_group": "Products",
-				"stock_uom": "Nos",
+				"stock_uom": default_uom,
 				"is_stock_item": 0,
 				"is_sales_item": 1,
 				"is_purchase_item": 0,
@@ -524,6 +546,32 @@ class FieldMapper:
 		except Exception as e:
 			frappe.log_error(f"Error mapping product {in_product.get('id')}: {e!s}", "Product Mapping Error")
 			return None
+
+	@staticmethod
+	def get_default_product_uom(invoice_ninja_company):
+		"""
+		Get default product UOM from company settings with validation
+
+		Args:
+			invoice_ninja_company: Invoice Ninja Company doc name
+
+		Returns:
+			str: Default UOM (defaults to "Nos" if not set or invalid)
+		"""
+		if not invoice_ninja_company:
+			return "Nos"
+
+		try:
+			company_doc = frappe.get_doc("Invoice Ninja Company", invoice_ninja_company)
+			default_uom = company_doc.default_product_uom
+
+			# Validate UOM exists in ERPNext
+			if default_uom and frappe.db.exists("UOM", default_uom):
+				return default_uom
+			else:
+				return "Nos"  # Fallback if UOM doesn't exist
+		except Exception:
+			return "Nos"  # Fallback on any error
 
 	@staticmethod
 	def get_or_create_item(in_item):
@@ -966,6 +1014,18 @@ class FieldMapper:
 			return None
 
 	@staticmethod
+	def parse_time(date_string):
+		"""Parse time string to ERPNext format"""
+		if not date_string:
+			return None
+		try:
+			if isinstance(date_string, str):
+				return get_datetime(date_string).time()
+			return date_string
+		except Exception:
+			return None
+
+	@staticmethod
 	def map_invoice_taxes(in_invoice, invoice_ninja_company=None):
 		"""Map Invoice Ninja taxes to ERPNext taxes"""
 		taxes = []
@@ -1178,6 +1238,9 @@ class FieldMapper:
 			in_product: Invoice Ninja product data
 			invoice_ninja_company: Invoice Ninja Company doc name for linking
 		"""
+		# Get default UOM for this company
+		default_uom = FieldMapper.get_default_product_uom(invoice_ninja_company)
+
 		# Get item group mapping based on Invoice Ninja tax category
 		# Use default item group for all items
 		default_item_group = "Products"
@@ -1215,7 +1278,7 @@ class FieldMapper:
 			"item_name": in_product.get("notes") or in_product.get("product_key"),
 			"description": in_product.get("notes") or in_product.get("product_key"),
 			"item_group": default_item_group,  # Use mapped group
-			"stock_uom": "Nos",
+			"stock_uom": default_uom,
 			"is_stock_item": 0,
 			"is_sales_item": 1,
 			"standard_rate": flt(in_product.get("price", 0)),

@@ -101,11 +101,14 @@ doc_events = {
 # ---------------
 
 scheduler_events = {
-    "hourly": [
-        "invoice_ninja_integration.tasks.sync_from_invoice_ninja"
-    ],
+    # Commented out hourly sync - replaced with webhook-based sync
+    # "hourly": [
+    #     "invoice_ninja_integration.tasks.sync_from_invoice_ninja"
+    # ],
     "daily": [
-        "invoice_ninja_integration.tasks.cleanup_sync_logs"
+        "invoice_ninja_integration.tasks.cleanup_sync_logs",
+        # Daily reconciliation sync to catch any missed webhook events
+        "invoice_ninja_integration.tasks.sync_from_invoice_ninja"
     ]
 }
 
