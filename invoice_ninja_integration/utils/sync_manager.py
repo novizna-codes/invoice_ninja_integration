@@ -4,6 +4,7 @@ from invoice_ninja_integration.utils.base_integration_service import BaseIntegra
 from invoice_ninja_integration.utils.company_mapper import CompanyMapper
 from invoice_ninja_integration.utils.field_mapper import FieldMapper
 from invoice_ninja_integration.utils.invoice_ninja_client import InvoiceNinjaClient
+from invoice_ninja_integration.utils.entity_mapper import EntityMapper
 
 
 class SyncManager(BaseIntegrationService):
@@ -18,45 +19,11 @@ class SyncManager(BaseIntegrationService):
 	# Settings DocType for this integration
 	SETTINGS_DOCTYPE = "Invoice Ninja Settings"
 
-	# Entity type configuration for generic fetch/sync operations
-	ENTITY_CONFIG = {
-		"Customer": {
-			"invoice_ninja_endpoint": "clients",
-			"invoice_ninja_method": "get_customers",
-			"erpnext_doctype": "Customer",
-			"include_params": "contacts,group_settings"
-		},
-		"Sales Invoice": {
-			"invoice_ninja_endpoint": "invoices",
-			"invoice_ninja_method": "get_invoices",
-			"erpnext_doctype": "Sales Invoice",
-			"include_params": "client.group_settings,project"
-		},
-		"Quotation": {
-			"invoice_ninja_endpoint": "quotes",
-			"invoice_ninja_method": "get_quotes",
-			"erpnext_doctype": "Quotation",
-			"include_params": "client,line_items"
-		},
-		"Item": {
-			"invoice_ninja_endpoint": "products",
-			"invoice_ninja_method": "get_products",
-			"erpnext_doctype": "Item",
-			"include_params": None
-		},
-		"Payment Entry": {
-			"invoice_ninja_endpoint": "payments",
-			"invoice_ninja_method": "get_payments",
-			"erpnext_doctype": "Payment Entry",
-			"include_params": "invoice,client"
-		},
-		"Invoice Ninja Task": {
-			"invoice_ninja_endpoint": "tasks",
-			"invoice_ninja_method": "get_tasks",
-			"erpnext_doctype": "Invoice Ninja Task",
-			"include_params": "client,project"
-		}
-	}
+	# Entity type configuration from centralized EntityMapper
+	@property
+	def ENTITY_CONFIG(self):
+		"""Get entity configuration from centralized EntityMapper"""
+		return EntityMapper.get_legacy_entity_config()
 
 	def _init_components(self):
 		"""Initialize Invoice Ninja specific components"""
@@ -573,7 +540,7 @@ class SyncManager(BaseIntegrationService):
 		"""Get a summary of current sync configuration"""
 		summary = {"enabled_syncs": [], "sync_directions": {}, "potential_issues": []}
 
-		doc_types = ["Customer", "Sales Invoice", "Quotation", "Item", "Payment Entry"]
+		doc_types = EntityMapper.get_all_erpnext_doctypes()
 
 		for doc_type in doc_types:
 			if self.is_sync_enabled(doc_type):
@@ -596,14 +563,14 @@ class SyncManager(BaseIntegrationService):
 		# Check if any sync is enabled but API not configured
 		if any(
 			self.is_sync_enabled(dt)
-			for dt in ["Customer", "Sales Invoice", "Quotation", "Item", "Payment Entry"]
+			for dt in EntityMapper.get_all_erpnext_doctypes()
 		):
 			if not self.settings.invoice_ninja_url or not self.settings.api_token:
 				issues.append("ERROR: Sync enabled but Invoice Ninja URL or API token not configured")
 
 		# Check webhook configuration for Invoice Ninja → ERPNext sync
 		needs_webhooks = False
-		for doc_type in ["Customer", "Sales Invoice", "Quotation", "Item", "Payment Entry"]:
+		for doc_type in EntityMapper.get_all_erpnext_doctypes():
 			if self.is_sync_enabled(doc_type) and self.should_sync_from_invoice_ninja(doc_type):
 				needs_webhooks = True
 				break
@@ -613,7 +580,7 @@ class SyncManager(BaseIntegrationService):
 
 		# Check for all bidirectional syncs (potential loop risk)
 		bidirectional_count = 0
-		for doc_type in ["Customer", "Sales Invoice", "Quotation", "Item", "Payment Entry"]:
+		for doc_type in EntityMapper.get_all_erpnext_doctypes():
 			if self.is_sync_enabled(doc_type) and self.get_sync_direction(doc_type) == "Bidirectional":
 				bidirectional_count += 1
 

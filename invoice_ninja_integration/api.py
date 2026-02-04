@@ -2,6 +2,7 @@ import frappe
 from frappe import _
 from .utils.invoice_ninja_client import InvoiceNinjaClient
 from .utils.field_mapper import FieldMapper
+from .utils.entity_mapper import EntityMapper
 import json
 
 
@@ -28,6 +29,27 @@ def get_client():
 		frappe.throw(_("Invoice Ninja integration is not properly configured"))
 
 	return InvoiceNinjaClient(settings.invoice_ninja_url, settings.get_password("api_token"))
+
+
+def safe_get_with_sync_hash(doctype, filters, fields=None):
+	"""Safely get document with sync hash field"""
+	# Default fields to include sync hash
+	if fields is None:
+		fields = ["name", "invoice_ninja_sync_hash"]
+	elif "invoice_ninja_sync_hash" not in fields:
+		fields.append("invoice_ninja_sync_hash")
+
+	try:
+		return frappe.db.get_value(doctype, filters, fields, as_dict=True)
+	except Exception as e:
+		# If sync hash field doesn't exist, try without it
+		if "invoice_ninja_sync_hash" in str(e):
+			fields = [f for f in fields if f != "invoice_ninja_sync_hash"]
+			result = frappe.db.get_value(doctype, filters, fields, as_dict=True)
+			if result:
+				result["invoice_ninja_sync_hash"] = None
+			return result
+		raise
 
 
 @frappe.whitelist()
@@ -156,12 +178,11 @@ def sync_customer_from_invoice_ninja(customer_data, invoice_ninja_company=None, 
 
 	customer_id = str(customer_data.get('id'))
 
-	# Check if customer already exists
-	existing = frappe.db.get_value(
+	# Check if customer already exists - with safe sync hash field handling
+	existing = safe_get_with_sync_hash(
 		"Customer",
 		{"invoice_ninja_id": customer_id},
-		["name", "invoice_ninja_sync_hash"],
-		as_dict=True
+		["name", "invoice_ninja_sync_hash"]
 	)
 
 	customer_doc_data, address_data, shipping_address_data, contact_data_list = FieldMapper.map_customer_from_invoice_ninja(customer_data, invoice_ninja_company)
@@ -267,6 +288,9 @@ def sync_invoice_from_invoice_ninja(invoice_data, invoice_ninja_company=None, fo
 
 	invoice_id = str(invoice_data.get('id'))
 
+	if invoice_data.get('is_deleted'):
+		return "deleted"
+
 	# Get currency
 	invoice_currency = FieldMapper.get_currency_code(invoice_data.get("currency_id")) or "USD"
 
@@ -306,13 +330,11 @@ def sync_invoice_from_invoice_ninja(invoice_data, invoice_ninja_company=None, fo
 		return "skipped"
 
 	# Check if invoice already exists
-	existing = frappe.db.get_value(
+	existing = safe_get_with_sync_hash(
 		"Sales Invoice",
 		{"invoice_ninja_id": invoice_id},
-		["name", "invoice_ninja_sync_hash"],
-		as_dict=True
+		["name", "invoice_ninja_sync_hash"]
 	)
-
 	invoice_doc_data = FieldMapper.map_invoice_from_invoice_ninja(invoice_data, invoice_ninja_company)
 	if not invoice_doc_data:
 		return "skipped"
@@ -391,11 +413,10 @@ def sync_quotation_from_invoice_ninja(quote_data, invoice_ninja_company=None, fo
 	quote_id = str(quote_data.get('id'))
 
 	# Check if quotation already exists
-	existing = frappe.db.get_value(
+	existing = safe_get_with_sync_hash(
 		"Quotation",
 		{"invoice_ninja_id": quote_id},
-		["name", "invoice_ninja_sync_hash"],
-		as_dict=True
+		["name", "invoice_ninja_sync_hash"]
 	)
 
 	quotation_doc_data = FieldMapper.map_quotation_from_invoice_ninja(quote_data, invoice_ninja_company)
@@ -446,21 +467,19 @@ def sync_item_from_invoice_ninja(product_data, invoice_ninja_company=None, force
 	product_id = str(product_data.get('id'))
 
 	# Check if item exists by invoice_ninja_id
-	existing = frappe.db.get_value(
+	existing = safe_get_with_sync_hash(
 		"Item",
 		{"invoice_ninja_id": product_id},
-		["name", "invoice_ninja_sync_hash"],
-		as_dict=True
+		["name", "invoice_ninja_sync_hash"]
 	)
 
 	if not existing:
 		# Also check by item_code for backwards compatibility
 		item_code = product_data.get("product_key") or f"IN-{product_id}"
-		existing = frappe.db.get_value(
+		existing = safe_get_with_sync_hash(
 			"Item",
 			{"item_code": item_code},
-			["name", "invoice_ninja_sync_hash"],
-			as_dict=True
+			["name", "invoice_ninja_sync_hash"]
 		)
 
 	# Map product data
@@ -508,11 +527,10 @@ def sync_payment_from_invoice_ninja(payment_data, invoice_ninja_company=None, fo
 	payment_id = str(payment_data.get('id'))
 
 	# Check if payment already exists
-	existing = frappe.db.get_value(
+	existing = safe_get_with_sync_hash(
 		"Payment Entry",
 		{"invoice_ninja_id": payment_id},
-		["name", "invoice_ninja_sync_hash"],
-		as_dict=True
+		["name", "invoice_ninja_sync_hash"]
 	)
 
 	payment_doc_data = FieldMapper.map_payment_from_invoice_ninja(payment_data, invoice_ninja_company)
@@ -995,7 +1013,7 @@ def sync_company_entities(invoice_ninja_company, entity_type, limit=100, force_f
 def sync_company_all_entities(invoice_ninja_company, entity_types=None, limit=100):
 	"""Sync multiple entity types for a single company"""
 	if not entity_types:
-		entity_types = ["Customer", "Sales Invoice", "Quotation", "Item", "Payment Entry"]
+		entity_types = EntityMapper.get_all_erpnext_doctypes()
 
 	if isinstance(entity_types, str):
 		import json

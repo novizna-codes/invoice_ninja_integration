@@ -49,7 +49,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Record Type",
-   "options": "Customer\nInvoice\nQuotation\nItem\nPayment\nFile",
+   "options": "Customer\nSales Invoice\nQuotation\nItem\nPayment Entry\nFile",
    "reqd": 1
   },
   {

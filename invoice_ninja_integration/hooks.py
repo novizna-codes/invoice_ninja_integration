@@ -123,7 +123,7 @@ add_to_apps_screen = [
 # ------------
 
 # before_install = "invoice_ninja_integration.install.before_install"
-# after_install = "invoice_ninja_integration.install.after_install"
+after_install = "invoice_ninja_integration.install.after_install"
 
 # Uninstallation
 # ------------

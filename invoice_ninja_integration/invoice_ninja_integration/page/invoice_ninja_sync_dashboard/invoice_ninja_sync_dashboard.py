@@ -142,12 +142,14 @@ def get_sync_configuration():
 def manual_sync(sync_type, sync_direction, record_id=None):
     """Trigger manual sync"""
     try:
-        # Validate inputs
-        valid_types = ['Customer', 'Invoice', 'Quote', 'Product', 'Payment']
+        from invoice_ninja_integration.utils.entity_mapper import EntityMapper
+        
+        # Validate inputs using centralized EntityMapper
+        is_valid, error_msg = EntityMapper.validate_entity_type(sync_type)
         valid_directions = ['Invoice Ninja to ERPNext', 'ERPNext to Invoice Ninja']
 
-        if sync_type not in valid_types:
-            return {"success": False, "error": "Invalid sync type"}
+        if not is_valid:
+            return {"success": False, "error": error_msg}
 
         if sync_direction not in valid_directions:
             return {"success": False, "error": "Invalid sync direction"}

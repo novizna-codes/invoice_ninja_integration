@@ -5,11 +5,17 @@ from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 from frappe.custom.doctype.property_setter.property_setter import make_property_setter
 
 
+def after_install():
+	"""Run after app installation"""
+	print("Running Invoice Ninja Integration post-install setup...")
+	# install_customizations()  # Load JSON customization files
+	print("Invoice Ninja Integration installation completed successfully!")
+
+
 def after_migrate():
 	"""Install customizations after migration"""
-	install_customizations()
-	setup_task_custom_fields()
-	add_sync_hash_fields()
+	pass
+	# install_customizations()  # Load JSON customization files
 
 
 def install_customizations():
@@ -83,128 +89,3 @@ def install_customization(customization_data):
 		)
 
 	print(f"Installed customization for {doctype}")
-
-
-def setup_task_custom_fields():
-	"""Create custom fields for task-based invoice line items"""
-
-	custom_fields = {
-		"Sales Invoice Item": [
-			{
-				"fieldname": "invoice_ninja_task_id",
-				"fieldtype": "Data",
-				"label": "Invoice Ninja Task ID",
-				"insert_after": "item_code",
-				"read_only": 1,
-				"hidden": 1,
-				"no_copy": 1
-			},
-			{
-				"fieldname": "custom_is_task_based",
-				"fieldtype": "Check",
-				"label": "Is Task Based",
-				"insert_after": "invoice_ninja_task_id",
-				"read_only": 1,
-				"default": "0",
-				"no_copy": 1
-			}
-		],
-		"Sales Invoice": [
-			{
-				"fieldname": "invoice_ninja_tasks",
-				"fieldtype": "Small Text",
-				"label": "Invoice Ninja Tasks",
-				"insert_after": "customer",
-				"read_only": 1,
-				"description": "Task IDs from Invoice Ninja that are billed in this invoice",
-				"no_copy": 1
-			}
-		]
-	}
-
-	create_custom_fields(custom_fields, update=True)
-	frappe.db.commit()
-	print("Invoice Ninja task custom fields installed successfully")
-
-
-def add_sync_hash_fields():
-	"""Add invoice_ninja_sync_hash field to all synced doctypes"""
-	doctypes = ["Customer", "Sales Invoice", "Quotation", "Item", "Payment Entry", "Invoice Ninja Task"]
-
-	for doctype in doctypes:
-		field_name = f"{doctype}-invoice_ninja_sync_hash"
-		if not frappe.db.exists("Custom Field", field_name):
-			try:
-				frappe.get_doc({
-					"doctype": "Custom Field",
-					"dt": doctype,
-					"fieldname": "invoice_ninja_sync_hash",
-					"fieldtype": "Data",
-					"label": "Invoice Ninja Sync Hash",
-					"hidden": 1,
-					"read_only": 1,
-					"no_copy": 1,
-					"print_hide": 1,
-					"report_hide": 1,
-					"length": 32,
-					"insert_after": "invoice_ninja_id"
-				}).insert(ignore_permissions=True)
-				print(f"Added sync hash field to {doctype}")
-			except Exception as e:
-				print(f"Error adding sync hash field to {doctype}: {str(e)}")
-
-	frappe.db.commit()
-	print("Invoice Ninja sync hash fields installed successfully")
-
-
-def uninstall_customizations():
-	"""Remove all Invoice Ninja custom fields"""
-	custom_fields_to_remove = [
-		# Customer fields
-		"Customer-invoice_ninja_id",
-		"Customer-invoice_ninja_sync_status",
-		"Customer-invoice_ninja_last_sync",
-
-		# Sales Invoice fields
-		"Sales Invoice-invoice_ninja_id",
-		"Sales Invoice-invoice_ninja_sync_status",
-		"Sales Invoice-invoice_ninja_last_sync",
-		"Sales Invoice-invoice_ninja_number",
-
-		# Quotation fields
-		"Quotation-invoice_ninja_id",
-		"Quotation-invoice_ninja_sync_status",
-		"Quotation-invoice_ninja_last_sync",
-		"Quotation-invoice_ninja_number",
-
-		# Item fields
-		"Item-invoice_ninja_id",
-		"Item-invoice_ninja_sync_status",
-		"Item-invoice_ninja_last_sync",
-
-		# Payment Entry fields
-		"Payment Entry-invoice_ninja_id",
-		"Payment Entry-invoice_ninja_sync_status",
-		"Payment Entry-invoice_ninja_last_sync",
-
-		# File fields
-		"File-invoice_ninja_id",
-		"File-invoice_ninja_sync_status",
-		"File-invoice_ninja_last_sync",
-
-		# Task-based invoice line item fields
-		"Sales Invoice Item-invoice_ninja_task_id",
-		"Sales Invoice Item-custom_is_task_based",
-		"Sales Invoice-invoice_ninja_tasks"
-	]
-
-	for field_name in custom_fields_to_remove:
-		try:
-			if frappe.db.exists("Custom Field", field_name):
-				frappe.delete_doc("Custom Field", field_name)
-				print(f"Removed custom field: {field_name}")
-		except Exception as e:
-			frappe.log_error(f"Error removing custom field {field_name}: {str(e)}", "Customization Removal Error")
-
-	frappe.db.commit()
-	print("Invoice Ninja customizations removed successfully")

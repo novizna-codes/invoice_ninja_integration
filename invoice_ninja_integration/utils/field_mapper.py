@@ -301,6 +301,8 @@ class FieldMapper:
 			"items": [],
 		}
 
+		print('invoice_data', invoice_data)
+
 		# Set receivable account based on currency mapping (ONLY for Sales Invoices)
 		receivable_account = FieldMapper.get_receivable_account_for_currency(
 			invoice_ninja_company,
