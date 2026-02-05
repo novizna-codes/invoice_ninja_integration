@@ -3,6 +3,7 @@
 
 import frappe
 from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
+from frappe.custom.doctype.property_setter.property_setter import make_property_setter
 
 
 def setup_custom_fields():
@@ -43,6 +44,53 @@ def setup_custom_fields():
 	}
 
 	create_custom_fields(custom_fields, update=True)
+	frappe.db.commit()
+
+
+def setup_property_setters():
+	"""Create property setters to increase item_name field length to 1000 characters"""
+
+	property_setters = [
+		{
+			"doctype": "Sales Invoice Item",
+			"fieldname": "item_name",
+			"property": "length",
+			"value": "1000",
+			"property_type": "Int"
+		},
+		{
+			"doctype": "Quotation Item",
+			"fieldname": "item_name",
+			"property": "length",
+			"value": "1000",
+			"property_type": "Int"
+		},
+		{
+			"doctype": "Item",
+			"fieldname": "item_name",
+			"property": "length",
+			"value": "1000",
+			"property_type": "Int"
+		}
+	]
+
+	for prop in property_setters:
+		try:
+			make_property_setter(
+				doctype=prop["doctype"],
+				fieldname=prop["fieldname"],
+				property=prop["property"],
+				value=prop["value"],
+				property_type=prop["property_type"],
+				validate_fields_for_doctype=False
+			)
+			print(f"Set {prop['property']} = {prop['value']} for {prop['doctype']}.{prop['fieldname']}")
+		except Exception as e:
+			frappe.log_error(
+				f"Error creating property setter for {prop['doctype']}.{prop['fieldname']}: {str(e)}",
+				"Property Setter Error"
+			)
+
 	frappe.db.commit()
 
 

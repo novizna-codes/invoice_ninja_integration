@@ -3,18 +3,20 @@ import os
 import json
 from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 from frappe.custom.doctype.property_setter.property_setter import make_property_setter
+from invoice_ninja_integration.custom_fields import setup_property_setters
 
 
 def after_install():
 	"""Run after app installation"""
 	print("Running Invoice Ninja Integration post-install setup...")
 	# install_customizations()  # Load JSON customization files
+	setup_property_setters()  # Increase item_name field length to 1000 chars
 	print("Invoice Ninja Integration installation completed successfully!")
 
 
 def after_migrate():
 	"""Install customizations after migration"""
-	pass
+	setup_property_setters()  # Ensure property setters are applied
 	# install_customizations()  # Load JSON customization files
 
 
