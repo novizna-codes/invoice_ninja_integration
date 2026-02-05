@@ -3,10 +3,77 @@ import re
 import frappe
 from frappe.utils import cint, flt, get_datetime, now_datetime, nowdate
 import json
+from erpnext.setup.utils import get_exchange_rate
 
 
 class FieldMapper:
 	"""Field mapping utility for Invoice Ninja to ERPNext conversion"""
+
+	@staticmethod
+	def get_conversion_rate_for_transaction(invoice_currency, company_currency, posting_date, in_exchange_rate=None):
+		"""
+		Get conversion rate with automatic API fetching if not found in Currency Exchange table
+
+		Args:
+			invoice_currency: Currency from Invoice Ninja invoice
+			company_currency: ERPNext company's currency
+			posting_date: Transaction posting date
+			in_exchange_rate: Exchange rate from Invoice Ninja (fallback)
+
+		Returns:
+			float: Conversion rate
+		"""
+		# If currencies are the same, no conversion needed
+		if invoice_currency == company_currency:
+			return 1.0
+
+		try:
+			# Use ERPNext's get_exchange_rate - it automatically:
+			# 1. Checks Currency Exchange table for existing rate on this date
+			# 2. Falls back to API (frankfurter.dev, etc.) if not found
+			# 3. Creates Currency Exchange record automatically
+			# 4. Respects Currency Exchange Settings configuration
+			conversion_rate = get_exchange_rate(
+				from_currency=invoice_currency,
+				to_currency=company_currency,
+				transaction_date=posting_date,
+				args=None
+			)
+
+			# If ERPNext returns a valid rate, use it
+			if conversion_rate and conversion_rate > 0:
+				frappe.logger().info(
+					f"Using exchange rate {conversion_rate} for {invoice_currency} to {company_currency} on {posting_date}"
+				)
+				return flt(conversion_rate)
+
+			# If ERPNext returns 0 or None, it means API is disabled or failed
+			# Fall back to Invoice Ninja's rate if provided
+			if in_exchange_rate and flt(in_exchange_rate) > 0:
+				frappe.logger().warning(
+					f"ERPNext exchange rate API unavailable. Using Invoice Ninja rate {in_exchange_rate} "
+					f"for {invoice_currency} to {company_currency} on {posting_date}"
+				)
+				return flt(in_exchange_rate)
+
+			# Last resort: use 1.0 but log warning
+			frappe.logger().error(
+				f"No exchange rate found for {invoice_currency} to {company_currency} on {posting_date}. "
+				"Defaulting to 1.0. Please create Currency Exchange record manually or enable API fetching."
+			)
+			return 1.0
+
+		except Exception as e:
+			# If any error occurs, fall back to Invoice Ninja's rate
+			frappe.log_error(
+				f"Error fetching exchange rate for {invoice_currency} to {company_currency}: {str(e)}",
+				"Exchange Rate Fetch Error"
+			)
+
+			if in_exchange_rate and flt(in_exchange_rate) > 0:
+				return flt(in_exchange_rate)
+
+			return 1.0
 
 	@staticmethod
 	def map_customer_from_invoice_ninja(in_customer, invoice_ninja_company=None):
@@ -294,6 +361,17 @@ class FieldMapper:
 			# If no due_date provided, set it to posting_date to avoid validation issues
 			due_date = posting_date
 
+		# Get company currency for conversion rate calculation
+		company_currency = frappe.get_cached_value("Company", company_mapping.erpnext_company, "default_currency")
+
+		# Get conversion rate with automatic API fetching if needed
+		conversion_rate = FieldMapper.get_conversion_rate_for_transaction(
+			invoice_currency=invoice_currency,
+			company_currency=company_currency,
+			posting_date=posting_date,
+			in_exchange_rate=in_invoice.get("exchange_rate")
+		)
+
 		# Basic invoice mapping
 		invoice_data = {
 			"doctype": "Sales Invoice",
@@ -304,7 +382,7 @@ class FieldMapper:
 			"set_posting_time": True,
 			"due_date": due_date,
 			"currency": invoice_currency,
-			"conversion_rate": flt(in_invoice.get("exchange_rate")) or 1.0,
+			"conversion_rate": conversion_rate,
 			"selling_price_list": "Standard Selling",
 			"invoice_ninja_id": str(in_invoice.get("id")),
 			"invoice_ninja_company": invoice_ninja_company,
@@ -465,14 +543,32 @@ class FieldMapper:
 		if not customer_name:
 			return None
 
+		# Get quote currency
+		quote_currency = FieldMapper.get_currency_code(in_quote.get("currency_id")) or "USD"
+
+		# Get transaction date
+		transaction_date = FieldMapper.parse_date(in_quote.get("date")) or nowdate()
+
+		# Get company currency for conversion rate calculation
+		company_currency = frappe.get_cached_value("Company", company_mapping.erpnext_company, "default_currency")
+
+		# Get conversion rate with automatic API fetching if needed
+		conversion_rate = FieldMapper.get_conversion_rate_for_transaction(
+			invoice_currency=quote_currency,
+			company_currency=company_currency,
+			posting_date=transaction_date,
+			in_exchange_rate=in_quote.get("exchange_rate")
+		)
+
 		quote_data = {
 			"doctype": "Quotation",
 			"party_name": customer_name,
 			"quotation_to": "Customer",
 			"company": company_mapping.erpnext_company,  # Set the mapped company
-			"transaction_date": FieldMapper.parse_date(in_quote.get("date")) or nowdate(),
+			"transaction_date": transaction_date,
 			"valid_till": FieldMapper.parse_date(in_quote.get("due_date")),
-			"currency": FieldMapper.get_currency_code(in_quote.get("currency_id")) or "USD",
+			"currency": quote_currency,
+			"conversion_rate": conversion_rate,
 			"selling_price_list": "Standard Selling",
 			"invoice_ninja_id": str(in_quote.get("id")),
 			"invoice_ninja_company": invoice_ninja_company,
