@@ -10,9 +10,51 @@ class FieldMapper:
 	"""Field mapping utility for Invoice Ninja to ERPNext conversion"""
 
 	@staticmethod
+	def get_exchange_rate_provider():
+		"""
+		Get the best available exchange rate provider
+
+		Looks for custom providers registered via 'currency_exchange_provider' hook,
+		falls back to ERPNext standard function
+
+		This allows other apps to provide enhanced exchange rate functionality
+		without hardcoding dependencies
+
+		Returns:
+			callable: Exchange rate function with signature:
+					  get_exchange_rate(from_currency, to_currency, transaction_date, args=None)
+		"""
+		try:
+			# Check if any app has registered a custom exchange rate provider
+			custom_providers = frappe.get_hooks("currency_exchange_provider")
+
+			if custom_providers and len(custom_providers) > 0:
+				# Use the first registered provider
+				provider_path = custom_providers[0]
+
+				# Try to import the custom provider
+				provider_func = frappe.get_attr(provider_path)
+
+				frappe.logger().debug(
+					f"Using custom exchange rate provider: {provider_path}"
+				)
+				return provider_func
+		except Exception as e:
+			frappe.logger().debug(
+				f"Custom exchange rate provider not available, using standard ERPNext: {str(e)}"
+			)
+
+		# Fall back to ERPNext standard
+		from erpnext.setup.utils import get_exchange_rate
+		return get_exchange_rate
+
+	@staticmethod
 	def get_conversion_rate_for_transaction(invoice_currency, company_currency, posting_date, in_exchange_rate=None):
 		"""
-		Get conversion rate with automatic API fetching if not found in Currency Exchange table
+		Get conversion rate using the best available exchange rate provider
+
+		This method uses a plugin system to support enhanced exchange rate providers.
+		Other apps can register custom providers via the 'currency_exchange_provider' hook.
 
 		Args:
 			invoice_currency: Currency from Invoice Ninja invoice
@@ -28,45 +70,46 @@ class FieldMapper:
 			return 1.0
 
 		try:
-			# Use ERPNext's get_exchange_rate - it automatically:
-			# 1. Checks Currency Exchange table for existing rate on this date
-			# 2. Falls back to API (frankfurter.dev, etc.) if not found
-			# 3. Creates Currency Exchange record automatically
-			# 4. Respects Currency Exchange Settings configuration
-			conversion_rate = get_exchange_rate(
+			# Get the best available exchange rate provider
+			# This respects custom providers registered via hooks
+			get_rate_func = FieldMapper.get_exchange_rate_provider()
+
+			# Call the provider function (could be custom or standard ERPNext)
+			conversion_rate = get_rate_func(
 				from_currency=invoice_currency,
 				to_currency=company_currency,
 				transaction_date=posting_date,
 				args=None
 			)
 
-			# If ERPNext returns a valid rate, use it
+			# If provider returns a valid rate, use it
 			if conversion_rate and conversion_rate > 0:
 				frappe.logger().info(
-					f"Using exchange rate {conversion_rate} for {invoice_currency} to {company_currency} on {posting_date}"
+					f"Exchange rate {conversion_rate} for "
+					f"{invoice_currency}→{company_currency} on {posting_date}"
 				)
 				return flt(conversion_rate)
 
-			# If ERPNext returns 0 or None, it means API is disabled or failed
-			# Fall back to Invoice Ninja's rate if provided
+			# If provider returns 0 or None, fall back to Invoice Ninja's rate
 			if in_exchange_rate and flt(in_exchange_rate) > 0:
 				frappe.logger().warning(
-					f"ERPNext exchange rate API unavailable. Using Invoice Ninja rate {in_exchange_rate} "
-					f"for {invoice_currency} to {company_currency} on {posting_date}"
+					f"Using Invoice Ninja rate {in_exchange_rate} for "
+					f"{invoice_currency}→{company_currency} on {posting_date}"
 				)
 				return flt(in_exchange_rate)
 
 			# Last resort: use 1.0 but log warning
 			frappe.logger().error(
-				f"No exchange rate found for {invoice_currency} to {company_currency} on {posting_date}. "
-				"Defaulting to 1.0. Please create Currency Exchange record manually or enable API fetching."
+				f"No exchange rate found for {invoice_currency}→{company_currency} "
+				f"on {posting_date}. Defaulting to 1.0."
 			)
 			return 1.0
 
 		except Exception as e:
 			# If any error occurs, fall back to Invoice Ninja's rate
 			frappe.log_error(
-				f"Error fetching exchange rate for {invoice_currency} to {company_currency}: {str(e)}",
+				f"Error fetching exchange rate for "
+				f"{invoice_currency}→{company_currency}: {str(e)}",
 				"Exchange Rate Fetch Error"
 			)
 
