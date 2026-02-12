@@ -69,54 +69,54 @@ class FieldMapper:
 		if invoice_currency == company_currency:
 			return 1.0
 
-		try:
-			# Get the best available exchange rate provider
-			# This respects custom providers registered via hooks
-			get_rate_func = FieldMapper.get_exchange_rate_provider()
+		# try:
+		# Get the best available exchange rate provider
+		# This respects custom providers registered via hooks
+		get_rate_func = FieldMapper.get_exchange_rate_provider()
 
-			# Call the provider function (could be custom or standard ERPNext)
-			conversion_rate = get_rate_func(
-				from_currency=invoice_currency,
-				to_currency=company_currency,
-				transaction_date=posting_date,
-				args=None
+		# Call the provider function (could be custom or standard ERPNext)
+		conversion_rate = get_rate_func(
+			from_currency=invoice_currency,
+			to_currency=company_currency,
+			transaction_date=posting_date.strftime("%Y-%m-%d"),
+			args=None
+		)
+
+		# If provider returns a valid rate, use it
+		if conversion_rate and conversion_rate > 0:
+			frappe.logger().info(
+				f"Exchange rate {conversion_rate} for "
+				f"{invoice_currency}→{company_currency} on {posting_date}"
 			)
+			return flt(conversion_rate)
 
-			# If provider returns a valid rate, use it
-			if conversion_rate and conversion_rate > 0:
-				frappe.logger().info(
-					f"Exchange rate {conversion_rate} for "
-					f"{invoice_currency}→{company_currency} on {posting_date}"
-				)
-				return flt(conversion_rate)
-
-			# If provider returns 0 or None, fall back to Invoice Ninja's rate
-			if in_exchange_rate and flt(in_exchange_rate) > 0:
-				frappe.logger().warning(
-					f"Using Invoice Ninja rate {in_exchange_rate} for "
-					f"{invoice_currency}→{company_currency} on {posting_date}"
-				)
-				return flt(in_exchange_rate)
-
-			# Last resort: use 1.0 but log warning
-			frappe.logger().error(
-				f"No exchange rate found for {invoice_currency}→{company_currency} "
-				f"on {posting_date}. Defaulting to 1.0."
+		# If provider returns 0 or None, fall back to Invoice Ninja's rate
+		if in_exchange_rate and flt(in_exchange_rate) > 0:
+			frappe.logger().warning(
+				f"Using Invoice Ninja rate {in_exchange_rate} for "
+				f"{invoice_currency}→{company_currency} on {posting_date}"
 			)
-			return 1.0
+			return flt(in_exchange_rate)
 
-		except Exception as e:
-			# If any error occurs, fall back to Invoice Ninja's rate
-			frappe.log_error(
-				f"Error fetching exchange rate for "
-				f"{invoice_currency}→{company_currency}: {str(e)}",
-				"Exchange Rate Fetch Error"
-			)
+		# Last resort: use 1.0 but log warning
+		frappe.logger().error(
+			f"No exchange rate found for {invoice_currency}→{company_currency} "
+			f"on {posting_date}. Defaulting to 1.0."
+		)
+		return 1.0
 
-			if in_exchange_rate and flt(in_exchange_rate) > 0:
-				return flt(in_exchange_rate)
+		# except Exception as e:
+		# 	# If any error occurs, fall back to Invoice Ninja's rate
+		# 	frappe.log_error(
+		# 		f"Error fetching exchange rate for "
+		# 		f"{invoice_currency}→{company_currency}: {str(e)}",
+		# 		"Exchange Rate Fetch Error"
+		# 	)
+		#
+		# 	if in_exchange_rate and flt(in_exchange_rate) > 0:
+		# 		return flt(in_exchange_rate)
 
-			return 1.0
+			# return 1.0
 
 	@staticmethod
 	def map_customer_from_invoice_ninja(in_customer, invoice_ninja_company=None):
@@ -434,8 +434,6 @@ class FieldMapper:
 			"status": FieldMapper.map_invoice_status(in_invoice.get("status_id")),
 			"items": [],
 		}
-
-		print('invoice_data', invoice_data)
 
 		# Set receivable account based on currency mapping (ONLY for Sales Invoices)
 		receivable_account = FieldMapper.get_receivable_account_for_currency(
