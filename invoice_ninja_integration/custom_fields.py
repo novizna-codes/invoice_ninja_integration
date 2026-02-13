@@ -2,49 +2,19 @@
 # For license information, please see license.txt
 
 import frappe
-from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 from frappe.custom.doctype.property_setter.property_setter import make_property_setter
 
 
 def setup_custom_fields():
-	"""Create custom fields for task-based invoice line items"""
+	"""
+	Custom fields are now managed via JSON files in:
+	- invoice_ninja_integration/custom/sales_invoice.json
+	- invoice_ninja_integration/custom/sales_invoice_item.json
 
-	custom_fields = {
-		"Sales Invoice Item": [
-			{
-				"fieldname": "invoice_ninja_task_id",
-				"fieldtype": "Data",
-				"label": "Invoice Ninja Task ID",
-				"insert_after": "item_code",
-				"read_only": 1,
-				"hidden": 1,
-				"no_copy": 1
-			},
-			{
-				"fieldname": "custom_is_task_based",
-				"fieldtype": "Check",
-				"label": "Is Task Based",
-				"insert_after": "invoice_ninja_task_id",
-				"read_only": 1,
-				"default": "0",
-				"no_copy": 1
-			}
-		],
-		"Sales Invoice": [
-			{
-				"fieldname": "invoice_ninja_tasks",
-				"fieldtype": "Small Text",
-				"label": "Invoice Ninja Tasks",
-				"insert_after": "customer",
-				"read_only": 1,
-				"description": "Task IDs from Invoice Ninja that are billed in this invoice",
-				"no_copy": 1
-			}
-		]
-	}
-
-	create_custom_fields(custom_fields, update=True)
-	frappe.db.commit()
+	This function is kept for backward compatibility but does nothing.
+	Fields are automatically synced from JSON files during migration.
+	"""
+	pass
 
 
 def setup_property_setters():

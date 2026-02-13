@@ -80,7 +80,7 @@ doc_events = {
         "on_update": "invoice_ninja_integration.sync_hooks.on_customer_save",
     },
     "Sales Invoice": {
-        "on_submit": "invoice_ninja_integration.sync_hooks.on_invoice_save",
+        "on_submit": "invoice_ninja_integration.sync_hooks.on_invoice_submit",
         "on_update_after_submit": "invoice_ninja_integration.sync_hooks.on_invoice_save",
     },
     "Quotation": {
@@ -108,7 +108,9 @@ scheduler_events = {
     "daily": [
         "invoice_ninja_integration.tasks.cleanup_sync_logs",
         # Daily reconciliation sync to catch any missed webhook events
-        "invoice_ninja_integration.tasks.sync_from_invoice_ninja"
+        "invoice_ninja_integration.tasks.sync_from_invoice_ninja",
+        # Check unpaid invoices for new payments
+        "invoice_ninja_integration.tasks.check_unpaid_invoices_for_payments"
     ]
 }
 

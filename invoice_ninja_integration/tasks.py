@@ -132,3 +132,77 @@ def _create_payment_entry_from_invoice_ninja(payment_data):
 
 	except Exception as e:
 		frappe.log_error(f"Error creating payment entry from Invoice Ninja: {str(e)}", "Payment Creation Error")
+
+
+def check_unpaid_invoices_for_payments():
+	"""
+	Daily task to check unpaid Invoice Ninja invoices for new payments
+
+	This task finds submitted invoices from Invoice Ninja that:
+	- Have outstanding amounts
+	- Haven't been checked in the last 24 hours (or never checked)
+	- And checks if payments are now available in Invoice Ninja
+	"""
+	try:
+		from frappe.utils import add_to_date
+
+		# Get invoices that need payment check
+		cutoff_time = add_to_date(now_datetime(), hours=-24)
+
+		invoices = frappe.db.sql("""
+			SELECT
+				name,
+				invoice_ninja_id,
+				invoice_ninja_company,
+				outstanding_amount
+			FROM `tabSales Invoice`
+			WHERE invoice_ninja_id IS NOT NULL
+			AND invoice_ninja_id != ''
+			AND invoice_ninja_company IS NOT NULL
+			AND invoice_ninja_company != ''
+			AND docstatus = 1
+			AND outstanding_amount > 0
+			AND (
+				invoice_ninja_last_payment_check IS NULL
+				OR invoice_ninja_last_payment_check < %s
+			)
+			ORDER BY modified DESC
+			LIMIT 100
+		""", (cutoff_time,), as_dict=True)
+
+		if not invoices:
+			frappe.logger().info("No unpaid invoices to check for payments")
+			return
+
+		checked_count = 0
+		synced_count = 0
+
+		for invoice in invoices:
+			try:
+				# Queue payment sync for this invoice
+				frappe.enqueue(
+					method='invoice_ninja_integration.api.sync_payments_for_invoice',
+					queue='default',
+					invoice_doc_name=invoice.name,
+					invoice_ninja_id=invoice.invoice_ninja_id,
+					invoice_ninja_company=invoice.invoice_ninja_company,
+					timeout=300,
+					is_async=True
+				)
+				checked_count += 1
+
+			except Exception as e:
+				frappe.log_error(
+					f"Error queuing payment check for invoice {invoice.name}: {str(e)}",
+					"Payment Check Queue Error"
+				)
+
+		frappe.logger().info(
+			f"Queued payment checks for {checked_count} unpaid invoices"
+		)
+
+	except Exception as e:
+		frappe.log_error(
+			f"Error in check_unpaid_invoices_for_payments: {str(e)}",
+			"Unpaid Invoice Payment Check Error"
+		)

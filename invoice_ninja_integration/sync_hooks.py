@@ -36,6 +36,38 @@ def on_invoice_save(doc, method):
             is_async=True
         )
 
+
+def on_invoice_submit(doc, method):
+    """
+    Handle Sales Invoice submission - sync payments for Invoice Ninja invoices
+
+    When an Invoice Ninja invoice is submitted in ERPNext, check if there are
+    any payments for it in Invoice Ninja and sync them.
+    """
+    # Only process Invoice Ninja invoices
+    if not hasattr(doc, 'invoice_ninja_id') or not doc.invoice_ninja_id:
+        return
+
+    # Only process if invoice has company reference
+    if not hasattr(doc, 'invoice_ninja_company') or not doc.invoice_ninja_company:
+        return
+
+    # Enqueue payment sync for this specific invoice
+    frappe.enqueue(
+        method='invoice_ninja_integration.api.sync_payments_for_invoice',
+        queue='default',
+        invoice_doc_name=doc.name,
+        invoice_ninja_id=doc.invoice_ninja_id,
+        invoice_ninja_company=doc.invoice_ninja_company,
+        timeout=300,
+        is_async=True
+    )
+
+    frappe.logger().info(
+        f"Queued payment sync for submitted invoice {doc.name} "
+        f"(IN ID: {doc.invoice_ninja_id})"
+    )
+
 def on_quotation_save(doc, method):
     """Handle Quotation save events for sync to Invoice Ninja"""
     if hasattr(doc, '_skip_invoice_ninja_sync'):

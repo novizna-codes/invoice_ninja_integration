@@ -765,6 +765,127 @@ def fetch_and_create_invoice_ninja_companies():
 		}
 
 
+def _sync_payments_for_paid_invoices(invoice_ninja_company, limit=100):
+	"""
+	Helper function to sync payments for paid invoices from Invoice Ninja.
+	Called when user clicks "Sync Payments" button from Invoice Ninja Company page.
+
+	Strategy:
+	1. Find submitted invoices with outstanding amounts
+	2. Check each in Invoice Ninja for paid status
+	3. Sync payments only for paid invoices
+	4. Track statistics
+
+	Args:
+		invoice_ninja_company: Invoice Ninja Company doc name
+		limit: Max number of invoices to check
+
+	Returns:
+		dict with success, statistics, message
+	"""
+	from datetime import datetime
+	start_time = datetime.now()
+
+	# Find submitted invoices from this company with outstanding amount
+	invoices = frappe.get_all(
+		"Sales Invoice",
+		filters={
+			"invoice_ninja_company": invoice_ninja_company,
+			"docstatus": 1,  # Submitted only
+			"outstanding_amount": [">", 0],  # Has outstanding amount
+			"invoice_ninja_id": ["!=", ""]  # Has Invoice Ninja ID
+		},
+		fields=["name", "invoice_ninja_id"],
+		limit=int(limit)
+	)
+
+	if not invoices:
+		return {
+			"success": True,
+			"message": "No unpaid invoices found for this company",
+			"synced_count": 0,
+			"statistics": {
+				"new_records": 0,
+				"updated_records": 0,
+				"unchanged_records": 0,
+				"skipped_records": 0,
+				"failed_records": 0
+			}
+		}
+
+	# Track statistics
+	sync_stats = {
+		"new_records": 0,  # Payments created
+		"updated_records": 0,  # Not used for payments
+		"unchanged_records": 0,  # Already synced
+		"skipped_records": 0,  # Not paid or no payments
+		"failed_records": 0
+	}
+
+	total_payments_synced = 0
+	processed_invoices = 0
+
+	# Process each invoice
+	for invoice in invoices:
+		try:
+			result = sync_payments_for_invoice(
+				invoice_doc_name=invoice.name,
+				invoice_ninja_id=invoice.invoice_ninja_id,
+				invoice_ninja_company=invoice_ninja_company
+			)
+
+			processed_invoices += 1
+
+			if result.get("success"):
+				payments_count = result.get("payments_synced", 0)
+				if payments_count > 0:
+					sync_stats["new_records"] += payments_count
+					total_payments_synced += payments_count
+				elif result.get("skipped"):
+					sync_stats["skipped_records"] += 1
+				elif result.get("payments_skipped", 0) > 0:
+					sync_stats["unchanged_records"] += result.get("payments_skipped", 0)
+			else:
+				sync_stats["failed_records"] += 1
+
+		except Exception as e:
+			sync_stats["failed_records"] += 1
+			frappe.log_error(
+				f"Error processing invoice {invoice.name}: {str(e)}",
+				"Payment Sync Error"
+			)
+
+	duration = (datetime.now() - start_time).total_seconds()
+
+	# Update company stats
+	if total_payments_synced > 0:
+		update_company_sync_stats(
+			invoice_ninja_company,
+			"Payment Entry",
+			total_payments_synced,
+			"Success" if sync_stats["failed_records"] == 0 else "Partial",
+			duration
+		)
+
+	# Build result message
+	msg = f"Checked {processed_invoices} invoices: "
+	msg += f"✓ {sync_stats['new_records']} payments synced"
+	if sync_stats['skipped_records'] > 0:
+		msg += f", ⚠ {sync_stats['skipped_records']} invoices not paid"
+	if sync_stats['unchanged_records'] > 0:
+		msg += f", ○ {sync_stats['unchanged_records']} already synced"
+	if sync_stats['failed_records'] > 0:
+		msg += f", ✗ {sync_stats['failed_records']} failed"
+
+	return {
+		"success": True,
+		"message": msg,
+		"synced_count": total_payments_synced,
+		"total_fetched": processed_invoices,
+		"statistics": sync_stats
+	}
+
+
 # Company-Specific Sync API Methods
 @frappe.whitelist()
 def sync_company_entities(invoice_ninja_company, entity_type, limit=100, force_full_sync=False):
@@ -799,6 +920,13 @@ def sync_company_entities(invoice_ninja_company, entity_type, limit=100, force_f
 
 	if not mapping:
 		return {"success": False, "message": "No company mapping found for this Invoice Ninja Company"}
+
+	# SPECIAL HANDLING FOR PAYMENT ENTRY - Use new paid invoice method
+	if entity_type == "Payment Entry":
+		return _sync_payments_for_paid_invoices(
+			invoice_ninja_company=invoice_ninja_company,
+			limit=limit
+		)
 
 	# Perform sync with pagination (fetch from Invoice Ninja)
 	all_entities = []
@@ -1956,6 +2084,231 @@ def fetch_entities(entity_type, scope="all_companies", company_identifier=None, 
 			"success": False,
 			"message": error_msg
 		}
+
+
+@frappe.whitelist()
+def sync_payments_for_invoice(invoice_doc_name, invoice_ninja_id, invoice_ninja_company):
+	"""
+	Sync payments for a specific submitted invoice from Invoice Ninja
+
+	Args:
+		invoice_doc_name: ERPNext Sales Invoice name
+		invoice_ninja_id: Invoice Ninja invoice ID
+		invoice_ninja_company: Invoice Ninja Company doc name
+
+	Returns:
+		dict with success status and details
+	"""
+	try:
+		# Get invoice document
+		invoice_doc = frappe.get_doc("Sales Invoice", invoice_doc_name)
+
+		# Validate invoice can have payments synced
+		can_sync, message = can_sync_payment_for_invoice(invoice_doc)
+		if not can_sync:
+			# Update tracking field
+			_update_payment_tracking(invoice_doc.name, "Not Eligible", skip_reason=message)
+			return {
+				"success": False,
+				"message": message,
+				"skipped": True,
+				"reason": "validation_failed"
+			}
+
+		# Initialize Invoice Ninja client
+		client = InvoiceNinjaClient(invoice_ninja_company=invoice_ninja_company)
+
+		# Fetch the invoice with payments included
+		# Invoice Ninja API doesn't support filtering payments by invoice_id
+		# So we fetch the invoice with payments included instead
+		response = client.get_invoice(invoice_ninja_id, include='payments')
+
+		if not response or response.get('error'):
+			_update_payment_tracking(invoice_doc.name, "Failed",
+				error_msg=f"API Error: {response.get('message', 'Unknown')}")
+			return {
+				"success": False,
+				"message": f"Failed to fetch invoice: {response.get('message', 'Unknown error')}"
+			}
+
+		# Extract invoice data and validate payment status
+		invoice_data = response.get('data', {})
+		status_id = invoice_data.get('status_id')
+		paid_to_date = float(invoice_data.get('paid_to_date', 0))
+
+		# Invoice Ninja status mapping
+		status_map = {
+			1: "Draft",
+			2: "Sent",
+			3: "Viewed",
+			4: "Approved/Paid",
+			5: "Cancelled"
+		}
+
+		# Check if invoice is paid in Invoice Ninja
+		# Status 4 = Paid/Partially Paid in Invoice Ninja
+		if status_id not in [4]:
+			status_name = status_map.get(status_id, f"Unknown ({status_id})")
+			_update_payment_tracking(invoice_doc.name, "No Payments",
+				skip_reason=f"Invoice Ninja status: {status_name}")
+			return {
+				"success": True,
+				"message": f"Invoice not paid in Invoice Ninja (Status: {status_name})",
+				"payments_synced": 0,
+				"skipped": True,
+				"reason": "not_paid_in_invoice_ninja"
+			}
+
+		# Check if any amount has been paid
+		if paid_to_date <= 0:
+			_update_payment_tracking(invoice_doc.name, "No Payments",
+				skip_reason="No payment amount received")
+			return {
+				"success": True,
+				"message": "No payment amount received in Invoice Ninja",
+				"payments_synced": 0,
+				"skipped": True,
+				"reason": "zero_payment_amount"
+			}
+
+		# Extract payments from the invoice data
+		payments = invoice_data.get('payments', [])
+		if not payments:
+			_update_payment_tracking(invoice_doc.name, "No Payments",
+				skip_reason=f"Paid ${paid_to_date} but no payment records found")
+			return {
+				"success": True,
+				"message": f"No payment records found (paid_to_date: {paid_to_date})",
+				"payments_synced": 0,
+				"skipped": True,
+				"reason": "no_payment_records"
+			}
+
+		# Sync each payment
+		synced_count = 0
+		failed_count = 0
+		skipped_count = 0
+
+		for payment_data in payments:
+			try:
+				result = sync_payment_from_invoice_ninja(
+					payment_data,
+					invoice_ninja_company=invoice_ninja_company,
+					force_full_sync=False
+				)
+
+				if result in ["created", "updated"]:
+					synced_count += 1
+				elif result == "unchanged":
+					skipped_count += 1  # Already synced
+				else:
+					failed_count += 1
+
+			except Exception as e:
+				frappe.log_error(
+					f"Error syncing payment {payment_data.get('id')}: {str(e)}",
+					"Payment Sync Error"
+				)
+				failed_count += 1
+
+		# Update tracking fields with results
+		status = "Synced" if synced_count > 0 else "No Payments"
+		_update_payment_tracking(
+			invoice_doc.name,
+			status,
+			payment_count=synced_count,
+			paid_amount=paid_to_date
+		)
+
+		return {
+			"success": True,
+			"message": f"Synced {synced_count} payments for invoice {invoice_doc.name}",
+			"payments_synced": synced_count,
+			"payments_failed": failed_count,
+			"payments_skipped": skipped_count,
+			"paid_to_date": paid_to_date
+		}
+
+	except Exception as e:
+		frappe.log_error(
+			f"Error in sync_payments_for_invoice for {invoice_doc_name}: {str(e)}",
+			"Payment Sync Error"
+		)
+		_update_payment_tracking(invoice_doc_name, "Failed", error_msg=str(e))
+		return {
+			"success": False,
+			"message": f"Error: {str(e)}"
+		}
+
+
+def _update_payment_tracking(invoice_name, status, payment_count=0, paid_amount: float=0,
+                             skip_reason=None, error_msg=None):
+	"""
+	Update payment tracking fields on Sales Invoice
+
+	Args:
+		invoice_name: Sales Invoice name
+		status: Payment sync status
+		payment_count: Number of payments synced
+		paid_amount: Amount paid in Invoice Ninja
+		skip_reason: Reason for skipping sync
+		error_msg: Error message if failed
+	"""
+	try:
+		from frappe.utils import now
+
+		update_dict = {
+			"invoice_ninja_payment_status": status,
+			"invoice_ninja_last_payment_check": now(),
+		}
+
+		if payment_count > 0:
+			update_dict["invoice_ninja_payments_synced"] = 1
+			update_dict["invoice_ninja_payment_sync_count"] = payment_count
+
+		if paid_amount > 0:
+			update_dict["invoice_ninja_paid_to_date"] = paid_amount
+
+		if skip_reason:
+			update_dict["invoice_ninja_payment_skip_reason"] = skip_reason
+
+		if error_msg:
+			update_dict["invoice_ninja_payment_error"] = error_msg[:140]  # Limit length
+
+		frappe.db.set_value("Sales Invoice", invoice_name, update_dict)
+		frappe.db.commit()
+
+	except Exception as e:
+		# Don't fail the main process if tracking update fails
+		frappe.log_error(
+			f"Failed to update payment tracking for {invoice_name}: {str(e)}",
+			"Payment Tracking Update Error"
+		)
+
+
+def can_sync_payment_for_invoice(invoice_doc):
+	"""
+	Determine if payments can be synced for this invoice
+
+	Args:
+		invoice_doc: Sales Invoice document
+
+	Returns:
+		tuple: (can_sync: bool, message: str)
+	"""
+	# Must be from Invoice Ninja
+	if not hasattr(invoice_doc, 'invoice_ninja_id') or not invoice_doc.invoice_ninja_id:
+		return False, "Not an Invoice Ninja invoice"
+
+	# Must be submitted
+	if invoice_doc.docstatus != 1:
+		return False, "Invoice not submitted"
+
+	# Must have outstanding amount (not fully paid)
+	if invoice_doc.outstanding_amount <= 0:
+		return False, "Invoice already paid in ERPNext"
+
+	return True, ""
 
 
 @frappe.whitelist()
