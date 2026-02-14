@@ -2146,7 +2146,7 @@ def sync_payments_for_invoice(invoice_doc_name, invoice_ninja_id, invoice_ninja_
 
 		# Extract invoice data and validate payment status
 		invoice_data = response.get('data', {})
-		status_id = invoice_data.get('status_id')
+		status_id = int(invoice_data.get('status_id', 0))  # Convert to int (API returns string)
 		paid_to_date = float(invoice_data.get('paid_to_date', 0))
 
 		# Invoice Ninja status mapping
