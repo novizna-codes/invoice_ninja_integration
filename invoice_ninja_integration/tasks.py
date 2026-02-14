@@ -127,7 +127,12 @@ def _create_payment_entry_from_invoice_ninja(payment_data):
 
 		doc = frappe.get_doc(payment_doc_data)
 		doc.insert()
-		doc.submit()  # Auto-submit payment entries
+
+		# Check if auto-submit is enabled
+		settings = frappe.get_single("Invoice Ninja Settings")
+		if settings.get("auto_submit_payments"):
+			doc.submit()
+
 		frappe.db.commit()
 
 	except Exception as e:

@@ -6,7 +6,7 @@
    "fieldname": "invoice_ninja_tab",
    "fieldtype": "Tab Break",
    "label": "Invoice Ninja",
-   "insert_after": "deductions_or_loss_section",
+   "insert_after": "reference",
    "hidden": 0
   },
   {

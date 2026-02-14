@@ -368,6 +368,11 @@ def sync_invoice_from_invoice_ninja(invoice_data, invoice_ninja_company=None, fo
 		doc = frappe.get_doc(invoice_doc_data)
 		doc.insert()
 
+		# Check if auto-submit is enabled
+		settings = frappe.get_single("Invoice Ninja Settings")
+		if settings.get("auto_submit_invoices"):
+			doc.submit()
+
 		# Store initial hash
 		SyncHashManager.store_hash(doc, new_hash)
 		sync_result = "created"
@@ -451,6 +456,11 @@ def sync_quotation_from_invoice_ninja(quote_data, invoice_ninja_company=None, fo
 		# Create new quotation
 		doc = frappe.get_doc(quotation_doc_data)
 		doc.insert()
+
+		# Check if auto-submit is enabled
+		settings = frappe.get_single("Invoice Ninja Settings")
+		if settings.get("auto_submit_quotations"):
+			doc.submit()
 
 		# Store initial hash
 		SyncHashManager.store_hash(doc, new_hash)
@@ -553,7 +563,11 @@ def sync_payment_from_invoice_ninja(payment_data, invoice_ninja_company=None, fo
 		# Create new payment entry
 		doc = frappe.get_doc(payment_doc_data)
 		doc.insert()
-		doc.submit()  # Auto-submit payment entries
+
+		# Check if auto-submit is enabled
+		settings = frappe.get_single("Invoice Ninja Settings")
+		if settings.get("auto_submit_payments"):
+			doc.submit()
 
 		# Store initial hash
 		SyncHashManager.store_hash(doc, new_hash)
@@ -767,14 +781,20 @@ def fetch_and_create_invoice_ninja_companies():
 
 def _sync_payments_for_paid_invoices(invoice_ninja_company, limit=100):
 	"""
-	Helper function to sync payments for paid invoices from Invoice Ninja.
-	Called when user clicks "Sync Payments" button from Invoice Ninja Company page.
+	UTILITY FUNCTION: Sync payments for unpaid invoices by checking each invoice individually.
 
-	Strategy:
-	1. Find submitted invoices with outstanding amounts
-	2. Check each in Invoice Ninja for paid status
-	3. Sync payments only for paid invoices
-	4. Track statistics
+	NOTE: This function is kept for specific use cases (like a "Check Unpaid Invoices" button)
+	but is NOT used in the standard entity sync flow. Payment Entry now follows the same
+	pattern as other entities (Customer, Invoice, etc.) in sync_company_entities().
+
+	This function's "smart" behavior:
+	1. Finds submitted invoices with outstanding amounts
+	2. Checks each in Invoice Ninja for paid status
+	3. Syncs payments only for paid invoices
+	4. Tracks statistics
+
+	For standard payment sync from Invoice Ninja API, use sync_company_entities()
+	with entity_type="Payment Entry" which fetches payments directly from Invoice Ninja.
 
 	Args:
 		invoice_ninja_company: Invoice Ninja Company doc name
@@ -920,13 +940,6 @@ def sync_company_entities(invoice_ninja_company, entity_type, limit=100, force_f
 
 	if not mapping:
 		return {"success": False, "message": "No company mapping found for this Invoice Ninja Company"}
-
-	# SPECIAL HANDLING FOR PAYMENT ENTRY - Use new paid invoice method
-	if entity_type == "Payment Entry":
-		return _sync_payments_for_paid_invoices(
-			invoice_ninja_company=invoice_ninja_company,
-			limit=limit
-		)
 
 	# Perform sync with pagination (fetch from Invoice Ninja)
 	all_entities = []

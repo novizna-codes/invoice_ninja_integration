@@ -1435,59 +1435,129 @@ class FieldMapper:
 	@staticmethod
 	def map_payment_from_invoice_ninja(in_payment, invoice_ninja_company=None):
 		"""
-		Map Invoice Ninja payment to ERPNext payment entry
+		Map Invoice Ninja payment to ERPNext payment entry with proper exchange rate handling
+		Supports multiple invoices via paymentables array
 
 		Args:
 			in_payment: Invoice Ninja payment data
 			invoice_ninja_company: Invoice Ninja Company doc name for linking
-		"""
-		# Get related invoice
-		invoice_id = in_payment.get("invoice_id")
-		if not invoice_id:
-			return None
 
-		invoice_name = frappe.db.get_value("Sales Invoice", {"invoice_ninja_id": str(invoice_id)}, "name")
-		if not invoice_name:
+		Returns:
+			dict: Payment Entry data with proper currency and exchange rate handling
+		"""
+		# Get paymentables array (can have multiple invoices)
+		paymentables = in_payment.get("paymentables", [])
+
+		if not paymentables:
 			frappe.log_error(
-				f"Invoice not found for Invoice Ninja payment: {in_payment.get('id')}",
-				"Payment Mapping Error",
+				f"Payment {in_payment.get('id')} has no paymentables array",
+				"Payment Mapping Error"
 			)
 			return None
 
-		invoice_doc = frappe.get_doc("Sales Invoice", invoice_name)
+		# Build reference list for each invoice
+		references = []
+		first_invoice = None
+
+		for paymentable in paymentables:
+			invoice_id = paymentable.get("invoice_id")
+			allocated_amount = flt(paymentable.get("amount", 0))
+
+			# Skip if no amount allocated
+			if allocated_amount <= 0:
+				continue
+
+			# Find ERPNext Sales Invoice
+			invoice_name = frappe.db.get_value(
+				"Sales Invoice",
+				{"invoice_ninja_id": str(invoice_id)},
+				"name"
+			)
+
+			if not invoice_name:
+				frappe.log_error(
+					f"Invoice {invoice_id} not found in ERPNext for payment {in_payment.get('id')}",
+					"Payment Mapping - Invoice Not Found"
+				)
+				continue  # Skip this invoice, continue with others
+
+			# Add to references
+			references.append({
+				"doctype": "Payment Entry Reference",
+				"reference_doctype": "Sales Invoice",
+				"reference_name": invoice_name,
+				"allocated_amount": allocated_amount
+			})
+
+			# Store first invoice for context (company, currency, etc.)
+			if first_invoice is None:
+				first_invoice = frappe.get_doc("Sales Invoice", invoice_name)
+
+		# If no valid invoices found, skip payment
+		if not references or first_invoice is None:
+			frappe.log_error(
+				f"No valid invoices found for payment {in_payment.get('id')}",
+				"Payment Mapping Error"
+			)
+			return None
+
+		# Use first invoice for company/currency context
+		company = first_invoice.company
+
+		# Validate exchange gain/loss account is configured
+		FieldMapper.validate_exchange_gain_loss_account(company)
+
+		# Get payment date and currency
+		payment_date = FieldMapper.parse_date(in_payment.get("date")) or nowdate()
+		payment_currency = FieldMapper.get_currency_code(in_payment.get("currency_id")) or first_invoice.currency
+		company_currency = frappe.get_cached_value("Company", company, "default_currency")
+
+		# Get exchange rate at PAYMENT date (not invoice date!)
+		# This is critical for accurate exchange gain/loss calculation
+		conversion_rate = FieldMapper.get_conversion_rate_for_transaction(
+			invoice_currency=payment_currency,
+			company_currency=company_currency,
+			posting_date=payment_date,
+			in_exchange_rate=in_payment.get("exchange_rate")
+		)
+
+		# Get proper accounts
+		# paid_from = First invoice's receivable account (preserves currency-specific account)
+		paid_from_account = first_invoice.debit_to
+
+		# paid_to = Company's default bank/cash account
+		paid_to_account = FieldMapper.get_default_bank_cash_account(company, account_type="Cash")
+
+		# Calculate total amounts from payment
+		total_paid_amount = flt(in_payment.get("amount", 0))
+		total_received_amount = total_paid_amount * conversion_rate
 
 		payment_data = {
 			"doctype": "Payment Entry",
 			"payment_type": "Receive",
 			"party_type": "Customer",
-			"party": invoice_doc.customer,
-			"posting_date": FieldMapper.parse_date(in_payment.get("date")) or nowdate(),
-			"paid_amount": flt(in_payment.get("amount", 0)),
-			"received_amount": flt(in_payment.get("amount", 0)),
-			"source_exchange_rate": 1.0,
-			"target_exchange_rate": 1.0,
-			"reference_no": in_payment.get("transaction_reference") or "",
-			"reference_date": FieldMapper.parse_date(in_payment.get("date")),
+			"party": first_invoice.customer,
+			"company": company,
+			"posting_date": payment_date,
+			"paid_from": paid_from_account,
+			"paid_to": paid_to_account,
+			"paid_from_account_currency": payment_currency,
+			"paid_to_account_currency": company_currency,
+			"paid_amount": total_paid_amount,
+			"received_amount": total_received_amount,
+			"source_exchange_rate": conversion_rate,
+			"target_exchange_rate": 1.0,  # Company currency to itself
+			"reference_no": in_payment.get("transaction_reference") or in_payment.get("number") or "",
+			"reference_date": payment_date,
 			"invoice_ninja_id": str(in_payment.get("id")),
 			"invoice_ninja_company": invoice_ninja_company,
 			"sync_status": "Synced",
-			"references": [
-				{
-					"doctype": "Payment Entry Reference",
-					"reference_doctype": "Sales Invoice",
-					"reference_name": invoice_name,
-					"allocated_amount": flt(in_payment.get("amount", 0)),
-				}
-			],
+			"references": references  # Multiple invoice references supported!
 		}
 
-		# Set default accounts (adjust based on your setup)
-		payment_data["paid_from"] = frappe.db.get_value(
-			"Account", {"account_type": "Receivable", "is_group": 0}, "name"
-		)
-		payment_data["paid_to"] = frappe.db.get_value(
-			"Account", {"account_type": "Cash", "is_group": 0}, "name"
-		)
+		# Add remarks if available
+		if in_payment.get("private_notes"):
+			payment_data["remarks"] = in_payment.get("private_notes")
 
 		return payment_data
 
@@ -1883,6 +1953,74 @@ class FieldMapper:
 	def map_quote_to_invoice_ninja(quotation_doc):
 		"""Map ERPNext quotation to Invoice Ninja quote format (alias for map_quotation_to_invoice_ninja)"""
 		return FieldMapper.map_quotation_to_invoice_ninja(quotation_doc)
+
+	@staticmethod
+	def validate_exchange_gain_loss_account(company):
+		"""
+		Validate that company has exchange gain/loss account configured
+
+		Args:
+			company: Company name
+
+		Raises:
+			frappe.ValidationError: If account not configured
+
+		Returns:
+			str: Exchange gain/loss account name
+		"""
+		account = frappe.get_cached_value("Company", company, "exchange_gain_loss_account")
+
+		if not account:
+			frappe.throw(
+				f"Please set Exchange Gain/Loss Account in Company {company}. "
+				"This is required for multi-currency payment synchronization from Invoice Ninja."
+			)
+
+		return account
+
+	@staticmethod
+	def get_default_bank_cash_account(company, account_type="Cash"):
+		"""
+		Get default bank or cash account for company
+
+		Args:
+			company: Company name
+			account_type: "Cash" or "Bank" (default: "Cash")
+
+		Returns:
+			str: Account name
+
+		Raises:
+			frappe.ValidationError: If no suitable account found
+		"""
+		# Try to get from Mode of Payment Account first
+		mode_of_payment_account = frappe.db.get_value(
+			"Mode of Payment Account",
+			{"company": company},
+			"default_account"
+		)
+
+		if mode_of_payment_account:
+			return mode_of_payment_account
+
+		# Fallback: Get any Cash/Bank account for company
+		account = frappe.db.get_value(
+			"Account",
+			{
+				"company": company,
+				"account_type": account_type,
+				"is_group": 0
+			},
+			"name"
+		)
+
+		if not account:
+			frappe.throw(
+				f"No {account_type} account found for company {company}. "
+				"Please configure a default payment account or create a Cash/Bank account."
+			)
+
+		return account
 
 	@staticmethod
 	def map_payment_to_invoice_ninja(payment_doc):
