@@ -1,12 +1,15 @@
 {
+ "app": "invoice_ninja_integration",
  "charts": [],
- "creation": "2025-07-26 10:00:00.000000",
+ "content": "[]",
+ "creation": "2025-07-26 10:00:00",
  "custom_blocks": [],
  "docstatus": 0,
  "doctype": "Workspace",
  "for_user": "",
  "hide_custom": 0,
  "icon": "integration",
+ "idx": 0,
  "is_hidden": 0,
  "label": "Invoice Ninja Integration",
  "links": [
@@ -45,16 +48,6 @@
    "link_count": 0,
    "onboard": 0,
    "type": "Card Break"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Sync Dashboard",
-   "link_count": 1,
-   "link_to": "/app/invoice-ninja-sync-dashboard",
-   "link_type": "Page",
-   "onboard": 1,
-   "type": "Link"
   },
   {
    "hidden": 0,
@@ -105,12 +98,11 @@
    "type": "Link"
   }
  ],
- "modified": "2025-07-26 10:00:00.000000",
+ "modified": "2026-02-17 14:40:10.952748",
  "modified_by": "Administrator",
  "module": "Invoice Ninja Integration",
  "name": "Invoice Ninja Integration",
  "number_cards": [],
- "onboarding_list": [],
  "owner": "Administrator",
  "parent_page": "",
  "public": 1,
@@ -133,13 +125,6 @@
    "type": "DocType"
   },
   {
-   "color": "Blue",
-   "doc_view": "",
-   "label": "Sync Dashboard",
-   "link_to": "/app/invoice-ninja-sync-dashboard",
-   "type": "Page"
-  },
-  {
    "color": "Orange",
    "doc_view": "List",
    "label": "Sync Logs",
@@ -147,5 +132,6 @@
    "type": "DocType"
   }
  ],
- "title": "Invoice Ninja Integration"
+ "title": "Invoice Ninja Integration",
+ "type": "Workspace"
 }
