@@ -31,7 +31,7 @@ A robust ERPNext app that provides seamless two-way synchronization between ERPN
    cd /path/to/your/site
 
    # Install the app
-   bench get-app https://github.com/your-org/invoice_ninja_integration
+   bench get-app https://github.com/novizna-codes/invoice_ninja_integration
    bench install-app invoice_ninja_integration
    ```
 
@@ -492,6 +492,385 @@ When syncing a Sales Invoice from Invoice Ninja:
 - Comprehensive error handling
 - Background sync tasks
 - Field mapping system
+
+---
+
+## Advanced Features
+
+### Smart Payment Sync
+
+The payment sync system intelligently syncs payments only for paid invoices with comprehensive tracking:
+
+#### Features
+- ✅ **Smart Validation**: Only syncs payments for invoices marked as "Paid" in Invoice Ninja
+- ✅ **Status Checking**: Validates Invoice Ninja status before attempting sync
+- ✅ **Deduplication**: Prevents duplicate payment entries
+- ✅ **Comprehensive Tracking**: 8 custom fields on Sales Invoice for payment audit trail
+- ✅ **Automatic Sync**: Triggers on invoice submission and daily checks for unpaid invoices
+- ✅ **Error Handling**: Detailed error messages and skip reasons
+
+#### Payment Tracking Fields
+
+| Field | Purpose |
+|-------|---------|
+| `invoice_ninja_payment_status` | Current sync status (Not Checked, No Payments, Synced, Failed, Not Eligible) |
+| `invoice_ninja_payments_synced` | Boolean flag indicating if payments were synced |
+| `invoice_ninja_last_payment_check` | Timestamp of last payment check |
+| `invoice_ninja_payment_sync_count` | Number of payments synced |
+| `invoice_ninja_paid_to_date` | Total amount paid in Invoice Ninja |
+| `invoice_ninja_payment_skip_reason` | Reason if sync was skipped |
+| `invoice_ninja_payment_error` | Error message if sync failed |
+
+#### Workflow
+
+1. **On Invoice Submit**: Automatically checks for payments after invoice is submitted in ERPNext
+2. **Daily Task**: Checks unpaid invoices (with outstanding amounts) for new payments
+3. **Status Validation**: Only syncs if Invoice Ninja status is "Paid" (status_id = 4)
+4. **Payment Creation**: Creates Payment Entry documents in ERPNext
+5. **Tracking Update**: Updates all tracking fields with results
+
+#### Manual Payment Sync
+
+```python
+# Sync payments for a specific invoice
+frappe.call({
+    method: 'invoice_ninja_integration.api.sync_payments_for_invoice',
+    args: {
+        invoice_doc_name: 'SINV-00001',
+        invoice_ninja_id: '123',
+        invoice_ninja_company: 'Company Name'
+    }
+})
+```
+
+📖 **Detailed documentation**: See [PAYMENT_SYNC_IMPLEMENTATION.md](docs/PAYMENT_SYNC_IMPLEMENTATION.md) (archived for reference)
+
+---
+
+### Webhook Integration with Security
+
+The webhook handler provides real-time sync with enterprise-grade security:
+
+#### Features
+- ✅ **HMAC SHA-256 Signature Verification**: Ensures webhooks are from Invoice Ninja
+- ✅ **Smart Company Detection**: 4-tier fallback strategy to identify the triggering company
+- ✅ **Incremental Sync**: Only updates records when data actually changes
+- ✅ **Comprehensive Logging**: All webhook events are logged for auditing
+- ✅ **Entity Support**: Customers, Invoices, Quotations, Items, Payments
+- ✅ **Graceful Error Handling**: Detailed logging with no service disruption
+
+#### Company Detection Strategy
+
+The webhook handler uses a 4-tier fallback to identify which Invoice Ninja Company triggered the webhook:
+
+1. **URL Parameter** (Most Reliable): `?company=Company-Name`
+2. **Existing Entity Lookup**: Check if entity exists and get its company
+3. **Company ID from Payload**: Use `company_id` field to lookup company
+4. **Single Company Fallback**: If only one enabled company exists, use it
+
+#### Setup Webhook in Invoice Ninja
+
+1. Go to **Settings > Webhooks** in Invoice Ninja
+2. Add webhook URL: `https://yoursite.com/api/method/invoice_ninja_integration.webhook_handler.handle_webhook`
+3. For multi-company: Add `?company=Company-Name` parameter
+4. Select events: `client.created`, `client.updated`, `invoice.created`, etc.
+5. (Optional) Set webhook secret for signature verification
+
+#### Configure Webhook Secret
+
+1. In ERPNext, go to **Invoice Ninja Settings**
+2. Set **Webhook Secret** (same as in Invoice Ninja)
+3. This enables HMAC SHA-256 signature verification for security
+
+📖 **Detailed documentation**: See [WEBHOOK_HANDLER_IMPLEMENTATION.md](docs/WEBHOOK_HANDLER_IMPLEMENTATION.md) (archived for reference)
+
+---
+
+### Auto-Submit Settings
+
+Control whether synced documents are automatically submitted or remain in draft state:
+
+#### Available Settings
+
+| Setting | Document Type | Default |
+|---------|--------------|---------|
+| `auto_submit_invoices` | Sales Invoice | Off |
+| `auto_submit_quotations` | Quotation | Off |
+| `auto_submit_payments` | Payment Entry | Off |
+
+#### Configuration
+
+1. Go to **Invoice Ninja Settings**
+2. Scroll to **Auto Submit Settings** section
+3. Enable checkboxes for document types you want to auto-submit
+4. Save settings
+
+#### Behavior
+
+**When OFF (Default)**:
+- Documents are created in **Draft** state
+- Allows manual review before submission
+- Safer for compliance and review workflows
+
+**When ON**:
+- Documents are automatically submitted after sync
+- Faster processing, no manual intervention
+- Suitable for trusted, automated workflows
+
+📖 **Detailed documentation**: See [AUTO_SUBMIT_SETTINGS_IMPLEMENTATION.md](docs/AUTO_SUBMIT_SETTINGS_IMPLEMENTATION.md) (archived for reference)
+
+---
+
+### Custom Exchange Rate Providers
+
+The app uses a **plugin system** for exchange rate providers, allowing you to use custom exchange rate sources without modifying the app code:
+
+#### Features
+- ✅ **Zero Hardcoded Dependencies**: No proprietary app references
+- ✅ **Open Source Friendly**: Works with standard ERPNext
+- ✅ **Extensible**: Any app can provide custom exchange rate logic
+- ✅ **Graceful Fallback**: Uses Invoice Ninja rates if no provider available
+
+#### How It Works
+
+**Default Behavior** (No Custom Provider):
+- Uses ERPNext's standard `get_exchange_rate()` function
+- Falls back to Invoice Ninja's provided exchange rate
+
+**With Custom Provider**:
+- Detects custom provider via hooks
+- Uses custom logic (e.g., regional APIs, cached rates, smart routing)
+- Falls back to Invoice Ninja rate if provider fails
+
+#### Creating a Custom Provider
+
+1. **In your custom app's `hooks.py`**:
+```python
+currency_exchange_provider = "your_app.exchange_rates.get_custom_exchange_rate"
+```
+
+2. **Implement the provider function**:
+```python
+def get_custom_exchange_rate(from_currency, to_currency, transaction_date, args=None):
+    """
+    Args:
+        from_currency: Source currency (e.g., "USD")
+        to_currency: Target currency (e.g., "PKR")
+        transaction_date: Date in YYYY-MM-DD format
+        args: Optional additional arguments
+
+    Returns:
+        Exchange rate as float (e.g., 279.65)
+    """
+    # Your custom logic here
+    return fetch_rate_from_your_source(from_currency, to_currency, transaction_date)
+```
+
+3. **The Invoice Ninja Integration app automatically detects and uses your provider**
+
+#### Example Use Cases
+
+- **Regional APIs**: Use State Bank rates for PKR, RBI rates for INR
+- **Smart Routing**: Route based on company context or currency pairs
+- **Caching**: Implement rate caching for better performance
+- **Multiple Fallbacks**: Try multiple sources before giving up
+
+📖 **Full documentation**: See [EXCHANGE_RATE_PROVIDERS.md](EXCHANGE_RATE_PROVIDERS.md) for detailed examples and implementation guide
+
+---
+
+### Task & Time Tracking
+
+Sync time tracking data from Invoice Ninja:
+
+#### Features
+- ✅ **Task Sync**: Sync tasks with duration and rates
+- ✅ **Invoice Linking**: Automatically link tasks to invoices
+- ✅ **Status Tracking**: Track billable/non-billable status
+- ✅ **Client Association**: Link tasks to customers
+
+#### Sync Tasks
+
+```python
+# Sync tasks for a company
+frappe.call({
+    method: 'invoice_ninja_integration.api.sync_tasks_from_invoice_ninja',
+    args: {
+        invoice_ninja_company_id: 'Company Name',
+        limit: 100
+    }
+})
+```
+
+---
+
+## Troubleshooting Guide
+
+### Connection Issues
+
+**Problem**: Connection test fails
+
+**Solutions**:
+1. Verify Invoice Ninja URL is correct (including https://)
+2. Check API token has proper permissions
+3. Ensure network connectivity (firewall, proxy)
+4. Test API token directly using curl:
+   ```bash
+   curl -H "X-Api-Token: YOUR_TOKEN" https://your-domain.invoiceninja.com/api/v1/clients
+   ```
+
+### Sync Issues
+
+**Problem**: Records not syncing
+
+**Solutions**:
+1. Check sync is enabled for the entity type in settings
+2. Verify company mapping is configured correctly
+3. Review Error Log for detailed error messages
+4. Check field validation (required fields must be populated)
+
+**Problem**: Duplicate records created
+
+**Solutions**:
+1. Ensure `invoice_ninja_id` field is properly set
+2. Check deduplication logic in sync functions
+3. Review sync logs for "unchanged" vs "created" actions
+
+### Currency Mapping Issues
+
+**Problem**: Invoices being skipped (currency mapping error)
+
+**Solutions**:
+1. Configure currency account mappings in Invoice Ninja Company
+2. Create currency-specific receivable accounts in Chart of Accounts
+3. Use "Setup Currency Mappings" button for auto-setup
+4. Check sync statistics for list of skipped invoices with currency info
+
+### Webhook Issues
+
+**Problem**: Webhooks not triggering
+
+**Solutions**:
+1. Verify webhook URL is correct in Invoice Ninja
+2. Check webhook is enabled for the correct events
+3. Review webhook logs in Invoice Ninja
+4. Test webhook using Invoice Ninja's "Test" button
+5. Check ERPNext Error Log for webhook handler errors
+
+**Problem**: Signature verification fails
+
+**Solutions**:
+1. Ensure webhook secret matches in both systems
+2. Check Invoice Ninja is sending signature in headers
+3. Temporarily disable verification for testing (remove webhook_secret)
+
+### Payment Sync Issues
+
+**Problem**: Payments not syncing for paid invoices
+
+**Solutions**:
+1. Check invoice status in Invoice Ninja (must be status 4 = Paid)
+2. Verify `paid_to_date` amount is > 0
+3. Check payment tracking fields on Sales Invoice
+4. Review `invoice_ninja_payment_skip_reason` field for details
+5. Ensure auto-submit is enabled if you want payments submitted
+
+### Performance Issues
+
+**Problem**: Sync taking too long
+
+**Solutions**:
+1. Use incremental sync (default behavior)
+2. Reduce sync limit per batch
+3. Enable incremental sync monitoring via statistics
+4. Check for network latency to Invoice Ninja
+5. Review unchanged record percentages in sync statistics
+
+---
+
+## API Reference
+
+### Core Sync Methods
+
+```python
+# Test connection for a specific company
+frappe.call('invoice_ninja_integration.api.test_invoice_ninja_company_connection',
+    {'invoice_ninja_company': 'Company Name'})
+
+# Sync entities for a company
+frappe.call('invoice_ninja_integration.api.sync_company_entities',
+    {
+        'invoice_ninja_company': 'Company Name',
+        'entity_type': 'Customer',  # Customer, Sales Invoice, Quotation, Item, Payment Entry
+        'limit': 100,
+        'force_full_sync': False  # Set to True to re-sync all records
+    })
+
+# Sync multiple entity types
+frappe.call('invoice_ninja_integration.api.sync_company_all_entities',
+    {
+        'invoice_ninja_company': 'Company Name',
+        'entity_types': ['Customer', 'Sales Invoice', 'Item'],
+        'limit': 100
+    })
+
+# Trigger manual sync for all companies
+frappe.call('invoice_ninja_integration.api.trigger_manual_sync',
+    {'sync_type': 'all'})  # all, customers, invoices, quotations, items, payments
+```
+
+### Company Management
+
+```python
+# Fetch and create Invoice Ninja Companies
+frappe.call('invoice_ninja_integration.api.fetch_and_create_invoice_ninja_companies')
+
+# Get company sync statistics
+frappe.call('invoice_ninja_integration.api.get_company_sync_statistics',
+    {
+        'invoice_ninja_company': 'Company Name',
+        'days': 7
+    })
+```
+
+### Payment Sync
+
+```python
+# Sync payments for a specific invoice
+frappe.call('invoice_ninja_integration.api.sync_payments_for_invoice',
+    {
+        'invoice_doc_name': 'SINV-00001',
+        'invoice_ninja_id': '123',
+        'invoice_ninja_company': 'Company Name'
+    })
+```
+
+### Currency Mapping
+
+```python
+# Auto-suggest currency mappings based on existing invoices
+frappe.call('invoice_ninja_integration.api.suggest_currency_mappings',
+    {'invoice_ninja_company': 'Company Name'})
+```
+
+### Dashboard & Monitoring
+
+```python
+# Get dashboard statistics
+frappe.call('invoice_ninja_integration.api.get_dashboard_stats')
+
+# Get recent activity
+frappe.call('invoice_ninja_integration.api.get_recent_activity', {'limit': 10})
+
+# Get sync logs
+frappe.call('invoice_ninja_integration.api.get_sync_logs', {'limit': 5})
+```
+
+---
+
+## License
+
+This project is licensed under the MIT License - see the [license.txt](license.txt) file for details.
 
 ---
 
