@@ -408,30 +408,31 @@ class InvoiceNinjaClient:
 				"format": "JSON"
 			}
 
-			try:
-				result = self.create_webhook(webhook_data)
-				if result and not result.get('error'):
-					webhook_id = result.get('data', {}).get('id')
-					if webhook_id:
-						created_webhooks.append({
-							'id': webhook_id,
-							'entity': entity_type,
-							'event': event_name,
-							'event_id': event_id
-						})
-						frappe.logger().info(
-							f"Created webhook for {entity_type}.{event_name} (ID: {webhook_id})"
-						)
-				else:
-					frappe.log_error(
-						f"Failed to create webhook for {entity_type}.{event_name}: {result}",
-						"Webhook Registration Error"
+			# try:
+			result = self.create_webhook(webhook_data)
+			print('Webhook creation result:', result)  # Debug log for webhook creation response
+			if result and not result.get('error'):
+				webhook_id = result.get('data', {}).get('id')
+				if webhook_id:
+					created_webhooks.append({
+						'id': webhook_id,
+						'entity': entity_type,
+						'event': event_name,
+						'event_id': event_id
+					})
+					frappe.logger().info(
+						f"Created webhook for {entity_type}.{event_name} (ID: {webhook_id})"
 					)
-			except Exception as e:
+			else:
 				frappe.log_error(
-					f"Exception creating webhook for {entity_type}.{event_name}: {str(e)}",
-					"Webhook Registration Exception"
+					f"Failed to create webhook for {entity_type}.{event_name}: {result}",
+					"Webhook Registration Error"
 				)
+			# except Exception as e:
+			# 	frappe.log_error(
+			# 		f"Exception creating webhook for {entity_type}.{event_name}: {str(e)}",
+			# 		"Webhook Registration Exception"
+			# 	)
 
 		return created_webhooks
 

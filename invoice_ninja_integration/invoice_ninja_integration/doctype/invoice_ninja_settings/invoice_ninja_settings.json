@@ -38,9 +38,6 @@
   "column_break_13",
   "sync_frequency",
   "last_sync_time",
-  "enable_webhooks",
-  "webhook_url",
-  "webhook_secret",
   "error_handling_section",
   "send_error_notifications",
   "notification_email",
@@ -245,23 +242,6 @@
    "fieldtype": "Datetime",
    "label": "Last Sync Time",
    "read_only": 1
-  },
-  {
-   "default": "1",
-   "fieldname": "enable_webhooks",
-   "fieldtype": "Check",
-   "label": "Enable Real-time Webhooks"
-  },
-  {
-   "fieldname": "webhook_url",
-   "fieldtype": "Data",
-   "label": "Webhook URL",
-   "read_only": 1
-  },
-  {
-   "fieldname": "webhook_secret",
-   "fieldtype": "Password",
-   "label": "Webhook Secret"
   },
   {
    "fieldname": "error_handling_section",

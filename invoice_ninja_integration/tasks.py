@@ -65,8 +65,17 @@ def sync_from_invoice_ninja():
 def cleanup_sync_logs():
 	"""Daily cleanup of old sync logs"""
 	try:
-		# Delete sync logs older than 30 days
-		cutoff_date = add_days(now_datetime(), -30)
+		settings = frappe.get_single("Invoice Ninja Settings")
+		cleanup_days = settings.cleanup_logs_after_days or 30
+
+		# Delete sync logs older than configured days
+		cutoff_date = add_days(now_datetime(), -cleanup_days)
+
+		# Delete old Invoice Ninja Sync Logs
+		frappe.db.sql("""
+			DELETE FROM `tabInvoice Ninja Sync Logs`
+			WHERE creation < %s
+		""", cutoff_date)
 
 		# Delete old error logs related to Invoice Ninja
 		frappe.db.sql("""
@@ -76,10 +85,17 @@ def cleanup_sync_logs():
 		""", cutoff_date)
 
 		frappe.db.commit()
-		frappe.log_error("Sync logs cleanup completed", "Invoice Ninja Cleanup")
+
+		frappe.logger().info(
+			f"Sync logs cleanup completed: "
+			f"Deleted logs older than {cleanup_days} days"
+		)
 
 	except Exception as e:
-		frappe.log_error(f"Sync logs cleanup failed: {str(e)}", "Invoice Ninja Cleanup Error")
+		frappe.log_error(
+			f"Sync logs cleanup failed: {str(e)}",
+			"Invoice Ninja Cleanup Error"
+		)
 
 
 def sync_payments_from_invoice_ninja():
@@ -94,23 +110,34 @@ def sync_payments_from_invoice_ninja():
 		synced_count = 0
 
 		while True:
-			payments = client.get_payments(page=page, per_page=100, include='invoice')
+			payments = client.get_payments(
+				page=page,
+				per_page=100,
+				include='invoice'
+			)
 			if not payments or not payments.get('data'):
 				break
 
 			for payment in payments['data']:
 				# Check if payment already exists
-				existing = frappe.db.exists("Payment Entry", {"invoice_ninja_id": str(payment.get('id'))})
+				existing = frappe.db.exists(
+					"Payment Entry",
+					{"invoice_ninja_id": str(payment.get('id'))}
+				)
 				if not existing:
 					_create_payment_entry_from_invoice_ninja(payment)
 					synced_count += 1
 
 			# Check if there are more pages
-			if not payments.get('meta', {}).get('pagination', {}).get('links', {}).get('next'):
+			pagination = payments.get('meta', {}).get('pagination', {})
+			if not pagination.get('links', {}).get('next'):
 				break
 			page += 1
 
-		frappe.log_error(f"Synced {synced_count} payments from Invoice Ninja", "Payment Sync Success")
+		frappe.log_error(
+			f"Synced {synced_count} payments from Invoice Ninja",
+			"Payment Sync Success"
+		)
 
 	except Exception as e:
 		frappe.log_error(f"Payment sync failed: {str(e)}", "Payment Sync Error")
@@ -136,7 +163,10 @@ def _create_payment_entry_from_invoice_ninja(payment_data):
 		frappe.db.commit()
 
 	except Exception as e:
-		frappe.log_error(f"Error creating payment entry from Invoice Ninja: {str(e)}", "Payment Creation Error")
+		frappe.log_error(
+			f"Error creating payment entry from Invoice Ninja: {str(e)}",
+			"Payment Creation Error"
+		)
 
 
 def check_unpaid_invoices_for_payments():
@@ -180,7 +210,6 @@ def check_unpaid_invoices_for_payments():
 			return
 
 		checked_count = 0
-		synced_count = 0
 
 		for invoice in invoices:
 			try:

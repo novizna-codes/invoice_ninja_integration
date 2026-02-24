@@ -17,13 +17,34 @@
   "default_product_uom",
   "test_connection",
   "connection_status",
-  "section_break_webhooks",
+  "webhooks_tab",
+  "webhook_configuration_section",
+  "auto_register_webhooks",
+  "webhook_secret",
+  "generate_secret_btn",
+  "column_break_webhook_config",
   "webhooks_registered",
+  "webhook_health_status",
+  "webhook_status_section",
   "webhook_url",
-  "column_break_webhooks",
+  "last_webhook_received",
+  "column_break_webhook_stats",
+  "webhook_events_count_24h",
+  "webhook_active_count",
+  "webhook_actions_section",
+  "regenerate_url_btn",
   "register_webhooks_btn",
   "unregister_webhooks_btn",
+  "test_webhook_btn",
+  "webhook_details_section",
   "webhook_ids",
+  "selective_webhook_section",
+  "enable_customer_webhooks",
+  "enable_invoice_webhooks",
+  "enable_quote_webhooks",
+  "column_break_selective",
+  "enable_product_webhooks",
+  "enable_payment_webhooks",
   "section_break_sync_info",
   "last_sync_time",
   "total_synced_records",
@@ -37,15 +58,15 @@
   "column_break_stats",
   "items_synced",
   "payments_synced",
- "mappings_tab",
- "customer_group_mapping_section",
- "customer_group_mappings",
- "tax_template_mapping_section",
- "tax_template_mappings",
- "default_tax_template",
- "currency_mapping_section",
- "currency_account_mappings"
-],
+  "mappings_tab",
+  "customer_group_mapping_section",
+  "customer_group_mappings",
+  "tax_template_mapping_section",
+  "tax_template_mappings",
+  "default_tax_template",
+  "currency_mapping_section",
+  "currency_account_mappings"
+ ],
  "fields": [
   {
    "fieldname": "company_id",
@@ -116,10 +137,36 @@
    "read_only": 1
   },
   {
-   "collapsible": 1,
-   "fieldname": "section_break_webhooks",
+   "fieldname": "webhooks_tab",
+   "fieldtype": "Tab Break",
+   "label": "Webhooks"
+  },
+  {
+   "fieldname": "webhook_configuration_section",
    "fieldtype": "Section Break",
    "label": "Webhook Configuration"
+  },
+  {
+   "default": "0",
+   "description": "If enabled, webhooks will be automatically registered in Invoice Ninja when this company is enabled",
+   "fieldname": "auto_register_webhooks",
+   "fieldtype": "Check",
+   "label": "Auto-register webhooks when enabled"
+  },
+  {
+   "description": "Secret for HMAC signature verification (auto-generated if empty)",
+   "fieldname": "webhook_secret",
+   "fieldtype": "Password",
+   "label": "Webhook Secret"
+  },
+  {
+   "fieldname": "generate_secret_btn",
+   "fieldtype": "Button",
+   "label": "Generate New Secret"
+  },
+  {
+   "fieldname": "column_break_webhook_config",
+   "fieldtype": "Column Break"
   },
   {
    "default": "0",
@@ -129,14 +176,58 @@
    "read_only": 1
   },
   {
-   "fieldname": "webhook_url",
-   "fieldtype": "Data",
-   "label": "Webhook URL",
+   "default": "Not Checked",
+   "fieldname": "webhook_health_status",
+   "fieldtype": "Select",
+   "label": "Webhook Health",
+   "options": "Not Checked\nHealthy\nDegraded\nFailed",
    "read_only": 1
   },
   {
-   "fieldname": "column_break_webhooks",
+   "fieldname": "webhook_status_section",
+   "fieldtype": "Section Break",
+   "label": "Webhook Status"
+  },
+  {
+   "description": "Webhook URL for Invoice Ninja to send events. Auto-generated or manually editable (e.g., for ngrok)",
+   "fieldname": "webhook_url",
+   "fieldtype": "Data",
+   "label": "Webhook URL",
+   "length": 1000
+  },
+  {
+   "fieldname": "regenerate_url_btn",
+   "fieldtype": "Button",
+   "label": "Regenerate URL"
+  },
+  {
+   "fieldname": "last_webhook_received",
+   "fieldtype": "Datetime",
+   "label": "Last Webhook Received",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_webhook_stats",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "webhook_events_count_24h",
+   "fieldtype": "Int",
+   "label": "Events (Last 24h)",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "webhook_active_count",
+   "fieldtype": "Int",
+   "label": "Active Webhooks",
+   "read_only": 1
+  },
+  {
+   "fieldname": "webhook_actions_section",
+   "fieldtype": "Section Break",
+   "label": "Actions"
   },
   {
    "fieldname": "register_webhooks_btn",
@@ -149,12 +240,63 @@
    "label": "Unregister Webhooks"
   },
   {
+   "fieldname": "test_webhook_btn",
+   "fieldtype": "Button",
+   "label": "Test Webhook"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "webhook_details_section",
+   "fieldtype": "Section Break",
+   "label": "Webhook Details"
+  },
+  {
    "description": "JSON data of registered webhook IDs",
    "fieldname": "webhook_ids",
    "fieldtype": "Long Text",
-   "hidden": 1,
-   "label": "Webhook IDs",
+   "label": "Registered Webhook IDs",
    "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "description": "Choose which entity types to register webhooks for (all are enabled by default)",
+   "fieldname": "selective_webhook_section",
+   "fieldtype": "Section Break",
+   "label": "Selective Webhook Registration"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_customer_webhooks",
+   "fieldtype": "Check",
+   "label": "Enable Customer Webhooks"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_invoice_webhooks",
+   "fieldtype": "Check",
+   "label": "Enable Invoice Webhooks"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_quote_webhooks",
+   "fieldtype": "Check",
+   "label": "Enable Quote Webhooks"
+  },
+  {
+   "fieldname": "column_break_selective",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_product_webhooks",
+   "fieldtype": "Check",
+   "label": "Enable Product Webhooks"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_payment_webhooks",
+   "fieldtype": "Check",
+   "label": "Enable Payment Webhooks"
   },
   {
    "fieldname": "section_break_sync_info",
@@ -249,11 +391,11 @@
    "label": "Customer Group Mappings"
   },
   {
+   "description": "Map ERPNext customer groups to Invoice Ninja customer groups for this company",
    "fieldname": "customer_group_mappings",
    "fieldtype": "Table",
    "label": "Customer Group Mappings",
-   "options": "Invoice Ninja Customer Group Mapping",
-   "description": "Map ERPNext customer groups to Invoice Ninja customer groups for this company"
+   "options": "Invoice Ninja Customer Group Mapping"
   },
   {
    "fieldname": "tax_template_mapping_section",
@@ -261,18 +403,18 @@
    "label": "Tax Template Mappings"
   },
   {
+   "description": "Map ERPNext tax templates to Invoice Ninja tax rates for this company",
    "fieldname": "tax_template_mappings",
    "fieldtype": "Table",
    "label": "Tax Template Mappings",
-   "options": "Invoice Ninja Tax Template Mapping",
-   "description": "Map ERPNext tax templates to Invoice Ninja tax rates for this company"
+   "options": "Invoice Ninja Tax Template Mapping"
   },
   {
+   "description": "Default tax template when no mapping found",
    "fieldname": "default_tax_template",
    "fieldtype": "Link",
    "label": "Default Tax Template",
-   "options": "Sales Taxes and Charges Template",
-   "description": "Default tax template when no mapping found"
+   "options": "Sales Taxes and Charges Template"
   },
   {
    "fieldname": "currency_mapping_section",
@@ -280,17 +422,17 @@
    "label": "Currency Account Mapping"
   },
   {
+   "description": "Map currencies to receivable accounts. The receivable account must support the specified currency in ERPNext.",
    "fieldname": "currency_account_mappings",
    "fieldtype": "Table",
    "label": "Currency Account Mappings",
-   "options": "Invoice Ninja Currency Account Mapping",
-   "description": "Map currencies to receivable accounts. The receivable account must support the specified currency in ERPNext."
+   "options": "Invoice Ninja Currency Account Mapping"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-01 01:23:18.213670",
+ "modified": "2026-02-20 21:59:09.218196",
  "modified_by": "Administrator",
  "module": "Invoice Ninja Integration",
  "name": "Invoice Ninja Company",

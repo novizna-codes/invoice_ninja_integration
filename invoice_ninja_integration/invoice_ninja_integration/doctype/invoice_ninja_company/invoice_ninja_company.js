@@ -100,6 +100,18 @@ frappe.ui.form.on('Invoice Ninja Company', {
 		unregister_webhooks(frm);
 	},
 
+	generate_secret_btn: function(frm) {
+		generate_webhook_secret(frm);
+	},
+
+	test_webhook_btn: function(frm) {
+		test_webhook(frm);
+	},
+
+	regenerate_url_btn: function(frm) {
+		regenerate_webhook_url(frm);
+	},
+
 	invoice_ninja_url: function(frm) {
 		// Validate URL format
 		if (frm.doc.invoice_ninja_url) {
@@ -238,6 +250,106 @@ function sync_entity(frm, entity_type) {
 							message: r.message.message || __('Unknown error')
 						});
 					}
+				}
+			});
+		}
+	);
+}
+
+function generate_webhook_secret(frm) {
+	frappe.confirm(
+		__('Generate a new webhook secret? This will overwrite any existing secret.<br><br>' +
+		   '<b>Note:</b> If webhooks are already registered, you may need to re-register them for the new secret to take effect.'),
+		function() {
+			frm.call({
+				method: 'generate_new_secret',
+				doc: frm.doc,
+				freeze: true,
+				freeze_message: __('Generating webhook secret...'),
+				callback: function(r) {
+					if (r.message && r.message.success) {
+						frappe.show_alert({
+							message: __('Webhook secret generated successfully!'),
+							indicator: 'green'
+						});
+						frm.reload_doc();
+					} else {
+						frappe.msgprint({
+							title: __('Generation Failed'),
+							indicator: 'red',
+							message: r.message.message || __('Unknown error')
+						});
+					}
+				},
+				error: function(r) {
+					frappe.msgprint({
+						title: __('Generation Failed'),
+						indicator: 'red',
+						message: __('Failed to generate webhook secret. Please check error logs.')
+					});
+				}
+			});
+		}
+	);
+}
+
+function test_webhook(frm) {
+	if (!frm.doc.webhooks_registered) {
+		frappe.msgprint({
+			title: __('No Webhooks Registered'),
+			indicator: 'orange',
+			message: __('You need to register webhooks before you can test them.')
+		});
+		return;
+	}
+
+	frappe.msgprint({
+		title: __('Webhook Testing'),
+		indicator: 'blue',
+		message: __('To test webhooks, perform an action in Invoice Ninja (e.g., create/update a customer, invoice, etc.) and check the sync logs.')
+	});
+
+	// Optionally, you could add logic to check webhook health
+	frm.call('check_webhook_health').then(r => {
+		if (r.message && r.message.success) {
+			frappe.show_alert({
+				message: __('Webhook health check: {0} ({1} active webhooks)',
+					[r.message.status, r.message.active_count]),
+				indicator: r.message.status === 'Healthy' ? 'green' : 'orange'
+			});
+		}
+	});
+}
+
+function regenerate_webhook_url(frm) {
+	frappe.confirm(
+		__('Regenerate webhook URL? This will update the URL based on your current site configuration.<br><br>' +
+		   '<b>Note:</b> If webhooks are already registered, you will need to re-register them with the new URL.'),
+		function() {
+			frm.call({
+				method: 'regenerate_webhook_url',
+				doc: frm.doc,
+				callback: function(r) {
+					if (r.message && r.message.success) {
+						frappe.show_alert({
+							message: __('Webhook URL regenerated successfully!'),
+							indicator: 'green'
+						});
+						frm.reload_doc();
+					} else {
+						frappe.msgprint({
+							title: __('Regeneration Failed'),
+							indicator: 'red',
+							message: r.message.message || __('Unknown error')
+						});
+					}
+				},
+				error: function(r) {
+					frappe.msgprint({
+						title: __('Regeneration Failed'),
+						indicator: 'red',
+						message: __('Failed to regenerate webhook URL. Please check error logs.')
+					});
 				}
 			});
 		}
