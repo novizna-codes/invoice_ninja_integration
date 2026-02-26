@@ -41,6 +41,31 @@ def register_webhooks(invoice_ninja_company):
 	# Build webhook target URL with company parameter
 	webhook_url = company_doc.webhook_url
 
+	# Get or generate webhook secret for authentication
+	if not company_doc.webhook_secret:
+		company_doc.generate_webhook_secret()
+		company_doc.save(ignore_permissions=True)
+
+	webhook_secret = company_doc.get_password('webhook_secret')
+
+	# Get API credentials from webhook user
+	authorization = None
+	if company_doc.webhook_user:
+		try:
+			user_doc = frappe.get_doc("User", company_doc.webhook_user)
+			if user_doc.api_key and user_doc.get_password('api_secret'):
+				api_key = user_doc.api_key
+				api_secret = user_doc.get_password('api_secret')
+				authorization = f"token {api_key}:{api_secret}"
+			else:
+				frappe.msgprint(
+					f"Warning: User '{company_doc.webhook_user}' does not have API credentials. "
+					f"Webhooks will only use X-API-SECRET authentication.",
+					indicator="orange"
+				)
+		except Exception as e:
+			frappe.log_error(f"Failed to get API credentials: {str(e)}", "Webhook Registration")
+
 	# Determine which entities to register based on settings
 	entities_to_register = []
 	entity_mapping = {
@@ -60,7 +85,9 @@ def register_webhooks(invoice_ninja_company):
 	for entity in entities_to_register:
 		webhooks = client.register_webhooks_for_entity(
 			entity,
-			webhook_url
+			webhook_url,
+			webhook_secret,  # Pass secret for source verification
+			authorization  # Pass API credentials for ERPNext auth
 		)
 		all_webhooks.extend(webhooks)
 

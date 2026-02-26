@@ -355,13 +355,15 @@ class InvoiceNinjaClient:
 		"""Delete webhook in Invoice Ninja"""
 		return self.delete(f'webhooks/{webhook_id}')
 
-	def register_webhooks_for_entity(self, entity_type, target_url):
+	def 	register_webhooks_for_entity(self, entity_type, target_url, webhook_secret=None, authorization=None):
 		"""
 		Register webhooks for all events of a specific entity type
 
 		Args:
 			entity_type: Type of entity (client, invoice, quote, product, payment)
 			target_url: Full URL to receive webhook notifications
+			webhook_secret: Secret key for source verification (optional but recommended)
+			authorization: Authorization header for ERPNext API authentication (optional)
 
 		Returns:
 			List of created webhook IDs
@@ -407,6 +409,27 @@ class InvoiceNinjaClient:
 				"event_id": event_id,
 				"format": "JSON"
 			}
+
+			# Build authentication headers
+			headers = []
+
+			# Add X-API-SECRET for source verification
+			if webhook_secret:
+				headers.append({
+					"key": "X-API-SECRET",
+					"value": webhook_secret
+				})
+
+			# Add Authorization for ERPNext API authentication
+			if authorization:
+				headers.append({
+					"key": "Authorization",
+					"value": authorization
+				})
+
+			# Add headers to webhook if any exist
+			if headers:
+				webhook_data["headers"] = headers
 
 			# try:
 			result = self.create_webhook(webhook_data)

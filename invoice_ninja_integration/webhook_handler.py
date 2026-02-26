@@ -11,11 +11,15 @@ import hashlib
 from frappe.utils import now
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def handle_webhook():
 	"""
 	Main webhook endpoint for Invoice Ninja
 	URL: /api/method/invoice_ninja_integration.webhook_handler.handle_webhook
+
+	Dual authentication:
+	1. ERPNext API key (via Authorization header) - handled by @frappe.whitelist()
+	2. X-API-SECRET (via custom header) - verified manually below
 
 	Supports company parameter: ?company=Company-Name
 	"""
@@ -32,38 +36,47 @@ def handle_webhook():
 		# Get company from URL parameter (if provided)
 		company_param = frappe.request.args.get('company')
 
-		# Verify webhook signature
-		settings = frappe.get_single("Invoice Ninja Settings")
-		if settings.webhook_secret:
-			signature = (
-				frappe.request.headers.get('X-Ninja-Signature') or
-				frappe.request.headers.get('X-Webhook-Signature')
-			)
+		# Identify Invoice Ninja Company first (needed for secret verification)
+		# We need to do a preliminary identification to get the company
+		entity_data = webhook_data.get('data', {})
+		entity_type = webhook_data.get('entity_type')
 
-			if signature:
-				raw_payload = frappe.request.get_data(as_text=True)
-				is_valid = verify_webhook_signature(
-					raw_payload, signature, settings.webhook_secret
-				)
-				if not is_valid:
+		# Get company for secret verification
+		invoice_ninja_company_prelim = identify_company(
+			entity_data, entity_type, company_param
+		)
+
+		# Verify X-API-SECRET header (company-specific)
+		if invoice_ninja_company_prelim:
+			company_doc = frappe.get_doc(
+				"Invoice Ninja Company", invoice_ninja_company_prelim
+			)
+			expected_secret = company_doc.get_password('webhook_secret')
+			received_secret = frappe.request.headers.get('X-API-SECRET')
+
+			if expected_secret and received_secret:
+				if received_secret != expected_secret:
 					frappe.log_error(
-						"Invalid webhook signature",
+						f"Unauthorized webhook attempt for {invoice_ninja_company_prelim}. "
+						f"Invalid X-API-SECRET header.",
 						"Webhook Security Error"
 					)
-					return error_response("Invalid webhook signature")
+					return error_response("Unauthorized webhook request")
+			elif expected_secret and not received_secret:
+				frappe.log_error(
+					f"Missing X-API-SECRET header for {invoice_ninja_company_prelim}",
+					"Webhook Security Warning"
+				)
+				return error_response("Missing authentication header")
 
 		# Extract event details
 		event_type = webhook_data.get('event_type')
-		entity_type = webhook_data.get('entity_type')
-		entity_data = webhook_data.get('data', {})
 
 		if not event_type or not entity_type:
 			return error_response("Missing event_type or entity_type")
 
-		# Identify Invoice Ninja Company
-		invoice_ninja_company = identify_company(
-			entity_data, entity_type, company_param
-		)
+		# Use the already identified company from security check
+		invoice_ninja_company = invoice_ninja_company_prelim
 
 		if not invoice_ninja_company:
 			error_msg = (

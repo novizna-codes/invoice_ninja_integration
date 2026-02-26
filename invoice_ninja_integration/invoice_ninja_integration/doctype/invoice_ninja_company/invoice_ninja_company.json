@@ -19,6 +19,10 @@
   "connection_status",
   "webhooks_tab",
   "webhook_configuration_section",
+  "webhook_user_help",
+  "webhook_user_section",
+  "webhook_user",
+  "column_break_webhook_user",
   "auto_register_webhooks",
   "webhook_secret",
   "generate_secret_btn",
@@ -145,6 +149,26 @@
    "fieldname": "webhook_configuration_section",
    "fieldtype": "Section Break",
    "label": "Webhook Configuration"
+  },
+  {
+   "fieldname": "webhook_user_help",
+   "fieldtype": "HTML",
+   "options": "<div class='form-message blue'><h5>📋 Webhook User Setup</h5><p><b>Create a dedicated user for webhook operations:</b></p><ol><li>Go to <b>Home → Users → User</b></li><li>Create user (e.g., invoice_ninja_webhook@company.com)</li><li>Enable <b>☑ Allow API Access</b></li><li>Assign roles: <b>Sales User, Accounts User, Stock User</b></li><li>Save and click <b>Generate Keys</b> in API Access section</li><li>Select this user below</li></ol><p class='text-muted'><b>⚠️ Important:</b> Use a dedicated service account for proper audit trails.</p></div>"
+  },
+  {
+   "fieldname": "webhook_user_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "webhook_user",
+   "fieldtype": "Link",
+   "label": "Webhook User",
+   "options": "User",
+   "description": "Dedicated user whose API credentials will authenticate incoming webhooks"
+  },
+  {
+   "fieldname": "column_break_webhook_user",
+   "fieldtype": "Column Break"
   },
   {
    "default": "0",
