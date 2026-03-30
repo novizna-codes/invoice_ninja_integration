@@ -8,7 +8,8 @@
  "field_order": [
   "group_id",
   "column_break_fyfm",
-  "group_name"
+  "group_name",
+  "invoice_ninja_company"
  ],
  "fields": [
   {
@@ -28,6 +29,13 @@
    "in_list_view": 1,
    "label": "Group Name",
    "reqd": 1
+  },
+  {
+   "fieldname": "invoice_ninja_company",
+   "fieldtype": "Link",
+   "label": "Invoice Ninja Company",
+   "options": "Invoice Ninja Company",
+   "in_list_view": 1
   }
  ],
  "grid_page_length": 50,

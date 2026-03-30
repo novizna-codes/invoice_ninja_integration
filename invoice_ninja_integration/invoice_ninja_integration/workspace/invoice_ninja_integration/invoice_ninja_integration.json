@@ -1,29 +1,47 @@
 {
+ "app": "invoice_ninja_integration",
  "charts": [],
- "creation": "2025-07-26 10:00:00.000000",
+ "content": "[{\"id\":\"header_main\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Reports & Masters</b></span>\",\"col\":12}},{\"id\":\"card_config\",\"type\":\"card\",\"data\":{\"card_name\":\"Configuration\",\"col\":4}},{\"id\":\"card_sync\",\"type\":\"card\",\"data\":{\"card_name\":\"Sync Management\",\"col\":4}},{\"id\":\"card_master\",\"type\":\"card\",\"data\":{\"card_name\":\"Master Data\",\"col\":4}}]",
+ "creation": "2025-07-26 10:00:00",
  "custom_blocks": [],
  "docstatus": 0,
  "doctype": "Workspace",
  "for_user": "",
  "hide_custom": 0,
  "icon": "integration",
+ "idx": 0,
  "is_hidden": 0,
  "label": "Invoice Ninja Integration",
  "links": [
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Settings",
-   "link_count": 0,
+   "label": "Configuration",
+   "link_count": 2,
+   "link_type": "DocType",
    "onboard": 0,
    "type": "Card Break"
   },
   {
+   "dependencies": "",
+   "description": "Global integration settings and API configuration",
    "hidden": 0,
    "is_query_report": 0,
    "label": "Invoice Ninja Settings",
-   "link_count": 1,
+   "link_count": 0,
    "link_to": "Invoice Ninja Settings",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "description": "Manage Invoice Ninja companies and their API credentials",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Invoice Ninja Company",
+   "link_count": 0,
+   "link_to": "Invoice Ninja Company",
    "link_type": "DocType",
    "onboard": 1,
    "type": "Link"
@@ -32,37 +50,74 @@
    "hidden": 0,
    "is_query_report": 0,
    "label": "Sync Management",
-   "link_count": 0,
+   "link_count": 1,
+   "link_type": "DocType",
    "onboard": 0,
    "type": "Card Break"
   },
   {
+   "dependencies": "",
+   "description": "View synchronization history, errors, and troubleshoot sync issues",
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Sync Dashboard",
-   "link_count": 1,
-   "link_to": "/app/invoice-ninja-sync-dashboard",
-   "link_type": "Page",
-   "onboard": 1,
+   "label": "Invoice Ninja Sync Logs",
+   "link_count": 0,
+   "link_to": "Invoice Ninja Sync Logs",
+   "link_type": "DocType",
+   "onboard": 0,
    "type": "Link"
   },
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Invoice Ninja Sync Logs",
-   "link_count": 1,
-   "link_to": "Invoice Ninja Sync Logs",
+   "label": "Master Data",
+   "link_count": 3,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "description": "Customer groups synced from Invoice Ninja for customer categorization",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Invoice Ninja Customer Group",
+   "link_count": 0,
+   "link_to": "Invoice Ninja Customer Group",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "description": "Tax rates synced from Invoice Ninja for automatic tax calculation",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Invoice Ninja Tax Rate",
+   "link_count": 0,
+   "link_to": "Invoice Ninja Tax Rate",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "description": "Time tracking tasks synced from Invoice Ninja for project management",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Invoice Ninja Task",
+   "link_count": 0,
+   "link_to": "Invoice Ninja Task",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
   }
  ],
- "modified": "2025-07-26 10:00:00.000000",
+ "modified": "2026-02-17 14:44:00.000000",
  "modified_by": "Administrator",
  "module": "Invoice Ninja Integration",
  "name": "Invoice Ninja Integration",
  "number_cards": [],
- "onboarding_list": [],
  "owner": "Administrator",
  "parent_page": "",
  "public": 1,
@@ -78,11 +133,11 @@
    "type": "DocType"
   },
   {
-   "color": "Blue",
-   "doc_view": "",
-   "label": "Sync Dashboard",
-   "link_to": "/app/invoice-ninja-sync-dashboard",
-   "type": "Page"
+   "color": "Purple",
+   "doc_view": "List",
+   "label": "Companies",
+   "link_to": "Invoice Ninja Company",
+   "type": "DocType"
   },
   {
    "color": "Orange",
@@ -90,7 +145,22 @@
    "label": "Sync Logs",
    "link_to": "Invoice Ninja Sync Logs",
    "type": "DocType"
+  },
+  {
+   "color": "Yellow",
+   "doc_view": "List",
+   "label": "Customer Groups",
+   "link_to": "Invoice Ninja Customer Group",
+   "type": "DocType"
+  },
+  {
+   "color": "Red",
+   "doc_view": "List",
+   "label": "Tax Rates",
+   "link_to": "Invoice Ninja Tax Rate",
+   "type": "DocType"
   }
  ],
- "title": "Invoice Ninja Integration"
+ "title": "Invoice Ninja Integration",
+ "type": "Workspace"
 }

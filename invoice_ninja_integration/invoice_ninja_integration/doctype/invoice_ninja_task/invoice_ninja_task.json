@@ -1,0 +1,227 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:IN-TASK-{#####}",
+ "creation": "2026-02-02 14:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "basic_information_section",
+  "task_id",
+  "task_number",
+  "description",
+  "invoice_ninja_company",
+  "column_break_basic",
+  "sync_status",
+  "last_synced",
+  "client_and_project_section",
+  "client_id",
+  "customer",
+  "column_break_client",
+  "project_id",
+  "project",
+  "time_tracking_section",
+  "duration",
+  "duration_hours",
+  "column_break_time",
+  "start_time",
+  "end_time",
+  "is_running",
+  "billing_section",
+  "rate",
+  "status",
+  "column_break_billing",
+  "is_invoiced",
+  "invoice_id",
+  "sales_invoice"
+ ],
+ "fields": [
+  {
+   "fieldname": "basic_information_section",
+   "fieldtype": "Section Break",
+   "label": "Basic Information"
+  },
+  {
+   "fieldname": "task_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Task ID",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "task_number",
+   "fieldtype": "Data",
+   "label": "Task Number"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Text",
+   "in_list_view": 1,
+   "label": "Description",
+   "reqd": 1
+  },
+  {
+   "fieldname": "invoice_ninja_company",
+   "fieldtype": "Link",
+   "label": "Invoice Ninja Company",
+   "options": "Invoice Ninja Company"
+  },
+  {
+   "fieldname": "column_break_basic",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Synced",
+   "fieldname": "sync_status",
+   "fieldtype": "Select",
+   "label": "Sync Status",
+   "options": "Synced\nPending\nError"
+  },
+  {
+   "fieldname": "last_synced",
+   "fieldtype": "Datetime",
+   "label": "Last Synced",
+   "read_only": 1
+  },
+  {
+   "fieldname": "client_and_project_section",
+   "fieldtype": "Section Break",
+   "label": "Client & Project"
+  },
+  {
+   "fieldname": "client_id",
+   "fieldtype": "Data",
+   "label": "Invoice Ninja Client ID"
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Customer",
+   "options": "Customer"
+  },
+  {
+   "fieldname": "column_break_client",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "project_id",
+   "fieldtype": "Data",
+   "label": "Invoice Ninja Project ID"
+  },
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "label": "Project",
+   "options": "Project"
+  },
+  {
+   "fieldname": "time_tracking_section",
+   "fieldtype": "Section Break",
+   "label": "Time Tracking"
+  },
+  {
+   "fieldname": "duration",
+   "fieldtype": "Duration",
+   "label": "Duration (seconds)"
+  },
+  {
+   "fieldname": "duration_hours",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Duration (hours)",
+   "precision": "2"
+  },
+  {
+   "fieldname": "column_break_time",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "start_time",
+   "fieldtype": "Datetime",
+   "label": "Start Time"
+  },
+  {
+   "fieldname": "end_time",
+   "fieldtype": "Datetime",
+   "label": "End Time"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_running",
+   "fieldtype": "Check",
+   "label": "Timer Running"
+  },
+  {
+   "fieldname": "billing_section",
+   "fieldtype": "Section Break",
+   "label": "Billing"
+  },
+  {
+   "fieldname": "rate",
+   "fieldtype": "Currency",
+   "label": "Hourly Rate",
+   "precision": "2"
+  },
+  {
+   "default": "Logged",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Logged\nInvoiced\nRunning"
+  },
+  {
+   "fieldname": "column_break_billing",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_invoiced",
+   "fieldtype": "Check",
+   "label": "Is Invoiced"
+  },
+  {
+   "fieldname": "invoice_id",
+   "fieldtype": "Data",
+   "label": "Invoice Ninja Invoice ID"
+  },
+  {
+   "fieldname": "sales_invoice",
+   "fieldtype": "Link",
+   "label": "Sales Invoice",
+   "options": "Sales Invoice"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-02-02 14:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Invoice Ninja Integration",
+ "name": "Invoice Ninja Task",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
+

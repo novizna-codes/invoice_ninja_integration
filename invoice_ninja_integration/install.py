@@ -3,11 +3,21 @@ import os
 import json
 from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 from frappe.custom.doctype.property_setter.property_setter import make_property_setter
+from invoice_ninja_integration.custom_fields import setup_property_setters
+
+
+def after_install():
+	"""Run after app installation"""
+	print("Running Invoice Ninja Integration post-install setup...")
+	# install_customizations()  # Load JSON customization files
+	setup_property_setters()  # Increase item_name field length to 1000 chars
+	print("Invoice Ninja Integration installation completed successfully!")
 
 
 def after_migrate():
 	"""Install customizations after migration"""
-	install_customizations()
+	setup_property_setters()  # Ensure property setters are applied
+	# install_customizations()  # Load JSON customization files
 
 
 def install_customizations():
@@ -81,51 +91,3 @@ def install_customization(customization_data):
 		)
 
 	print(f"Installed customization for {doctype}")
-
-
-def uninstall_customizations():
-	"""Remove all Invoice Ninja custom fields"""
-	custom_fields_to_remove = [
-		# Customer fields
-		"Customer-invoice_ninja_id",
-		"Customer-invoice_ninja_sync_status",
-		"Customer-invoice_ninja_last_sync",
-
-		# Sales Invoice fields
-		"Sales Invoice-invoice_ninja_id",
-		"Sales Invoice-invoice_ninja_sync_status",
-		"Sales Invoice-invoice_ninja_last_sync",
-		"Sales Invoice-invoice_ninja_number",
-
-		# Quotation fields
-		"Quotation-invoice_ninja_id",
-		"Quotation-invoice_ninja_sync_status",
-		"Quotation-invoice_ninja_last_sync",
-		"Quotation-invoice_ninja_number",
-
-		# Item fields
-		"Item-invoice_ninja_id",
-		"Item-invoice_ninja_sync_status",
-		"Item-invoice_ninja_last_sync",
-
-		# Payment Entry fields
-		"Payment Entry-invoice_ninja_id",
-		"Payment Entry-invoice_ninja_sync_status",
-		"Payment Entry-invoice_ninja_last_sync",
-
-		# File fields
-		"File-invoice_ninja_id",
-		"File-invoice_ninja_sync_status",
-		"File-invoice_ninja_last_sync"
-	]
-
-	for field_name in custom_fields_to_remove:
-		try:
-			if frappe.db.exists("Custom Field", field_name):
-				frappe.delete_doc("Custom Field", field_name)
-				print(f"Removed custom field: {field_name}")
-		except Exception as e:
-			frappe.log_error(f"Error removing custom field {field_name}: {str(e)}", "Customization Removal Error")
-
-	frappe.db.commit()
-	print("Invoice Ninja customizations removed successfully")

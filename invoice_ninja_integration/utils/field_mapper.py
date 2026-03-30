@@ -1,135 +1,259 @@
 import re
 
 import frappe
-from frappe.utils import cint, flt, get_datetime, nowdate
+from frappe.utils import cint, flt, get_datetime, now_datetime, nowdate
+import json
+from erpnext.setup.utils import get_exchange_rate
 
 
 class FieldMapper:
 	"""Field mapping utility for Invoice Ninja to ERPNext conversion"""
 
 	@staticmethod
-	def map_customer_from_invoice_ninja(in_customer):
-		"""Map Invoice Ninja customer to ERPNext customer"""
+	def get_exchange_rate_provider():
+		"""
+		Get the best available exchange rate provider
+
+		Looks for custom providers registered via 'currency_exchange_provider' hook,
+		falls back to ERPNext standard function
+
+		This allows other apps to provide enhanced exchange rate functionality
+		without hardcoding dependencies
+
+		Returns:
+			callable: Exchange rate function with signature:
+					  get_exchange_rate(from_currency, to_currency, transaction_date, args=None)
+		"""
 		try:
-			# Get company mapping for this customer (use settings.currency_id if no company_id)
+			# Check if any app has registered a custom exchange rate provider
+			custom_providers = frappe.get_hooks("currency_exchange_provider")
+
+			if custom_providers and len(custom_providers) > 0:
+				# Use the first registered provider
+				provider_path = custom_providers[0]
+
+				# Try to import the custom provider
+				provider_func = frappe.get_attr(provider_path)
+
+				frappe.logger().debug(
+					f"Using custom exchange rate provider: {provider_path}"
+				)
+				return provider_func
+		except Exception as e:
+			frappe.logger().debug(
+				f"Custom exchange rate provider not available, using standard ERPNext: {str(e)}"
+			)
+
+		# Fall back to ERPNext standard
+		from erpnext.setup.utils import get_exchange_rate
+		return get_exchange_rate
+
+	@staticmethod
+	def get_conversion_rate_for_transaction(invoice_currency, company_currency, posting_date, in_exchange_rate=None):
+		"""
+		Get conversion rate using the best available exchange rate provider
+
+		This method uses a plugin system to support enhanced exchange rate providers.
+		Other apps can register custom providers via the 'currency_exchange_provider' hook.
+
+		Args:
+			invoice_currency: Currency from Invoice Ninja invoice
+			company_currency: ERPNext company's currency
+			posting_date: Transaction posting date
+			in_exchange_rate: Exchange rate from Invoice Ninja (fallback)
+
+		Returns:
+			float: Conversion rate
+		"""
+		# If currencies are the same, no conversion needed
+		if invoice_currency == company_currency:
+			return 1.0
+
+		try:
+			# Get the best available exchange rate provider
+			# This respects custom providers registered via hooks
+			get_rate_func = FieldMapper.get_exchange_rate_provider()
+
+			# Call the provider function (could be custom or standard ERPNext)
+			conversion_rate = get_rate_func(
+				from_currency=invoice_currency,
+				to_currency=company_currency,
+				transaction_date=posting_date.strftime("%Y-%m-%d"),
+				args=None
+			)
+
+			# If provider returns a valid rate, use it
+			if conversion_rate and conversion_rate > 0:
+				frappe.logger().info(
+					f"Exchange rate {conversion_rate} for "
+					f"{invoice_currency}→{company_currency} on {posting_date}"
+				)
+				return flt(conversion_rate)
+
+			# If provider returns 0 or None, fall back to Invoice Ninja's rate
+			if in_exchange_rate and flt(in_exchange_rate) > 0:
+				frappe.logger().warning(
+					f"Using Invoice Ninja rate {in_exchange_rate} for "
+					f"{invoice_currency}→{company_currency} on {posting_date}"
+				)
+				return flt(in_exchange_rate)
+
+			# Last resort: use 1.0 but log warning
+			frappe.logger().error(
+				f"No exchange rate found for {invoice_currency}→{company_currency} "
+				f"on {posting_date}. Defaulting to 1.0."
+			)
+			return 1.0
+
+		except Exception as e:
+			# If any error occurs, fall back to Invoice Ninja's rate
+			frappe.log_error(
+				f"Error fetching exchange rate for "
+				f"{invoice_currency}→{company_currency}: {str(e)}",
+				"Exchange Rate Fetch Error"
+			)
+
+			if in_exchange_rate and flt(in_exchange_rate) > 0:
+				return flt(in_exchange_rate)
+
+			return 1.0
+
+	@staticmethod
+	def map_customer_from_invoice_ninja(in_customer, invoice_ninja_company=None):
+		"""
+		Map Invoice Ninja customer to ERPNext customer
+
+		Args:
+			in_customer: Invoice Ninja customer data
+			invoice_ninja_company: Invoice Ninja Company doc name for linking
+		"""
+		# Get company mapping - use Invoice Ninja Company from sync context
+		if invoice_ninja_company:
+			company_mapping = FieldMapper.get_company_mapping_by_invoice_ninja_company_doc(
+				invoice_ninja_company
+			)
+		else:
+			# Fallback for legacy sync (shouldn't happen in new flow)
 			company_mapping = FieldMapper.get_company_mapping(
 				invoice_ninja_company_id=in_customer.get("company_id")
 			)
 
-			if not company_mapping:
-				frappe.log_error(
-					f"No company mapping found for Invoice Ninja customer ID: {in_customer.get('id')}",
-					"Customer Mapping Error",
-				)
-				return None, None, None, None
-
-			# Get customer group mapping based on Invoice Ninja customer group
-			customer_group_mapping = None
-			default_customer_group = "Commercial"  # Default fallback
-
-			# Check if customer has a group setting from Invoice Ninja
-			if in_customer.get("group_settings_id"):
-				customer_group_mapping = FieldMapper.get_customer_group_mapping(
-					invoice_ninja_customer_group_id=in_customer.get("group_settings_id")
-				)
-
-			# If no specific mapping found, try to get default mapping
-			if not customer_group_mapping:
-				customer_group_mapping = FieldMapper.get_customer_group_mapping()
-
-			# Use mapped customer group or fallback to default
-			if customer_group_mapping:
-				default_customer_group = customer_group_mapping.customer_group
-
-			# Determine customer type based on classification or name
-			customer_type = "Company"
-			if in_customer.get("classification"):
-				customer_type = (
-					"Company" if in_customer.get("classification").lower() == "company" else "Individual"
-				)
-			elif not in_customer.get("name") or len(in_customer.get("name", "").split()) <= 2:
-				customer_type = "Individual"
-
-			# Get primary contact for email/phone
-			primary_contact = None
-			contacts = in_customer.get("contacts", [])
-			if contacts:
-				primary_contact = next((c for c in contacts if c.get("is_primary")), contacts[0])
-
-			# Get currency from settings if available
-			currency_code = "USD"  # Default
-			settings = in_customer.get("settings", {})
-			if settings.get("currency_id"):
-				currency_code = FieldMapper.get_currency_code(settings.get("currency_id"))
-
-			# Basic customer mapping
-			customer_data = {
-				"doctype": "Customer",
-				"customer_name": in_customer.get("display_name")
-				or in_customer.get("name")
-				or f"Customer {in_customer.get('id')}",
-				"customer_type": customer_type,
-				"customer_group": default_customer_group,
-				"territory": "All Territories",  # Default territory
-				"invoice_ninja_id": str(in_customer.get("id")),
-				"invoice_ninja_sync_status": "Synced",
-				"company": company_mapping.erpnext_company,  # Set the mapped company
-				"default_currency": currency_code,
-			}
-
-			# Contact information from primary contact
-			if primary_contact:
-				if primary_contact.get("email"):
-					customer_data["email_id"] = primary_contact.get("email")
-				if primary_contact.get("phone"):
-					customer_data["mobile_no"] = primary_contact.get("phone")
-
-			# Website and other details
-			if in_customer.get("website"):
-				customer_data["website"] = in_customer.get("website")
-
-			# Tax information
-			if in_customer.get("vat_number"):
-				customer_data["tax_id"] = in_customer.get("vat_number")
-			elif in_customer.get("id_number"):
-				customer_data["tax_id"] = in_customer.get("id_number")
-
-			# Additional fields
-			if in_customer.get("public_notes"):
-				customer_data["customer_details"] = in_customer.get("public_notes")
-			elif in_customer.get("private_notes"):
-				customer_data["customer_details"] = in_customer.get("private_notes")
-
-			# Set credit limit if balance information available
-			if in_customer.get("credit_balance"):
-				customer_data["credit_limit"] = flt(in_customer.get("credit_balance"))
-
-			# Create address if available
-			address_data = FieldMapper.map_customer_address(in_customer)
-
-			# Create shipping address if different from billing
-			shipping_address_data = FieldMapper.map_customer_shipping_address(in_customer)
-
-			# Create contact data for ERPNext contacts
-			contact_data_list = FieldMapper.map_customer_contacts(in_customer, customer_data["customer_name"])
-
-			return customer_data, address_data, shipping_address_data, contact_data_list
-
-		except Exception as e:
+		if not company_mapping:
 			frappe.log_error(
-				f"Error mapping customer {in_customer.get('id')}: {e!s}", "Customer Mapping Error"
+				f"No company mapping found for Invoice Ninja customer ID: {in_customer.get('id')}",
+				"Customer Mapping Error",
 			)
 			return None, None, None, None
+
+		# Get customer group mapping based on Invoice Ninja customer group
+		customer_group_mapping = None
+		default_customer_group = "Commercial"  # Default fallback
+
+		# Check if customer has a group setting from Invoice Ninja
+		if in_customer.get("group_settings_id"):
+			customer_group_mapping = FieldMapper.get_customer_group_mapping(
+				invoice_ninja_company=invoice_ninja_company,  # Pass company context
+				invoice_ninja_customer_group_id=in_customer.get("group_settings_id")
+			)
+
+		# If no specific mapping found, try to get default mapping
+		if not customer_group_mapping:
+			customer_group_mapping = FieldMapper.get_customer_group_mapping(
+				invoice_ninja_company=invoice_ninja_company  # Pass company context
+			)
+
+		# Use mapped customer group or fallback to default
+		if customer_group_mapping:
+			default_customer_group = customer_group_mapping.customer_group
+
+		# Determine customer type based on classification or name
+		customer_type = "Company"
+		if in_customer.get("classification"):
+			customer_type = (
+				"Company" if in_customer.get(
+					"classification").lower() == "company" else "Individual"
+			)
+		elif not in_customer.get("name") or len(in_customer.get("name", "").split()) <= 2:
+			customer_type = "Individual"
+
+		# Get primary contact for email/phone
+		primary_contact = None
+		contacts = in_customer.get("contacts", [])
+		if contacts:
+			primary_contact = next((c for c in contacts if c.get("is_primary")), contacts[0])
+
+		# Get currency from settings if available
+		currency_code = "USD"  # Default
+		settings = in_customer.get("settings", {})
+		if settings.get("currency_id"):
+			currency_code = FieldMapper.get_currency_code(settings.get("currency_id"))
+
+		# Basic customer mapping
+		customer_data = {
+			"doctype": "Customer",
+			"customer_name": in_customer.get("display_name")
+							 or in_customer.get("name")
+							 or f"Customer {in_customer.get('id')}",
+			"customer_type": customer_type,
+			"customer_group": default_customer_group,
+			"territory": "All Territories",  # Default territory
+			"invoice_ninja_id": str(in_customer.get("id")),
+			"invoice_ninja_company": invoice_ninja_company,  # Link to IN Company doc
+			"invoice_ninja_sync_status": "Synced",
+			"company": company_mapping.erpnext_company,  # Set the mapped company
+			"default_currency": currency_code,
+		}
+
+		# Contact information from primary contact
+		if primary_contact:
+			if primary_contact.get("email"):
+				customer_data["email_id"] = primary_contact.get("email")
+			if primary_contact.get("phone"):
+				customer_data["mobile_no"] = primary_contact.get("phone")
+
+		# Website and other details
+		if in_customer.get("website"):
+			customer_data["website"] = in_customer.get("website")
+
+		# Tax information
+		if in_customer.get("vat_number"):
+			customer_data["tax_id"] = in_customer.get("vat_number")
+		elif in_customer.get("id_number"):
+			customer_data["tax_id"] = in_customer.get("id_number")
+
+		# Additional fields
+		if in_customer.get("public_notes"):
+			customer_data["customer_details"] = in_customer.get("public_notes")
+		elif in_customer.get("private_notes"):
+			customer_data["customer_details"] = in_customer.get("private_notes")
+
+		# Set credit limit if balance information available
+		if in_customer.get("credit_balance"):
+			customer_data["credit_limit"] = flt(in_customer.get("credit_balance"))
+
+		# Create address if available
+		address_data = FieldMapper.map_customer_address(in_customer)
+
+		# Create shipping address if different from billing
+		shipping_address_data = FieldMapper.map_customer_shipping_address(in_customer)
+
+		# Create contact data for ERPNext contacts
+		contact_data_list = FieldMapper.map_customer_contacts(in_customer,
+															  customer_data["customer_name"])
+
+		return customer_data, address_data, shipping_address_data, contact_data_list
 
 	@staticmethod
 	def map_customer_address(in_customer):
 		"""Map customer address from Invoice Ninja"""
-		if not any([in_customer.get("address1"), in_customer.get("city"), in_customer.get("state")]):
+		if not any(
+			[in_customer.get("address1"), in_customer.get("city"), in_customer.get("state")]):
 			return None
 
 		address_data = {
 			"doctype": "Address",
-			"address_title": in_customer.get("display_name") or in_customer.get("name") or "Primary",
+			"address_title": in_customer.get("display_name") or in_customer.get(
+				"name") or "Primary",
 			"address_type": "Billing",
 			"address_line1": in_customer.get("address1") or "",
 			"address_line2": in_customer.get("address2") or "",
@@ -216,6 +340,7 @@ class FieldMapper:
 				"phone": contact.get("phone") or "",
 				"is_primary_contact": 1 if contact.get("is_primary") else 0,
 				"invoice_ninja_contact_id": str(contact.get("id")),
+				# "invoice_ninja_company": invoice_ninja_company,
 				"links": [{"link_doctype": "Customer", "link_name": customer_name}],
 			}
 
@@ -230,97 +355,196 @@ class FieldMapper:
 		return contact_data_list
 
 	@staticmethod
-	def map_invoice_from_invoice_ninja(in_invoice):
-		"""Map Invoice Ninja invoice to ERPNext sales invoice"""
-		try:
-			# Get company mapping for this invoice
+	def map_invoice_from_invoice_ninja(in_invoice, invoice_ninja_company=None):
+		"""
+		Map Invoice Ninja invoice to ERPNext sales invoice
+
+		Args:
+			in_invoice: Invoice Ninja invoice data
+			invoice_ninja_company: Invoice_Ninja Company doc name for linking
+		"""
+		# Get company mapping - use Invoice Ninja Company from sync context
+		if invoice_ninja_company:
+			company_mapping = FieldMapper.get_company_mapping_by_invoice_ninja_company_doc(
+				invoice_ninja_company
+			)
+		else:
+			# Fallback for legacy sync (shouldn't happen in new flow)
 			company_mapping = FieldMapper.get_company_mapping(
 				invoice_ninja_company_id=in_invoice.get("company_id")
 			)
 
-			if not company_mapping:
-				frappe.log_error(
-					f"No company mapping found for Invoice Ninja company ID: {in_invoice.get('company_id')}",
-					"Invoice Mapping Error",
-				)
-				return None
-
-			# Get customer reference
-			customer_name = FieldMapper.get_customer_by_invoice_ninja_id(in_invoice.get("client_id"))
-			if not customer_name:
-				frappe.log_error(
-					f"Customer not found for Invoice Ninja client_id: {in_invoice.get('client_id')}",
-					"Invoice Mapping Error",
-				)
-				return None
-
-			# Basic invoice mapping
-			invoice_data = {
-				"doctype": "Sales Invoice",
-				"customer": customer_name,
-				"company": company_mapping.erpnext_company,  # Set the mapped company
-				"posting_date": FieldMapper.parse_date(in_invoice.get("date")) or nowdate(),
-				"due_date": FieldMapper.parse_date(in_invoice.get("due_date")),
-				"currency": FieldMapper.get_currency_code(in_invoice.get("currency_id")) or "USD",
-				"conversion_rate": flt(in_invoice.get("exchange_rate")) or 1.0,
-				"selling_price_list": "Standard Selling",
-				"invoice_ninja_id": str(in_invoice.get("id")),
-				"invoice_ninja_sync_status": "Synced",
-				"invoice_ninja_number": in_invoice.get("number"),
-				"status": FieldMapper.map_invoice_status(in_invoice.get("status_id")),
-				"items": [],
-			}
-
-			# Invoice number
-			if in_invoice.get("number"):
-				invoice_data["naming_series"] = "INV-"
-				# ERPNext will auto-generate, we store IN number in custom field
-
-			# Terms and conditions
-			if in_invoice.get("terms"):
-				invoice_data["tc_name"] = "Standard Terms"
-				invoice_data["terms"] = in_invoice.get("terms")
-
-			# Notes
-			if in_invoice.get("public_notes"):
-				invoice_data["other_charges_calculation"] = in_invoice.get("public_notes")
-
-			# Map line items
-			line_items = in_invoice.get("line_items", [])
-			for idx, item in enumerate(line_items, 1):
-				item_data = FieldMapper.map_invoice_item(item, idx)
-				if item_data:
-					invoice_data["items"].append(item_data)
-
-			# Map taxes if available
-			taxes = FieldMapper.map_invoice_taxes(in_invoice)
-			if taxes:
-				invoice_data["taxes"] = taxes
-
-			return invoice_data
-
-		except Exception as e:
-			frappe.log_error(f"Error mapping invoice {in_invoice.get('id')}: {e!s}", "Invoice Mapping Error")
+		if not company_mapping:
+			frappe.log_error(
+				f"No company mapping found for Invoice Ninja company ID: {in_invoice.get('company_id')}",
+				"Invoice Mapping Error",
+			)
 			return None
 
-	@staticmethod
-	def map_invoice_item(in_item, idx):
-		"""Map Invoice Ninja line item to ERPNext item"""
-		try:
-			# Get or create item
-			item_code = FieldMapper.get_or_create_item(in_item)
+		# Get customer reference
+		customer_name = FieldMapper.get_customer_by_invoice_ninja_id(in_invoice.get("client_id"))
+		if not customer_name:
+			frappe.log_error(
+				f"Customer not found for Invoice Ninja client_id: {in_invoice.get('client_id')}",
+				"Invoice Mapping Error",
+			)
+			return None
 
-			item_data = {
-				"doctype": "Sales Invoice Item",
-				"idx": idx,
-				"item_code": item_code,
-				"item_name": in_item.get("notes") or in_item.get("product_key") or "Service Item",
-				"description": in_item.get("notes") or "",
-				"qty": flt(in_item.get("quantity")) or 1.0,
-				"rate": flt(in_item.get("cost")) or 0.0,
-				"amount": flt(in_item.get("quantity", 1)) * flt(in_item.get("cost", 0)),
-				"uom": "Nos",
-			}
+		# Get invoice currency
+		invoice_currency = FieldMapper.get_currency_code(in_invoice.get("currency_id")) or "USD"
+
+		# Parse dates
+		posting_date = FieldMapper.parse_date(in_invoice.get("date")) or nowdate()
+		due_date = FieldMapper.parse_date(in_invoice.get("due_date"))
+
+		# Ensure due_date is not before posting_date
+		if due_date and due_date < posting_date:
+			due_date = posting_date
+		elif not due_date:
+			# If no due_date provided, set it to posting_date to avoid validation issues
+			due_date = posting_date
+
+		# Get company currency for conversion rate calculation
+		company_currency = frappe.get_cached_value("Company", company_mapping.erpnext_company, "default_currency")
+
+		# Get conversion rate with automatic API fetching if needed
+		conversion_rate = FieldMapper.get_conversion_rate_for_transaction(
+			invoice_currency=invoice_currency,
+			company_currency=company_currency,
+			posting_date=posting_date,
+			in_exchange_rate=in_invoice.get("exchange_rate")
+		)
+
+		# Basic invoice mapping
+		invoice_data = {
+			"doctype": "Sales Invoice",
+			"customer": customer_name,
+			"company": company_mapping.erpnext_company,  # Set the mapped company
+			"posting_date": posting_date,
+			"posting_time": get_datetime(now_datetime()).time(),
+			"set_posting_time": True,
+			"due_date": due_date,
+			"currency": invoice_currency,
+			"conversion_rate": conversion_rate,
+			"selling_price_list": "Standard Selling",
+			"invoice_ninja_id": str(in_invoice.get("id")),
+			"invoice_ninja_company": invoice_ninja_company,
+			"invoice_ninja_sync_status": "Synced",
+			"invoice_ninja_number": in_invoice.get("number"),
+			"status": FieldMapper.map_invoice_status(in_invoice.get("status_id")),
+			"items": [],
+		}
+
+		# Set receivable account based on currency mapping (ONLY for Sales Invoices)
+		receivable_account = FieldMapper.get_receivable_account_for_currency(
+			invoice_ninja_company,
+			invoice_currency,
+			company_mapping.erpnext_company
+		)
+		if receivable_account:
+			invoice_data["debit_to"] = receivable_account
+
+		# Invoice number
+		if in_invoice.get("number"):
+			invoice_data["naming_series"] = "INV-"
+		# ERPNext will auto-generate, we store IN number in custom field
+
+		# Terms and conditions
+		if in_invoice.get("terms"):
+			invoice_data["tc_name"] = "Standard Terms"
+			invoice_data["terms"] = in_invoice.get("terms")
+
+		# Notes
+		if in_invoice.get("public_notes"):
+			invoice_data["other_charges_calculation"] = in_invoice.get("public_notes")
+
+		# Map line items
+		line_items = in_invoice.get("line_items", [])
+		for idx, item in enumerate(line_items, 1):
+			item_data = FieldMapper.map_invoice_item(item, idx, invoice_ninja_company)
+			if item_data:
+				invoice_data["items"].append(item_data)
+
+		# Map taxes if available
+		taxes = FieldMapper.map_invoice_taxes(in_invoice, invoice_ninja_company)
+		if taxes:
+			invoice_data["taxes"] = taxes
+
+		return invoice_data
+
+	@staticmethod
+	def map_invoice_item(in_item, idx, invoice_ninja_company=None):
+		"""Map Invoice Ninja line item to ERPNext item - supports task-based items"""
+		try:
+			# Get default UOM for this company
+			default_uom = FieldMapper.get_default_product_uom(invoice_ninja_company)
+
+			# Check if this line item is task-based
+			task_id = in_item.get('task_id')
+
+			if task_id:
+				# Create/sync task inline if it doesn't exist
+				task_data = in_item.get('task')  # Invoice Ninja can include task data
+				if task_data:
+					FieldMapper.sync_task_inline(task_data, invoice_ninja_company)
+
+				# Map line item with task reference
+				item_code = FieldMapper.get_or_create_item(in_item)
+
+				# If item doesn't exist, create it
+				if not frappe.db.exists("Item", item_code):
+					item_doc = frappe.get_doc({
+						"doctype": "Item",
+						"item_code": item_code,
+						"item_name": in_item.get("notes") or in_item.get("product_key") or "Unknown Item",
+						"item_group": "Products",
+						"stock_uom": default_uom,
+						"is_stock_item": 0
+					})
+					item_doc.insert(ignore_permissions=True)
+					frappe.db.commit()
+
+				item_data = {
+					"doctype": "Sales Invoice Item",
+					"idx": idx,
+					"item_code": item_code,
+					"item_name": in_item.get("notes") or in_item.get("product_key") or "Service Item",
+					"description": in_item.get("notes") or "",
+					"qty": flt(in_item.get("quantity")) or 1.0,
+					"rate": flt(in_item.get("cost")) or 0.0,
+					"amount": flt(in_item.get("quantity", 1)) * flt(in_item.get("cost", 0)),
+					"uom": default_uom,
+					"invoice_ninja_task_id": str(task_id),
+					"custom_is_task_based": 1,
+				}
+			else:
+				# Regular product-based line item
+				item_code = FieldMapper.get_or_create_item(in_item)
+
+				# If item doesn't exist, create it
+				if not frappe.db.exists("Item", item_code):
+					item_doc = frappe.get_doc({
+						"doctype": "Item",
+						"item_code": item_code,
+						"item_name": in_item.get("notes") or in_item.get("product_key") or "Unknown Item",
+						"item_group": "Products",
+						"stock_uom": default_uom,
+						"is_stock_item": 0
+					})
+					item_doc.insert(ignore_permissions=True)
+					frappe.db.commit()
+
+				item_data = {
+					"doctype": "Sales Invoice Item",
+					"idx": idx,
+					"item_code": item_code,
+					"item_name": in_item.get("notes") or in_item.get("product_key") or "Service Item",
+					"description": in_item.get("notes") or "",
+					"qty": flt(in_item.get("quantity")) or 1.0,
+					"rate": flt(in_item.get("cost")) or 0.0,
+					"amount": flt(in_item.get("quantity", 1)) * flt(in_item.get("cost", 0)),
+					"uom": default_uom,
+				}
 
 			return item_data
 
@@ -329,59 +553,88 @@ class FieldMapper:
 			return None
 
 	@staticmethod
-	def map_quote_from_invoice_ninja(in_quote):
-		"""Map Invoice Ninja quote to ERPNext quotation"""
-		try:
-			# Get company mapping for this quote
+	def map_quote_from_invoice_ninja(in_quote, invoice_ninja_company=None):
+		"""
+		Map Invoice Ninja quote to ERPNext quotation
+
+		Args:
+			in_quote: Invoice Ninja quote data
+			invoice_ninja_company: Invoice Ninja Company doc name for linking
+		"""
+		# Get company mapping - use Invoice Ninja Company from sync context
+		if invoice_ninja_company:
+			company_mapping = FieldMapper.get_company_mapping_by_invoice_ninja_company_doc(
+				invoice_ninja_company
+			)
+		else:
+			# Fallback for legacy sync (shouldn't happen in new flow)
 			company_mapping = FieldMapper.get_company_mapping(
 				invoice_ninja_company_id=in_quote.get("company_id")
 			)
 
-			if not company_mapping:
-				frappe.log_error(
-					f"No company mapping found for Invoice Ninja company ID: {in_quote.get('company_id')}",
-					"Quote Mapping Error",
-				)
-				return None
-
-			# Get customer reference
-			customer_name = FieldMapper.get_customer_by_invoice_ninja_id(in_quote.get("client_id"))
-			if not customer_name:
-				return None
-
-			quote_data = {
-				"doctype": "Quotation",
-				"party_name": customer_name,
-				"quotation_to": "Customer",
-				"company": company_mapping.erpnext_company,  # Set the mapped company
-				"transaction_date": FieldMapper.parse_date(in_quote.get("date")) or nowdate(),
-				"valid_till": FieldMapper.parse_date(in_quote.get("due_date")),
-				"currency": FieldMapper.get_currency_code(in_quote.get("currency_id")) or "USD",
-				"selling_price_list": "Standard Selling",
-				"invoice_ninja_id": str(in_quote.get("id")),
-				"invoice_ninja_sync_status": "Synced",
-				"invoice_ninja_number": in_quote.get("number"),
-				"status": FieldMapper.map_quote_status(in_quote.get("status_id")),
-				"items": [],
-			}
-
-			# Map line items
-			line_items = in_quote.get("line_items", [])
-			for idx, item in enumerate(line_items, 1):
-				item_data = FieldMapper.map_quotation_item(item, idx)
-				if item_data:
-					quote_data["items"].append(item_data)
-
-			return quote_data
-
-		except Exception as e:
-			frappe.log_error(f"Error mapping quote {in_quote.get('id')}: {e!s}", "Quote Mapping Error")
+		if not company_mapping:
+			frappe.log_error(
+				f"No company mapping found for Invoice Ninja company ID: {in_quote.get('company_id')}",
+				"Quote Mapping Error",
+			)
 			return None
 
+		# Get customer reference
+		customer_name = FieldMapper.get_customer_by_invoice_ninja_id(in_quote.get("client_id"))
+		if not customer_name:
+			return None
+
+		# Get quote currency
+		quote_currency = FieldMapper.get_currency_code(in_quote.get("currency_id")) or "USD"
+
+		# Get transaction date
+		transaction_date = FieldMapper.parse_date(in_quote.get("date")) or nowdate()
+
+		# Get company currency for conversion rate calculation
+		company_currency = frappe.get_cached_value("Company", company_mapping.erpnext_company, "default_currency")
+
+		# Get conversion rate with automatic API fetching if needed
+		conversion_rate = FieldMapper.get_conversion_rate_for_transaction(
+			invoice_currency=quote_currency,
+			company_currency=company_currency,
+			posting_date=transaction_date,
+			in_exchange_rate=in_quote.get("exchange_rate")
+		)
+
+		quote_data = {
+			"doctype": "Quotation",
+			"party_name": customer_name,
+			"quotation_to": "Customer",
+			"company": company_mapping.erpnext_company,  # Set the mapped company
+			"transaction_date": transaction_date,
+			"valid_till": FieldMapper.parse_date(in_quote.get("due_date")),
+			"currency": quote_currency,
+			"conversion_rate": conversion_rate,
+			"selling_price_list": "Standard Selling",
+			"invoice_ninja_id": str(in_quote.get("id")),
+			"invoice_ninja_company": invoice_ninja_company,
+			"invoice_ninja_sync_status": "Synced",
+			"invoice_ninja_number": in_quote.get("number"),
+			"status": FieldMapper.map_quote_status(in_quote.get("status_id")),
+			"items": [],
+		}
+
+		# Map line items
+		line_items = in_quote.get("line_items", [])
+		for idx, item in enumerate(line_items, 1):
+			item_data = FieldMapper.map_quotation_item(item, idx, invoice_ninja_company)
+			if item_data:
+				quote_data["items"].append(item_data)
+
+		return quote_data
+
 	@staticmethod
-	def map_quotation_item(in_item, idx):
+	def map_quotation_item(in_item, idx, invoice_ninja_company=None):
 		"""Map Invoice Ninja quote item to ERPNext quotation item"""
 		try:
+			# Get default UOM for this company
+			default_uom = FieldMapper.get_default_product_uom(invoice_ninja_company)
+
 			item_code = FieldMapper.get_or_create_item(in_item)
 
 			item_data = {
@@ -393,7 +646,7 @@ class FieldMapper:
 				"qty": flt(in_item.get("quantity")) or 1.0,
 				"rate": flt(in_item.get("cost")) or 0.0,
 				"amount": flt(in_item.get("quantity", 1)) * flt(in_item.get("cost", 0)),
-				"uom": "Nos",
+				"uom": default_uom,
 			}
 
 			return item_data
@@ -403,21 +656,25 @@ class FieldMapper:
 			return None
 
 	@staticmethod
-	def map_product_from_invoice_ninja(in_product):
+	def map_product_from_invoice_ninja(in_product, invoice_ninja_company=None):
 		"""Map Invoice Ninja product to ERPNext item"""
 		try:
+			# Get default UOM for this company
+			default_uom = FieldMapper.get_default_product_uom(invoice_ninja_company)
+
 			item_data = {
 				"doctype": "Item",
 				"item_code": in_product.get("product_key") or f"IN-PROD-{in_product.get('id')}",
 				"item_name": in_product.get("notes") or in_product.get("product_key") or "Unknown Item",
 				"item_group": "Products",
-				"stock_uom": "Nos",
+				"stock_uom": default_uom,
 				"is_stock_item": 0,
 				"is_sales_item": 1,
 				"is_purchase_item": 0,
 				"include_item_in_manufacturing": 0,
 				"description": in_product.get("notes") or "",
 				"invoice_ninja_id": str(in_product.get("id")),
+				"invoice_ninja_company": invoice_ninja_company,
 				"sync_status": "Synced",
 			}
 
@@ -428,15 +685,78 @@ class FieldMapper:
 			return None
 
 	@staticmethod
+	def get_default_product_uom(invoice_ninja_company):
+		"""
+		Get default product UOM from company settings with validation
+
+		Args:
+			invoice_ninja_company: Invoice Ninja Company doc name
+
+		Returns:
+			str: Default UOM (defaults to "Nos" if not set or invalid)
+		"""
+		if not invoice_ninja_company:
+			return "Nos"
+
+		try:
+			company_doc = frappe.get_doc("Invoice Ninja Company", invoice_ninja_company)
+			default_uom = company_doc.default_product_uom
+
+			# Validate UOM exists in ERPNext
+			if default_uom and frappe.db.exists("UOM", default_uom):
+				return default_uom
+			else:
+				return "Nos"  # Fallback if UOM doesn't exist
+		except Exception:
+			return "Nos"  # Fallback on any error
+
+	@staticmethod
 	def get_or_create_item(in_item):
 		"""Get existing item or create item code for line item"""
-		# Try to find existing item by product_key
-		if in_item.get("product_key"):
-			existing_item = frappe.db.get_value("Item", {"item_code": in_item.get("product_key")}, "name")
+
+		# Debug logging to identify Invoice Ninja line item structure
+		frappe.log_error(
+			f"Line item structure: {json.dumps(in_item, indent=2)}",
+			"Invoice Line Item Debug"
+		)
+
+		# Strategy 1: Look up by Invoice Ninja product ID
+		# Invoice Ninja line items may have product references in various fields
+		product_id = (
+			in_item.get("product_cost")  # Common field name
+			or in_item.get("product_id")  # Alternative field name
+			or in_item.get("id")  # Some line items have their own ID
+		)
+
+		if product_id:
+			existing_item = frappe.db.get_value(
+				"Item",
+				{"invoice_ninja_id": str(product_id)},
+				"name"
+			)
 			if existing_item:
 				return existing_item
 
-		# Create new item code
+		# Strategy 2: Try to find existing item by product_key (item_code)
+		if in_item.get("product_key"):
+			existing_item = frappe.db.get_value(
+				"Item",
+				{"item_code": in_item.get("product_key")},
+				"name"
+			)
+			if existing_item:
+				return existing_item
+
+		# Strategy 3: Return a default service item for line items without product
+		# This is common for custom/description-only line items in Invoice Ninja
+		if not in_item.get("product_key"):
+			# Check if a generic "Service" item exists
+			service_item = frappe.db.get_value("Item", {"item_code": "SERVICE"}, "name")
+			if service_item:
+				return service_item
+
+		# Strategy 4: Create new item code as last resort
+		# This will be used if the product doesn't exist in ERPNext yet
 		item_code = in_item.get("product_key") or f"IN-ITEM-{frappe.generate_hash(length=8)}"
 
 		# Ensure item code is unique
@@ -462,105 +782,105 @@ class FieldMapper:
 
 		# Comprehensive currency mapping based on Invoice Ninja's currency IDs
 		currency_map = {
-			"1": "USD",  # US Dollar
-			"2": "GBP",  # British Pound
-			"3": "EUR",  # Euro
-			"4": "CAD",  # Canadian Dollar
-			"5": "AUD",  # Australian Dollar
-			"6": "JPY",  # Japanese Yen
-			"7": "CHF",  # Swiss Franc
-			"8": "SEK",  # Swedish Krona
-			"9": "NOK",  # Norwegian Krone
-			"10": "DKK",  # Danish Krone
-			"11": "PLN",  # Polish Zloty
-			"12": "BRL",  # Brazilian Real
-			"13": "INR",  # Indian Rupee
-			"14": "AED",  # UAE Dirham
-			"15": "CNY",  # Chinese Yuan
-			"16": "ZAR",  # South African Rand
-			"17": "BGN",  # Bulgarian Lev
-			"18": "CZK",  # Czech Koruna
-			"19": "EGP",  # Egyptian Pound
-			"20": "HUF",  # Hungarian Forint
-			"21": "ISK",  # Icelandic Krona
-			"22": "RON",  # Romanian Leu
-			"23": "ILS",  # Israeli Shekel
-			"24": "MXN",  # Mexican Peso
-			"25": "SGD",  # Singapore Dollar
-			"26": "HKD",  # Hong Kong Dollar
-			"27": "NZD",  # New Zealand Dollar
-			"28": "KRW",  # South Korean Won
-			"29": "MYR",  # Malaysian Ringgit
-			"30": "THB",  # Thai Baht
-			"31": "PHP",  # Philippine Peso
-			"32": "IDR",  # Indonesian Rupiah
-			"33": "TWD",  # Taiwan Dollar
-			"34": "VND",  # Vietnamese Dong
-			"35": "RUB",  # Russian Ruble
-			"36": "TRY",  # Turkish Lira
-			"37": "CLP",  # Chilean Peso
-			"38": "COP",  # Colombian Peso
-			"39": "PEN",  # Peruvian Sol
-			"40": "ARS",  # Argentine Peso
-			"41": "UYU",  # Uruguayan Peso
-			"42": "PYG",  # Paraguayan Guarani
-			"43": "BOB",  # Bolivian Boliviano
-			"44": "VEF",  # Venezuelan Bolívar
-			"45": "GYD",  # Guyanese Dollar
-			"46": "SRD",  # Surinamese Dollar
-			"47": "FKP",  # Falkland Islands Pound
-			"48": "CRC",  # Costa Rican Colón
-			"49": "GTQ",  # Guatemalan Quetzal
-			"50": "HNL",  # Honduran Lempira
-			"51": "NIO",  # Nicaraguan Córdoba
-			"52": "PAB",  # Panamanian Balboa
-			"53": "BZD",  # Belize Dollar
-			"54": "JMD",  # Jamaican Dollar
-			"55": "HTG",  # Haitian Gourde
-			"56": "DOP",  # Dominican Peso
-			"57": "CUP",  # Cuban Peso
-			"58": "BBD",  # Barbadian Dollar
-			"59": "TTD",  # Trinidad and Tobago Dollar
-			"60": "XCD",  # East Caribbean Dollar
-			"61": "AWG",  # Aruban Florin
-			"62": "ANG",  # Netherlands Antillean Guilder
-			"63": "SVC",  # Salvadoran Colón
-			"64": "KYD",  # Cayman Islands Dollar
-			"65": "BMD",  # Bermudian Dollar
-			"66": "BSD",  # Bahamian Dollar
-			"67": "USD",  # US Dollar (Puerto Rico)
-			"68": "USD",  # US Dollar (US Virgin Islands)
-			"69": "MAD",  # Moroccan Dirham
-			"70": "TND",  # Tunisian Dinar
-			"71": "DZD",  # Algerian Dinar
-			"72": "LYD",  # Libyan Dinar
-			"73": "SDG",  # Sudanese Pound
-			"74": "ETB",  # Ethiopian Birr
-			"75": "ERN",  # Eritrean Nakfa
-			"76": "DJF",  # Djiboutian Franc
-			"77": "SOS",  # Somali Shilling
-			"78": "KES",  # Kenyan Shilling
-			"79": "UGX",  # Ugandan Shilling
-			"80": "TZS",  # Tanzanian Shilling
-			"81": "RWF",  # Rwandan Franc
-			"82": "BIF",  # Burundian Franc
-			"83": "SCR",  # Seychellois Rupee
-			"84": "MUR",  # Mauritian Rupee
-			"85": "KMF",  # Comorian Franc
-			"86": "MGA",  # Malagasy Ariary
-			"87": "MWK",  # Malawian Kwacha
-			"88": "ZMW",  # Zambian Kwacha
-			"89": "ZWL",  # Zimbabwean Dollar
-			"90": "BWP",  # Botswanan Pula
-			"91": "NAD",  # Namibian Dollar
-			"92": "LSL",  # Lesotho Loti
-			"93": "SZL",  # Swazi Lilangeni
-			"94": "CVE",  # Cape Verdean Escudo
-			"95": "GMD",  # Gambian Dalasi
-			"96": "GNF",  # Guinean Franc
-			"97": "SLL",  # Sierra Leonean Leone
-			"98": "LRD",  # Liberian Dollar
-			"99": "GHS",  # Ghanaian Cedi
+		"1": "USD",  # US Dollar
+		"2": "GBP",  # British Pound
+		"3": "EUR",  # Euro
+		"4": "CAD",  # Canadian Dollar
+		"5": "AUD",  # Australian Dollar
+		"6": "JPY",  # Japanese Yen
+		"7": "CHF",  # Swiss Franc
+		"8": "SEK",  # Swedish Krona
+		"9": "NOK",  # Norwegian Krone
+		"10": "DKK",  # Danish Krone
+		"11": "PLN",  # Polish Zloty
+		"12": "BRL",  # Brazilian Real
+		"13": "INR",  # Indian Rupee
+		"14": "AED",  # UAE Dirham
+		"15": "CNY",  # Chinese Yuan
+		"16": "ZAR",  # South African Rand
+		"17": "BGN",  # Bulgarian Lev
+		"18": "CZK",  # Czech Koruna
+		"19": "EGP",  # Egyptian Pound
+		"20": "HUF",  # Hungarian Forint
+		"21": "ISK",  # Icelandic Krona
+		"22": "RON",  # Romanian Leu
+		"23": "ILS",  # Israeli Shekel
+		"24": "MXN",  # Mexican Peso
+		"25": "SGD",  # Singapore Dollar
+		"26": "HKD",  # Hong Kong Dollar
+		"27": "NZD",  # New Zealand Dollar
+		"28": "KRW",  # South Korean Won
+		"29": "MYR",  # Malaysian Ringgit
+		"30": "THB",  # Thai Baht
+		"31": "PHP",  # Philippine Peso
+		"32": "IDR",  # Indonesian Rupiah
+		"33": "TWD",  # Taiwan Dollar
+		"34": "VND",  # Vietnamese Dong
+		"35": "RUB",  # Russian Ruble
+		"36": "TRY",  # Turkish Lira
+		"37": "CLP",  # Chilean Peso
+		"38": "COP",  # Colombian Peso
+		"39": "PEN",  # Peruvian Sol
+		"40": "ARS",  # Argentine Peso
+		"41": "UYU",  # Uruguayan Peso
+		"42": "PYG",  # Paraguayan Guarani
+		"43": "BOB",  # Bolivian Boliviano
+		"44": "VEF",  # Venezuelan Bolívar
+		"45": "GYD",  # Guyanese Dollar
+		"46": "SRD",  # Surinamese Dollar
+		"47": "FKP",  # Falkland Islands Pound
+		"48": "CRC",  # Costa Rican Colón
+		"49": "GTQ",  # Guatemalan Quetzal
+		"50": "HNL",  # Honduran Lempira
+		"51": "NIO",  # Nicaraguan Córdoba
+		"52": "PAB",  # Panamanian Balboa
+		"53": "BZD",  # Belize Dollar
+		"54": "JMD",  # Jamaican Dollar
+		"55": "HTG",  # Haitian Gourde
+		"56": "DOP",  # Dominican Peso
+		"57": "CUP",  # Cuban Peso
+		"58": "BBD",  # Barbadian Dollar
+		"59": "TTD",  # Trinidad and Tobago Dollar
+		"60": "XCD",  # East Caribbean Dollar
+		"61": "AWG",  # Aruban Florin
+		"62": "ANG",  # Netherlands Antillean Guilder
+		"63": "SVC",  # Salvadoran Colón
+		"64": "KYD",  # Cayman Islands Dollar
+		"65": "BMD",  # Bermudian Dollar
+		"66": "BSD",  # Bahamian Dollar
+		"67": "USD",  # US Dollar (Puerto Rico)
+		"68": "USD",  # US Dollar (US Virgin Islands)
+		"69": "MAD",  # Moroccan Dirham
+		"70": "TND",  # Tunisian Dinar
+		"71": "DZD",  # Algerian Dinar
+		"72": "LYD",  # Libyan Dinar
+		"73": "SDG",  # Sudanese Pound
+		"74": "ETB",  # Ethiopian Birr
+		"75": "ERN",  # Eritrean Nakfa
+		"76": "DJF",  # Djiboutian Franc
+		"77": "SOS",  # Somali Shilling
+		"78": "KES",  # Kenyan Shilling
+		"79": "UGX",  # Ugandan Shilling
+		"80": "TZS",  # Tanzanian Shilling
+		"81": "RWF",  # Rwandan Franc
+		"82": "BIF",  # Burundian Franc
+		"83": "SCR",  # Seychellois Rupee
+		"84": "MUR",  # Mauritian Rupee
+		"85": "KMF",  # Comorian Franc
+		"86": "MGA",  # Malagasy Ariary
+		"87": "MWK",  # Malawian Kwacha
+		"88": "ZMW",  # Zambian Kwacha
+		"89": "ZWL",  # Zimbabwean Dollar
+		"90": "BWP",  # Botswanan Pula
+		"91": "NAD",  # Namibian Dollar
+		"92": "LSL",  # Lesotho Loti
+		"93": "SZL",  # Swazi Lilangeni
+		"94": "CVE",  # Cape Verdean Escudo
+		"95": "GMD",  # Gambian Dalasi
+		"96": "GNF",  # Guinean Franc
+		"97": "SLL",  # Sierra Leonean Leone
+		"98": "LRD",  # Liberian Dollar
+		"99": "GHS",  # Ghanaian Cedi
 			"100": "NGN",  # Nigerian Naira
 		}
 
@@ -576,227 +896,227 @@ class FieldMapper:
 
 		# Comprehensive country mapping based on ISO 3166-1 numeric codes used by Invoice Ninja
 		country_map = {
-			# Major countries
-			"004": "Afghanistan",
-			"008": "Albania",
-			"012": "Algeria",
-			"016": "American Samoa",
-			"020": "Andorra",
-			"024": "Angola",
-			"028": "Antigua and Barbuda",
-			"032": "Argentina",
-			"036": "Australia",
-			"040": "Austria",
-			"044": "Bahamas",
-			"048": "Bahrain",
-			"050": "Bangladesh",
-			"052": "Barbados",
-			"056": "Belgium",
-			"060": "Bermuda",
-			"064": "Bhutan",
-			"068": "Bolivia",
-			"070": "Bosnia and Herzegovina",
-			"072": "Botswana",
-			"076": "Brazil",
-			"084": "Belize",
-			"092": "British Virgin Islands",
-			"096": "Brunei",
-			"100": "Bulgaria",
-			"108": "Burundi",
-			"116": "Cambodia",
-			"120": "Cameroon",
-			"124": "Canada",
-			"132": "Cape Verde",
-			"136": "Cayman Islands",
-			"140": "Central African Republic",
-			"144": "Sri Lanka",
-			"148": "Chad",
-			"152": "Chile",
-			"156": "China",
-			"170": "Colombia",
-			"174": "Comoros",
-			"178": "Congo",
-			"180": "Congo, Democratic Republic",
-			"188": "Costa Rica",
-			"191": "Croatia",
-			"192": "Cuba",
-			"196": "Cyprus",
-			"203": "Czech Republic",
-			"208": "Denmark",
-			"214": "Dominican Republic",
-			"218": "Ecuador",
-			"222": "El Salvador",
-			"226": "Equatorial Guinea",
-			"231": "Ethiopia",
-			"232": "Eritrea",
-			"233": "Estonia",
-			"234": "Faroe Islands",
-			"238": "Falkland Islands",
-			"242": "Fiji",
-			"246": "Finland",
-			"250": "France",
-			"254": "French Guiana",
-			"258": "French Polynesia",
-			"262": "Djibouti",
-			"266": "Gabon",
-			"268": "Georgia",
-			"270": "Gambia",
-			"276": "Germany",
-			"288": "Ghana",
-			"292": "Gibraltar",
-			"296": "Kiribati",
-			"300": "Greece",
-			"304": "Greenland",
-			"308": "Grenada",
-			"312": "Guadeloupe",
-			"316": "Guam",
-			"320": "Guatemala",
-			"324": "Guinea",
-			"328": "Guyana",
-			"332": "Haiti",
-			"336": "Vatican City",
-			"340": "Honduras",
-			"344": "Hong Kong",
-			"348": "Hungary",
-			"352": "Iceland",
-			"356": "India",
-			"360": "Indonesia",
-			"364": "Iran",
-			"368": "Iraq",
-			"372": "Ireland",
-			"376": "Israel",
-			"380": "Italy",
-			"384": "Ivory Coast",
-			"388": "Jamaica",
-			"392": "Japan",
-			"398": "Kazakhstan",
-			"400": "Jordan",
-			"404": "Kenya",
-			"408": "North Korea",
-			"410": "South Korea",
-			"414": "Kuwait",
-			"417": "Kyrgyzstan",
-			"418": "Laos",
-			"422": "Lebanon",
-			"426": "Lesotho",
-			"428": "Latvia",
-			"430": "Liberia",
-			"434": "Libya",
-			"438": "Liechtenstein",
-			"440": "Lithuania",
-			"442": "Luxembourg",
-			"446": "Macau",
-			"450": "Madagascar",
-			"454": "Malawi",
-			"458": "Malaysia",
-			"462": "Maldives",
-			"466": "Mali",
-			"470": "Malta",
-			"474": "Martinique",
-			"478": "Mauritania",
-			"480": "Mauritius",
-			"484": "Mexico",
-			"492": "Monaco",
-			"496": "Mongolia",
-			"498": "Moldova",
-			"499": "Montenegro",
-			"500": "Montserrat",
-			"504": "Morocco",
-			"508": "Mozambique",
-			"512": "Oman",
-			"516": "Namibia",
-			"520": "Nauru",
-			"524": "Nepal",
-			"528": "Netherlands",
-			"530": "Netherlands Antilles",
-			"533": "Aruba",
-			"540": "New Caledonia",
-			"548": "Vanuatu",
-			"554": "New Zealand",
-			"558": "Nicaragua",
-			"562": "Niger",
-			"566": "Nigeria",
-			"570": "Niue",
-			"574": "Norfolk Island",
-			"578": "Norway",
-			"580": "Northern Mariana Islands",
-			"581": "United States Minor Outlying Islands",
-			"583": "Micronesia",
-			"584": "Marshall Islands",
-			"585": "Palau",
-			"586": "Pakistan",
-			"591": "Panama",
-			"598": "Papua New Guinea",
-			"600": "Paraguay",
-			"604": "Peru",
-			"608": "Philippines",
-			"612": "Pitcairn Islands",
-			"616": "Poland",
-			"620": "Portugal",
-			"624": "Guinea-Bissau",
-			"626": "East Timor",
-			"630": "Puerto Rico",
-			"634": "Qatar",
-			"638": "Reunion",
-			"642": "Romania",
-			"643": "Russia",
-			"646": "Rwanda",
-			"654": "Saint Helena",
-			"659": "Saint Kitts and Nevis",
-			"660": "Anguilla",
-			"662": "Saint Lucia",
-			"666": "Saint Pierre and Miquelon",
-			"670": "Saint Vincent and the Grenadines",
-			"674": "San Marino",
-			"678": "Sao Tome and Principe",
-			"682": "Saudi Arabia",
-			"686": "Senegal",
-			"688": "Serbia",
-			"690": "Seychelles",
-			"694": "Sierra Leone",
-			"702": "Singapore",
-			"703": "Slovakia",
-			"704": "Vietnam",
-			"705": "Slovenia",
-			"706": "Somalia",
-			"710": "South Africa",
-			"716": "Zimbabwe",
-			"724": "Spain",
-			"732": "Western Sahara",
-			"736": "Sudan",
-			"740": "Suriname",
-			"744": "Svalbard and Jan Mayen",
-			"748": "Swaziland",
-			"752": "Sweden",
-			"756": "Switzerland",
-			"760": "Syria",
-			"762": "Tajikistan",
-			"764": "Thailand",
-			"768": "Togo",
-			"772": "Tokelau",
-			"776": "Tonga",
-			"780": "Trinidad and Tobago",
-			"784": "United Arab Emirates",
-			"788": "Tunisia",
-			"792": "Turkey",
-			"795": "Turkmenistan",
-			"796": "Turks and Caicos Islands",
-			"798": "Tuvalu",
-			"800": "Uganda",
-			"804": "Ukraine",
-			"807": "Macedonia",
-			"818": "Egypt",
-			"826": "United Kingdom",
-			"834": "Tanzania",
-			"840": "United States",
-			"850": "United States Virgin Islands",
-			"854": "Burkina Faso",
-			"858": "Uruguay",
-			"860": "Uzbekistan",
-			"862": "Venezuela",
-			"876": "Wallis and Futuna",
-			"882": "Samoa",
-			"887": "Yemen",
+		# Major countries
+		"004": "Afghanistan",
+		"008": "Albania",
+		"012": "Algeria",
+		"016": "American Samoa",
+		"020": "Andorra",
+		"024": "Angola",
+		"028": "Antigua and Barbuda",
+		"032": "Argentina",
+		"036": "Australia",
+		"040": "Austria",
+		"044": "Bahamas",
+		"048": "Bahrain",
+		"050": "Bangladesh",
+		"052": "Barbados",
+		"056": "Belgium",
+		"060": "Bermuda",
+		"064": "Bhutan",
+		"068": "Bolivia",
+		"070": "Bosnia and Herzegovina",
+		"072": "Botswana",
+		"076": "Brazil",
+		"084": "Belize",
+		"092": "British Virgin Islands",
+		"096": "Brunei",
+		"100": "Bulgaria",
+		"108": "Burundi",
+		"116": "Cambodia",
+		"120": "Cameroon",
+		"124": "Canada",
+		"132": "Cape Verde",
+		"136": "Cayman Islands",
+		"140": "Central African Republic",
+		"144": "Sri Lanka",
+		"148": "Chad",
+		"152": "Chile",
+		"156": "China",
+		"170": "Colombia",
+		"174": "Comoros",
+		"178": "Congo",
+		"180": "Congo, Democratic Republic",
+		"188": "Costa Rica",
+		"191": "Croatia",
+		"192": "Cuba",
+		"196": "Cyprus",
+		"203": "Czech Republic",
+		"208": "Denmark",
+		"214": "Dominican Republic",
+		"218": "Ecuador",
+		"222": "El Salvador",
+		"226": "Equatorial Guinea",
+		"231": "Ethiopia",
+		"232": "Eritrea",
+		"233": "Estonia",
+		"234": "Faroe Islands",
+		"238": "Falkland Islands",
+		"242": "Fiji",
+		"246": "Finland",
+		"250": "France",
+		"254": "French Guiana",
+		"258": "French Polynesia",
+		"262": "Djibouti",
+		"266": "Gabon",
+		"268": "Georgia",
+		"270": "Gambia",
+		"276": "Germany",
+		"288": "Ghana",
+		"292": "Gibraltar",
+		"296": "Kiribati",
+		"300": "Greece",
+		"304": "Greenland",
+		"308": "Grenada",
+		"312": "Guadeloupe",
+		"316": "Guam",
+		"320": "Guatemala",
+		"324": "Guinea",
+		"328": "Guyana",
+		"332": "Haiti",
+		"336": "Vatican City",
+		"340": "Honduras",
+		"344": "Hong Kong",
+		"348": "Hungary",
+		"352": "Iceland",
+		"356": "India",
+		"360": "Indonesia",
+		"364": "Iran",
+		"368": "Iraq",
+		"372": "Ireland",
+		"376": "Israel",
+		"380": "Italy",
+		"384": "Ivory Coast",
+		"388": "Jamaica",
+		"392": "Japan",
+		"398": "Kazakhstan",
+		"400": "Jordan",
+		"404": "Kenya",
+		"408": "North Korea",
+		"410": "South Korea",
+		"414": "Kuwait",
+		"417": "Kyrgyzstan",
+		"418": "Laos",
+		"422": "Lebanon",
+		"426": "Lesotho",
+		"428": "Latvia",
+		"430": "Liberia",
+		"434": "Libya",
+		"438": "Liechtenstein",
+		"440": "Lithuania",
+		"442": "Luxembourg",
+		"446": "Macau",
+		"450": "Madagascar",
+		"454": "Malawi",
+		"458": "Malaysia",
+		"462": "Maldives",
+		"466": "Mali",
+		"470": "Malta",
+		"474": "Martinique",
+		"478": "Mauritania",
+		"480": "Mauritius",
+		"484": "Mexico",
+		"492": "Monaco",
+		"496": "Mongolia",
+		"498": "Moldova",
+		"499": "Montenegro",
+		"500": "Montserrat",
+		"504": "Morocco",
+		"508": "Mozambique",
+		"512": "Oman",
+		"516": "Namibia",
+		"520": "Nauru",
+		"524": "Nepal",
+		"528": "Netherlands",
+		"530": "Netherlands Antilles",
+		"533": "Aruba",
+		"540": "New Caledonia",
+		"548": "Vanuatu",
+		"554": "New Zealand",
+		"558": "Nicaragua",
+		"562": "Niger",
+		"566": "Nigeria",
+		"570": "Niue",
+		"574": "Norfolk Island",
+		"578": "Norway",
+		"580": "Northern Mariana Islands",
+		"581": "United States Minor Outlying Islands",
+		"583": "Micronesia",
+		"584": "Marshall Islands",
+		"585": "Palau",
+		"586": "Pakistan",
+		"591": "Panama",
+		"598": "Papua New Guinea",
+		"600": "Paraguay",
+		"604": "Peru",
+		"608": "Philippines",
+		"612": "Pitcairn Islands",
+		"616": "Poland",
+		"620": "Portugal",
+		"624": "Guinea-Bissau",
+		"626": "East Timor",
+		"630": "Puerto Rico",
+		"634": "Qatar",
+		"638": "Reunion",
+		"642": "Romania",
+		"643": "Russia",
+		"646": "Rwanda",
+		"654": "Saint Helena",
+		"659": "Saint Kitts and Nevis",
+		"660": "Anguilla",
+		"662": "Saint Lucia",
+		"666": "Saint Pierre and Miquelon",
+		"670": "Saint Vincent and the Grenadines",
+		"674": "San Marino",
+		"678": "Sao Tome and Principe",
+		"682": "Saudi Arabia",
+		"686": "Senegal",
+		"688": "Serbia",
+		"690": "Seychelles",
+		"694": "Sierra Leone",
+		"702": "Singapore",
+		"703": "Slovakia",
+		"704": "Vietnam",
+		"705": "Slovenia",
+		"706": "Somalia",
+		"710": "South Africa",
+		"716": "Zimbabwe",
+		"724": "Spain",
+		"732": "Western Sahara",
+		"736": "Sudan",
+		"740": "Suriname",
+		"744": "Svalbard and Jan Mayen",
+		"748": "Swaziland",
+		"752": "Sweden",
+		"756": "Switzerland",
+		"760": "Syria",
+		"762": "Tajikistan",
+		"764": "Thailand",
+		"768": "Togo",
+		"772": "Tokelau",
+		"776": "Tonga",
+		"780": "Trinidad and Tobago",
+		"784": "United Arab Emirates",
+		"788": "Tunisia",
+		"792": "Turkey",
+		"795": "Turkmenistan",
+		"796": "Turks and Caicos Islands",
+		"798": "Tuvalu",
+		"800": "Uganda",
+		"804": "Ukraine",
+		"807": "Macedonia",
+		"818": "Egypt",
+		"826": "United Kingdom",
+		"834": "Tanzania",
+		"840": "United States",
+		"850": "United States Virgin Islands",
+		"854": "Burkina Faso",
+		"858": "Uruguay",
+		"860": "Uzbekistan",
+		"862": "Venezuela",
+		"876": "Wallis and Futuna",
+		"882": "Samoa",
+		"887": "Yemen",
 			"894": "Zambia",
 		}
 
@@ -831,20 +1151,75 @@ class FieldMapper:
 			return None
 
 	@staticmethod
-	def map_invoice_taxes(in_invoice):
+	def parse_time(date_string):
+		"""Parse time string to ERPNext format"""
+		if not date_string:
+			return None
+		try:
+			if isinstance(date_string, str):
+				return get_datetime(date_string).time()
+			return date_string
+		except Exception:
+			return None
+
+	@staticmethod
+	def map_invoice_taxes(in_invoice, invoice_ninja_company=None):
 		"""Map Invoice Ninja taxes to ERPNext taxes"""
 		taxes = []
+		settings = frappe.get_single("Invoice Ninja Settings")
 
-		# This would need proper tax mapping based on your setup
-		tax_amount = flt(in_invoice.get("tax_amount", 0))
-		if tax_amount > 0:
+		# Invoice Ninja can have multiple tax fields: tax_name1, tax_rate1, tax_name2, tax_rate2, etc.
+		for i in range(1, 4):  # Support up to 3 taxes
+			tax_name_field = f"tax_name{i}"
+			tax_rate_field = f"tax_rate{i}"
+			tax_amount_field = f"tax_amount{i}" if i > 1 else "tax_amount"
+
+			tax_name = in_invoice.get(tax_name_field)
+			tax_rate = flt(in_invoice.get(tax_rate_field, 0))
+			tax_amount = flt(in_invoice.get(tax_amount_field, 0))
+
+			if not tax_amount and not tax_rate:
+				continue
+
+			# Try to find mapping
+			tax_template = None
+
+			# Look up by tax name/ID if available
+			if tax_name:
+				# Try to find Invoice Ninja Tax Rate by name
+				tax_rate_doc = frappe.db.get_value(
+					"Invoice Ninja Tax Rate",
+					{"tax_name": tax_name},
+					["name", "tax_rate_id"],
+					as_dict=True
+				)
+
+				if tax_rate_doc:
+					tax_mapping = FieldMapper.get_tax_template_mapping(
+						invoice_ninja_company=invoice_ninja_company,  # Pass company context
+						invoice_ninja_tax_rate_id=tax_rate_doc.tax_rate_id
+					)
+					if tax_mapping:
+						tax_template = tax_mapping.tax_template
+
+			# If no mapping found, use default
+			if not tax_template and settings.default_tax_template:
+				tax_template = settings.default_tax_template
+
+			# Get the first tax account from the template
+			account_head = "VAT - Company"  # Fallback
+			if tax_template:
+				template_doc = frappe.get_doc("Sales Taxes and Charges Template", tax_template)
+				if template_doc.taxes and len(template_doc.taxes) > 0:
+					account_head = template_doc.taxes[0].account_head
+
 			tax_data = {
 				"doctype": "Sales Taxes and Charges",
-				"charge_type": "On Net Total",
-				"account_head": "VAT - Company",  # Adjust based on your chart of accounts
-				"rate": 0,  # Calculate rate if needed
+				"charge_type": "Actual",
+				"account_head": account_head,
+				"rate": tax_rate,
 				"tax_amount": tax_amount,
-				"description": "Tax from Invoice Ninja",
+				"description": tax_name or f"Tax from Invoice Ninja ({tax_rate}%)",
 			}
 			taxes.append(tax_data)
 
@@ -992,85 +1367,284 @@ class FieldMapper:
 		return product_data
 
 	@staticmethod
-	def map_item_from_invoice_ninja(in_product):
-		"""Map Invoice Ninja product to ERPNext item"""
-		try:
-			item_data = {
-				"doctype": "Item",
-				"item_code": in_product.get("product_key") or f"IN-{in_product.get('id')}",
-				"item_name": in_product.get("notes") or in_product.get("product_key"),
-				"description": in_product.get("notes") or in_product.get("product_key"),
-				"item_group": "Products",
-				"stock_uom": "Nos",  # Default UOM
-				"is_stock_item": 0,  # Assume service item by default
-				"is_sales_item": 1,
-				"standard_rate": flt(in_product.get("price", 0)),
-				"invoice_ninja_id": str(in_product.get("id")),
-				"sync_status": "Synced",
-			}
+	def map_item_from_invoice_ninja(in_product, invoice_ninja_company=None):
+		"""
+		Map Invoice Ninja product to ERPNext item with tax rate
 
-			return item_data
+		Args:
+			in_product: Invoice Ninja product data
+			invoice_ninja_company: Invoice Ninja Company doc name for linking
+		"""
+		# Get default UOM for this company
+		default_uom = FieldMapper.get_default_product_uom(invoice_ninja_company)
 
-		except Exception as e:
-			frappe.log_error(f"Error mapping item {in_product.get('id')}: {e!s}", "Item Mapping Error")
-			return None
+		# Get item group mapping based on Invoice Ninja tax category
+		# Use default item group for all items
+		default_item_group = "Products"
+
+		# Add tax rate application
+		tax_template = None
+		if in_product.get("tax_rate1") or in_product.get("tax_id"):
+			tax_rate_id = in_product.get("tax_rate1") or in_product.get("tax_id")
+
+			# Find matching tax rate
+			tax_rate_doc = frappe.db.get_value(
+				"Invoice Ninja Tax Rate",
+				{"tax_rate_id": str(tax_rate_id)},
+				["name", "rate", "account_head", "tax_name"],
+				as_dict=True
+			)
+
+			if tax_rate_doc and tax_rate_doc.account_head:
+				# Get ERPNext company from mapping
+				company_mapping = FieldMapper.get_company_mapping_by_invoice_ninja_company_doc(
+					invoice_ninja_company
+				)
+				company = company_mapping.company if company_mapping else None
+
+				if company:
+					# Create or get tax template for this rate
+					tax_template = FieldMapper.get_or_create_tax_template_for_rate(
+						tax_rate_doc,
+						company
+					)
+
+		item_data = {
+			"doctype": "Item",
+			"item_code": in_product.get("product_key") or f"IN-{in_product.get('id')}",
+			"item_name": in_product.get("notes") or in_product.get("product_key"),
+			"description": in_product.get("notes") or in_product.get("product_key"),
+			"item_group": default_item_group,  # Use mapped group
+			"stock_uom": default_uom,
+			"is_stock_item": 0,
+			"is_sales_item": 1,
+			"standard_rate": flt(in_product.get("price", 0)),
+			"invoice_ninja_id": str(in_product.get("id")),
+			"invoice_ninja_company": invoice_ninja_company,
+			"invoice_ninja_sync_status": "Synced",
+		}
+
+		# Add tax template if found
+		if tax_template:
+			item_data["taxes"] = [{
+				"item_tax_template": tax_template
+			}]
+
+		return item_data
 
 	@staticmethod
-	def map_payment_from_invoice_ninja(in_payment):
-		"""Map Invoice Ninja payment to ERPNext payment entry"""
-		try:
-			# Get related invoice
-			invoice_id = in_payment.get("invoice_id")
-			if not invoice_id:
-				return None
+	def map_payment_from_invoice_ninja(in_payment, invoice_ninja_company=None):
+		"""
+		Map Invoice Ninja payment to ERPNext payment entry with proper exchange rate handling
+		Supports multiple invoices via paymentables array
 
-			invoice_name = frappe.db.get_value("Sales Invoice", {"invoice_ninja_id": str(invoice_id)}, "name")
+		Args:
+			in_payment: Invoice Ninja payment data
+			invoice_ninja_company: Invoice Ninja Company doc name for linking
+
+		Returns:
+			dict: Payment Entry data with proper currency and exchange rate handling
+		"""
+		# Get paymentables array (can have multiple invoices)
+		paymentables = in_payment.get("paymentables", [])
+
+		if not paymentables:
+			frappe.log_error(
+				f"Payment {in_payment.get('id')} has no paymentables array",
+				"Payment Mapping Error"
+			)
+			return None
+
+		# Build reference list for each invoice
+		references = []
+		first_invoice = None
+
+		for paymentable in paymentables:
+			invoice_id = paymentable.get("invoice_id")
+			allocated_amount = flt(paymentable.get("amount", 0))
+
+			# Skip if no amount allocated
+			if allocated_amount <= 0:
+				continue
+
+			# Find ERPNext Sales Invoice
+			invoice_name = frappe.db.get_value(
+				"Sales Invoice",
+				{"invoice_ninja_id": str(invoice_id)},
+				"name"
+			)
+
 			if not invoice_name:
 				frappe.log_error(
-					f"Invoice not found for Invoice Ninja payment: {in_payment.get('id')}",
-					"Payment Mapping Error",
+					f"Invoice {invoice_id} not found in ERPNext for payment {in_payment.get('id')}",
+					"Payment Mapping - Invoice Not Found"
 				)
-				return None
+				continue  # Skip this invoice, continue with others
 
-			invoice_doc = frappe.get_doc("Sales Invoice", invoice_name)
+			# Add to references
+			references.append({
+				"doctype": "Payment Entry Reference",
+				"reference_doctype": "Sales Invoice",
+				"reference_name": invoice_name,
+				"allocated_amount": allocated_amount
+			})
 
-			payment_data = {
-				"doctype": "Payment Entry",
-				"payment_type": "Receive",
-				"party_type": "Customer",
-				"party": invoice_doc.customer,
-				"posting_date": FieldMapper.parse_date(in_payment.get("date")) or nowdate(),
-				"paid_amount": flt(in_payment.get("amount", 0)),
-				"received_amount": flt(in_payment.get("amount", 0)),
-				"source_exchange_rate": 1.0,
-				"target_exchange_rate": 1.0,
-				"reference_no": in_payment.get("transaction_reference") or "",
-				"reference_date": FieldMapper.parse_date(in_payment.get("date")),
-				"invoice_ninja_id": str(in_payment.get("id")),
-				"sync_status": "Synced",
-				"references": [
-					{
-						"doctype": "Payment Entry Reference",
-						"reference_doctype": "Sales Invoice",
-						"reference_name": invoice_name,
-						"allocated_amount": flt(in_payment.get("amount", 0)),
-					}
-				],
-			}
+			# Store first invoice for context (company, currency, etc.)
+			if first_invoice is None:
+				first_invoice = frappe.get_doc("Sales Invoice", invoice_name)
 
-			# Set default accounts (adjust based on your setup)
-			payment_data["paid_from"] = frappe.db.get_value(
-				"Account", {"account_type": "Receivable", "is_group": 0}, "name"
+		# If no valid invoices found, skip payment
+		if not references or first_invoice is None:
+			frappe.log_error(
+				f"No valid invoices found for payment {in_payment.get('id')}",
+				"Payment Mapping Error"
 			)
-			payment_data["paid_to"] = frappe.db.get_value(
-				"Account", {"account_type": "Cash", "is_group": 0}, "name"
-			)
-
-			return payment_data
-
-		except Exception as e:
-			frappe.log_error(f"Error mapping payment {in_payment.get('id')}: {e!s}", "Payment Mapping Error")
 			return None
+
+		# Use first invoice for company/currency context
+		company = first_invoice.company
+
+		# Validate exchange gain/loss account is configured
+		FieldMapper.validate_exchange_gain_loss_account(company)
+
+		# Get payment date and currency
+		payment_date = FieldMapper.parse_date(in_payment.get("date")) or nowdate()
+		payment_currency = FieldMapper.get_currency_code(in_payment.get("currency_id")) or first_invoice.currency
+		company_currency = frappe.get_cached_value("Company", company, "default_currency")
+
+		# Get exchange rate at PAYMENT date (not invoice date!)
+		# This is critical for accurate exchange gain/loss calculation
+		conversion_rate = FieldMapper.get_conversion_rate_for_transaction(
+			invoice_currency=payment_currency,
+			company_currency=company_currency,
+			posting_date=payment_date,
+			in_exchange_rate=in_payment.get("exchange_rate")
+		)
+
+		# Get proper accounts
+		# paid_from = First invoice's receivable account (preserves currency-specific account)
+		paid_from_account = first_invoice.debit_to
+
+		# paid_to = Company's default bank/cash account
+		paid_to_account = FieldMapper.get_default_bank_cash_account(company, account_type="Cash")
+
+		# Calculate total amounts from payment
+		total_paid_amount = flt(in_payment.get("amount", 0))
+		total_received_amount = total_paid_amount * conversion_rate
+
+		payment_data = {
+			"doctype": "Payment Entry",
+			"payment_type": "Receive",
+			"party_type": "Customer",
+			"party": first_invoice.customer,
+			"company": company,
+			"posting_date": payment_date,
+			"paid_from": paid_from_account,
+			"paid_to": paid_to_account,
+			"paid_from_account_currency": payment_currency,
+			"paid_to_account_currency": company_currency,
+			"paid_amount": total_paid_amount,
+			"received_amount": total_received_amount,
+			"source_exchange_rate": conversion_rate,
+			"target_exchange_rate": 1.0,  # Company currency to itself
+			"reference_no": in_payment.get("transaction_reference") or in_payment.get("number") or "",
+			"reference_date": payment_date,
+			"invoice_ninja_id": str(in_payment.get("id")),
+			"invoice_ninja_company": invoice_ninja_company,
+			"sync_status": "Synced",
+			"references": references  # Multiple invoice references supported!
+		}
+
+		# Add remarks if available
+		if in_payment.get("private_notes"):
+			payment_data["remarks"] = in_payment.get("private_notes")
+
+		return payment_data
+
+	@staticmethod
+	def map_task_from_invoice_ninja(in_task, invoice_ninja_company=None):
+		"""
+		Map Invoice Ninja task to ERPNext Invoice Ninja Task
+
+		Args:
+			in_task: Invoice Ninja task data
+			invoice_ninja_company: Invoice Ninja Company doc name for linking
+		"""
+		# Calculate duration in hours
+		duration_seconds = int(in_task.get('duration', 0))
+		duration_hours = duration_seconds / 3600.0 if duration_seconds > 0 else 0
+
+		# Map client to customer
+		customer = None
+		if in_task.get('client_id'):
+			customer = frappe.db.get_value(
+				"Customer",
+				{"invoice_ninja_id": str(in_task.get('client_id'))},
+				"name"
+			)
+
+		# Map project if available
+		project = None
+		if in_task.get('project_id'):
+			project = frappe.db.get_value(
+				"Project",
+				{"invoice_ninja_project_id": str(in_task.get('project_id'))},
+				"name"
+			)
+
+		# Determine status
+		status = "Logged"
+		if in_task.get('invoice_id'):
+			status = "Invoiced"
+		elif in_task.get('is_running'):
+			status = "Running"
+
+		task_data = {
+			"doctype": "Invoice Ninja Task",
+			"task_id": str(in_task.get('id')),
+			"task_number": in_task.get('number'),
+			"description": in_task.get('description') or in_task.get('notes') or "Time Entry",
+			"invoice_ninja_company": invoice_ninja_company,
+			"client_id": str(in_task.get('client_id')) if in_task.get('client_id') else None,
+			"customer": customer,
+			"project_id": str(in_task.get('project_id')) if in_task.get('project_id') else None,
+			"project": project,
+			"duration": duration_seconds,
+			"duration_hours": duration_hours,
+			"start_time": in_task.get('start_time'),
+			"end_time": in_task.get('end_time'),
+			"is_running": int(in_task.get('is_running', 0)),
+			"rate": flt(in_task.get('rate', 0)),
+			"status": status,
+			"is_invoiced": 1 if in_task.get('invoice_id') else 0,
+			"invoice_id": str(in_task.get('invoice_id')) if in_task.get('invoice_id') else None,
+			"sync_status": "Synced",
+			"last_synced": now_datetime(),
+		}
+
+		return task_data
+
+	@staticmethod
+	def sync_task_inline(task_data, invoice_ninja_company):
+		"""
+		Create/update task record inline during invoice sync
+
+		Args:
+			task_data: Task data from Invoice Ninja (can be nested in invoice)
+			invoice_ninja_company: Company reference for the task
+		"""
+		task_id = str(task_data.get('id'))
+
+		# Check if task already exists
+		existing = frappe.db.exists("Invoice Ninja Task", {"task_id": task_id})
+
+		if not existing:
+			# Create new task record
+			task_doc_data = FieldMapper.map_task_from_invoice_ninja(task_data, invoice_ninja_company)
+			if task_doc_data:
+				doc = frappe.get_doc(task_doc_data)
+				doc.insert(ignore_permissions=True)
+				frappe.db.commit()
 
 	@staticmethod
 	def get_currency_id(currency_code):
@@ -1137,30 +1711,131 @@ class FieldMapper:
 		return None
 
 	@staticmethod
-	def get_customer_group_mapping(erpnext_customer_group=None, invoice_ninja_customer_group_id=None):
-		"""Get customer group mapping between ERPNext and Invoice Ninja"""
-		settings = frappe.get_single("Invoice Ninja Settings")
+	def get_company_mapping_by_invoice_ninja_company_doc(invoice_ninja_company_doc_name):
+		"""
+		Get company mapping using Invoice Ninja Company doc name
 
-		if not settings.customer_group_mappings:
+		Args:
+			invoice_ninja_company_doc_name: Name of Invoice Ninja Company doc (e.g., "IN-COM-001")
+
+		Returns:
+			Company mapping object with erpnext_company, invoice_ninja_company_id, etc.
+		"""
+		if not invoice_ninja_company_doc_name:
 			return None
 
-		for mapping in settings.customer_group_mappings:
+		# Get the Invoice Ninja Company doc
+		in_company_doc = frappe.get_doc("Invoice Ninja Company", invoice_ninja_company_doc_name)
+
+		# Find the mapping for this company
+		settings = frappe.get_single("Invoice Ninja Settings")
+		if not settings.company_mappings:
+			return None
+
+		for mapping in settings.company_mappings:
 			if not mapping.enabled:
 				continue
 
-			if erpnext_customer_group and mapping.customer_group == erpnext_customer_group:
-				return mapping
-			elif invoice_ninja_customer_group_id and str(mapping.invoice_ninja_customer_group) == str(
-				invoice_ninja_customer_group_id
-			):
-				return mapping
-
-		# Return default mapping if no specific match found
-		for mapping in settings.customer_group_mappings:
-			if mapping.enabled and mapping.is_default:
+			# Match by company_id or company name
+			if (mapping.invoice_ninja_company_id == in_company_doc.company_id or
+				mapping.invoice_ninja_company_id == invoice_ninja_company_doc_name):
 				return mapping
 
 		return None
+
+	@staticmethod
+	def get_customer_group_mapping(invoice_ninja_company=None, erpnext_customer_group=None, invoice_ninja_customer_group_id=None):
+		"""Get customer group mapping for a specific Invoice Ninja Company"""
+
+		if not invoice_ninja_company:
+			# Fallback to global settings (deprecated)
+			settings = frappe.get_single("Invoice Ninja Settings")
+			mappings = settings.customer_group_mappings
+		else:
+			# Get mappings from the specific company
+			company_doc = frappe.get_doc("Invoice Ninja Company", invoice_ninja_company)
+			mappings = company_doc.customer_group_mappings
+
+		if not mappings:
+			return None
+
+		for mapping in mappings:
+			if erpnext_customer_group and mapping.customer_group == erpnext_customer_group:
+				return mapping
+			elif invoice_ninja_customer_group_id and mapping.invoice_ninja_customer_group:
+				# Fetch the actual group_id from the linked DocType (filtered by company)
+				group_id = frappe.db.get_value(
+					"Invoice Ninja Customer Group",
+					{
+						"name": mapping.invoice_ninja_customer_group,
+						"invoice_ninja_company": invoice_ninja_company
+					},
+					"group_id"
+				)
+				if group_id and str(group_id) == str(invoice_ninja_customer_group_id):
+					return mapping
+
+		return None
+
+	@staticmethod
+	def get_tax_template_mapping(invoice_ninja_company=None, erpnext_tax_template=None, invoice_ninja_tax_rate_id=None):
+		"""Get tax template mapping for a specific Invoice Ninja Company"""
+
+		if not invoice_ninja_company:
+			# Fallback to global settings (deprecated)
+			settings = frappe.get_single("Invoice Ninja Settings")
+			mappings = settings.tax_template_mappings
+		else:
+			# Get mappings from the specific company
+			company_doc = frappe.get_doc("Invoice Ninja Company", invoice_ninja_company)
+			mappings = company_doc.tax_template_mappings
+
+		if not mappings:
+			return None
+
+		for mapping in mappings:
+			if erpnext_tax_template and mapping.tax_template == erpnext_tax_template:
+				return mapping
+			elif invoice_ninja_tax_rate_id and mapping.invoice_ninja_tax_rate:
+				# Fetch tax_rate_id filtered by company
+				tax_rate_id = frappe.db.get_value(
+					"Invoice Ninja Tax Rate",
+					{
+						"name": mapping.invoice_ninja_tax_rate,
+						"invoice_ninja_company": invoice_ninja_company
+					},
+					"tax_rate_id"
+				)
+				if tax_rate_id and str(tax_rate_id) == str(invoice_ninja_tax_rate_id):
+					return mapping
+
+		return None
+
+	@staticmethod
+	def get_or_create_tax_template_for_rate(tax_rate_doc, company):
+		"""Get or create Sales Taxes and Charges Template for a tax rate"""
+
+		template_name = f"IN-{tax_rate_doc.tax_name}-{company}"
+
+		# Check if template exists
+		if frappe.db.exists("Sales Taxes and Charges Template", template_name):
+			return template_name
+
+		# Create new template
+		template = frappe.get_doc({
+			"doctype": "Sales Taxes and Charges Template",
+			"title": template_name,
+			"company": company,
+			"taxes": [{
+				"charge_type": "On Net Total",
+				"account_head": tax_rate_doc.account_head,
+				"rate": tax_rate_doc.rate,
+				"description": tax_rate_doc.tax_name
+			}]
+		})
+		template.insert(ignore_permissions=True)
+
+		return template.name
 
 	@staticmethod
 	def get_erpnext_company(invoice_ninja_company_id):
@@ -1212,9 +1887,140 @@ class FieldMapper:
 		return FieldMapper.map_item_to_invoice_ninja(item_doc)
 
 	@staticmethod
+	def get_receivable_account_for_currency(invoice_ninja_company, currency, erpnext_company):
+		"""
+		Get the appropriate receivable account for a given currency
+
+		Args:
+			invoice_ninja_company: Invoice Ninja Company doc name
+			currency: Currency code (e.g., 'USD', 'EUR')
+			erpnext_company: ERPNext company name
+
+		Returns:
+			Account name or None
+		"""
+		if not invoice_ninja_company or not currency:
+			return None
+
+		# Get the Invoice Ninja Company document
+		company_doc = frappe.get_doc("Invoice Ninja Company", invoice_ninja_company)
+
+		# Look for currency mapping
+		if company_doc.currency_account_mappings:
+			for mapping in company_doc.currency_account_mappings:
+				if mapping.currency == currency:
+					# Validate that the account belongs to the correct company
+					account_company = frappe.db.get_value(
+						"Account",
+						mapping.receivable_account,
+						"company"
+					)
+					if account_company == erpnext_company:
+						return mapping.receivable_account
+
+		# If no specific mapping found, check for default mapping
+		if company_doc.currency_account_mappings:
+			for mapping in company_doc.currency_account_mappings:
+				if mapping.is_default:
+					return mapping.receivable_account
+
+		# Final fallback: return None and let ERPNext use customer default
+		return None
+
+	@staticmethod
+	def validate_currency_mapping_exists(invoice_ninja_company, currency, erpnext_company):
+		"""
+		Check if currency mapping exists for the given currency
+
+		Returns:
+			tuple: (exists: bool, account: str or None, message: str)
+		"""
+		if not invoice_ninja_company or not currency:
+			return False, None, "Missing company or currency information"
+
+		account = FieldMapper.get_receivable_account_for_currency(
+			invoice_ninja_company,
+			currency,
+			erpnext_company
+		)
+
+		if account:
+			return True, account, ""
+		else:
+			return False, None, f"No receivable account mapping found for currency {currency}"
+
+	@staticmethod
 	def map_quote_to_invoice_ninja(quotation_doc):
 		"""Map ERPNext quotation to Invoice Ninja quote format (alias for map_quotation_to_invoice_ninja)"""
 		return FieldMapper.map_quotation_to_invoice_ninja(quotation_doc)
+
+	@staticmethod
+	def validate_exchange_gain_loss_account(company):
+		"""
+		Validate that company has exchange gain/loss account configured
+
+		Args:
+			company: Company name
+
+		Raises:
+			frappe.ValidationError: If account not configured
+
+		Returns:
+			str: Exchange gain/loss account name
+		"""
+		account = frappe.get_cached_value("Company", company, "exchange_gain_loss_account")
+
+		if not account:
+			frappe.throw(
+				f"Please set Exchange Gain/Loss Account in Company {company}. "
+				"This is required for multi-currency payment synchronization from Invoice Ninja."
+			)
+
+		return account
+
+	@staticmethod
+	def get_default_bank_cash_account(company, account_type="Cash"):
+		"""
+		Get default bank or cash account for company
+
+		Args:
+			company: Company name
+			account_type: "Cash" or "Bank" (default: "Cash")
+
+		Returns:
+			str: Account name
+
+		Raises:
+			frappe.ValidationError: If no suitable account found
+		"""
+		# Try to get from Mode of Payment Account first
+		mode_of_payment_account = frappe.db.get_value(
+			"Mode of Payment Account",
+			{"company": company},
+			"default_account"
+		)
+
+		if mode_of_payment_account:
+			return mode_of_payment_account
+
+		# Fallback: Get any Cash/Bank account for company
+		account = frappe.db.get_value(
+			"Account",
+			{
+				"company": company,
+				"account_type": account_type,
+				"is_group": 0
+			},
+			"name"
+		)
+
+		if not account:
+			frappe.throw(
+				f"No {account_type} account found for company {company}. "
+				"Please configure a default payment account or create a Cash/Bank account."
+			)
+
+		return account
 
 	@staticmethod
 	def map_payment_to_invoice_ninja(payment_doc):

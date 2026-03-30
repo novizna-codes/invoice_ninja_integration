@@ -13,6 +13,7 @@
   "record_type",
   "record_id",
   "record_name",
+  "invoice_ninja_company",
   "column_break_6",
   "status",
   "message",
@@ -48,7 +49,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Record Type",
-   "options": "Customer\nInvoice\nQuotation\nItem\nPayment\nFile",
+   "options": "Customer\nSales Invoice\nQuotation\nItem\nPayment Entry\nFile",
    "reqd": 1
   },
   {
@@ -61,6 +62,14 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Record Name"
+  },
+  {
+   "fieldname": "invoice_ninja_company",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Invoice Ninja Company",
+   "options": "Invoice Ninja Company"
   },
   {
    "fieldname": "column_break_6",

@@ -13,13 +13,11 @@
   "section_break_3",
   "invoice_ninja_url",
   "api_token",
-  "column_break_6",
+  "column_break_credentials",
   "test_connection",
   "connection_status",
    "company_mapping_section",
    "company_mappings",
-   "customer_group_mapping_section",
-   "customer_group_mappings",
    "sync_settings_section",
   "enable_customer_sync",
   "customer_sync_direction",
@@ -31,12 +29,15 @@
   "product_sync_direction",
   "enable_payment_sync",
   "payment_sync_direction",
+  "enable_task_sync",
+  "task_sync_direction",
+  "auto_submit_settings_section",
+  "auto_submit_invoices",
+  "auto_submit_quotations",
+  "auto_submit_payments",
   "column_break_13",
   "sync_frequency",
   "last_sync_time",
-  "enable_webhooks",
-  "webhook_url",
-  "webhook_secret",
   "error_handling_section",
   "send_error_notifications",
   "notification_email",
@@ -66,35 +67,36 @@
   {
    "fieldname": "section_break_3",
    "fieldtype": "Section Break",
-   "label": "Invoice Ninja Connection"
+   "label": "Master Connection (For Discovery)",
+   "description": "Master credentials are used only for discovering companies. Actual sync operations use per-company tokens."
   },
   {
    "fieldname": "invoice_ninja_url",
    "fieldtype": "Data",
    "label": "Invoice Ninja URL",
-   "reqd": 1
+   "description": "Master Invoice Ninja instance URL (e.g., https://invoicing.example.com)"
   },
   {
    "fieldname": "api_token",
    "fieldtype": "Password",
    "label": "API Token",
-   "reqd": 1
+   "description": "Master API token with access to list companies"
   },
   {
-   "fieldname": "column_break_6",
+   "fieldname": "column_break_credentials",
    "fieldtype": "Column Break"
   },
   {
    "fieldname": "test_connection",
    "fieldtype": "Button",
-   "label": "Test Connection"
+   "label": "Test Master Connection"
   },
   {
    "fieldname": "connection_status",
-   "fieldtype": "Select",
-   "label": "Connection Status",
-   "options": "Not Tested\nConnected\nFailed",
-   "read_only": 1
+   "fieldtype": "Data",
+   "label": "Last Test Result",
+   "read_only": 1,
+   "description": "Test individual companies in the Invoice Ninja Company list"
   },
   {
    "fieldname": "company_mapping_section",
@@ -107,18 +109,6 @@
     "label": "Company Mappings",
     "options": "Invoice Ninja Company Mapping",
     "description": "Map ERPNext companies to Invoice Ninja companies for proper document routing"
-   },
-   {
-    "fieldname": "customer_group_mapping_section",
-    "fieldtype": "Section Break",
-    "label": "Customer Group Mappings"
-   },
-   {
-    "fieldname": "customer_group_mappings",
-    "fieldtype": "Table",
-    "label": "Customer Group Mappings",
-    "options": "Invoice Ninja Customer Group Mapping",
-    "description": "Map ERPNext customer groups to Invoice Ninja customer groups"
    },
    {
     "fieldname": "sync_settings_section",
@@ -196,6 +186,47 @@
    "options": "Invoice Ninja to ERPNext\nERPNext to Invoice Ninja\nBidirectional"
   },
   {
+   "default": "1",
+   "fieldname": "enable_task_sync",
+   "fieldtype": "Check",
+   "label": "Enable Task Sync"
+  },
+  {
+   "default": "Invoice Ninja to ERPNext",
+   "depends_on": "enable_task_sync",
+   "fieldname": "task_sync_direction",
+   "fieldtype": "Select",
+   "label": "Task Sync Direction",
+   "options": "Invoice Ninja to ERPNext\nERPNext to Invoice Ninja\nBidirectional"
+  },
+  {
+   "fieldname": "auto_submit_settings_section",
+   "fieldtype": "Section Break",
+   "label": "Auto Submit Settings",
+   "description": "Control whether synced documents are automatically submitted (default: off for review)"
+  },
+  {
+   "default": "0",
+   "fieldname": "auto_submit_invoices",
+   "fieldtype": "Check",
+   "label": "Auto Submit Sales Invoices",
+   "description": "Automatically submit synced sales invoices from Invoice Ninja (default: off for review)"
+  },
+  {
+   "default": "0",
+   "fieldname": "auto_submit_quotations",
+   "fieldtype": "Check",
+   "label": "Auto Submit Quotations",
+   "description": "Automatically submit synced quotations from Invoice Ninja (default: off for review)"
+  },
+  {
+   "default": "0",
+   "fieldname": "auto_submit_payments",
+   "fieldtype": "Check",
+   "label": "Auto Submit Payment Entries",
+   "description": "Automatically submit synced payment entries from Invoice Ninja (default: off for review)"
+  },
+  {
    "fieldname": "column_break_13",
    "fieldtype": "Column Break"
   },
@@ -211,23 +242,6 @@
    "fieldtype": "Datetime",
    "label": "Last Sync Time",
    "read_only": 1
-  },
-  {
-   "default": "1",
-   "fieldname": "enable_webhooks",
-   "fieldtype": "Check",
-   "label": "Enable Real-time Webhooks"
-  },
-  {
-   "fieldname": "webhook_url",
-   "fieldtype": "Data",
-   "label": "Webhook URL",
-   "read_only": 1
-  },
-  {
-   "fieldname": "webhook_secret",
-   "fieldtype": "Password",
-   "label": "Webhook Secret"
   },
   {
    "fieldname": "error_handling_section",
@@ -288,7 +302,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-07-24 10:00:00.000000",
+ "modified": "2026-01-31 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Invoice Ninja Integration",
  "name": "Invoice Ninja Settings",
